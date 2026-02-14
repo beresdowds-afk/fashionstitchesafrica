@@ -124,6 +124,19 @@ export const dispatchNotifications = async (params: NotifyParams) => {
         },
       }).catch((e) => console.error("SMS dispatch failed:", e));
     }
+
+    // WhatsApp
+    if (settings.whatsapp_enabled && org?.phone && smsMessage) {
+      supabase.functions.invoke("send-whatsapp", {
+        body: {
+          ...basePayload,
+          to: org.phone,
+          message: smsMessage,
+          recipient_id: recipients[0]?.id || null,
+          recipient_type: "org_admin",
+        },
+      }).catch((e) => console.error("WhatsApp dispatch failed:", e));
+    }
   } catch (err) {
     console.error("dispatchNotifications error:", err);
   }

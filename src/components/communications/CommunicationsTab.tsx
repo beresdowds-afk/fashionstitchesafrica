@@ -1,8 +1,8 @@
-import { useState } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, History } from "lucide-react";
+import { Settings, History, UserCog } from "lucide-react";
 import NotificationSettingsPanel from "./NotificationSettingsPanel";
 import MessageLogViewer from "./MessageLogViewer";
+import UserNotificationPreferences from "./UserNotificationPreferences";
 
 interface CommunicationsTabProps {
   orgId: string;
@@ -15,18 +15,28 @@ const CommunicationsTab = ({ orgId, role }: CommunicationsTabProps) => {
   return (
     <div>
       <h2 className="font-heading font-bold text-2xl mb-6">Communications Hub</h2>
-      <Tabs defaultValue="settings">
+      <Tabs defaultValue={isAdmin ? "settings" : "preferences"}>
         <TabsList className="mb-6">
-          <TabsTrigger value="settings" className="gap-2">
-            <Settings size={14} /> Settings
+          {isAdmin && (
+            <TabsTrigger value="settings" className="gap-2">
+              <Settings size={14} /> Org Settings
+            </TabsTrigger>
+          )}
+          <TabsTrigger value="preferences" className="gap-2">
+            <UserCog size={14} /> My Preferences
           </TabsTrigger>
           <TabsTrigger value="logs" className="gap-2">
             <History size={14} /> Message Log
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="settings">
-          <NotificationSettingsPanel orgId={orgId} isAdmin={isAdmin} />
+        {isAdmin && (
+          <TabsContent value="settings">
+            <NotificationSettingsPanel orgId={orgId} isAdmin={isAdmin} />
+          </TabsContent>
+        )}
+        <TabsContent value="preferences">
+          <UserNotificationPreferences orgId={orgId} />
         </TabsContent>
         <TabsContent value="logs">
           <MessageLogViewer orgId={orgId} />

@@ -850,6 +850,65 @@ export type Database = {
         }
         Relationships: []
       }
+      user_notification_preferences: {
+        Row: {
+          created_at: string
+          due_reminder_email: boolean
+          due_reminder_sms: boolean
+          due_reminder_whatsapp: boolean
+          id: string
+          order_status_email: boolean
+          order_status_sms: boolean
+          order_status_whatsapp: boolean
+          org_id: string
+          payment_email: boolean
+          payment_sms: boolean
+          payment_whatsapp: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          due_reminder_email?: boolean
+          due_reminder_sms?: boolean
+          due_reminder_whatsapp?: boolean
+          id?: string
+          order_status_email?: boolean
+          order_status_sms?: boolean
+          order_status_whatsapp?: boolean
+          org_id: string
+          payment_email?: boolean
+          payment_sms?: boolean
+          payment_whatsapp?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          due_reminder_email?: boolean
+          due_reminder_sms?: boolean
+          due_reminder_whatsapp?: boolean
+          id?: string
+          order_status_email?: boolean
+          order_status_sms?: boolean
+          order_status_whatsapp?: boolean
+          org_id?: string
+          payment_email?: boolean
+          payment_sms?: boolean
+          payment_whatsapp?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_notification_preferences_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
