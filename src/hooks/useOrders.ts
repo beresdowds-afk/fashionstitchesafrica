@@ -26,6 +26,9 @@ export interface Order {
   total_amount: number;
   currency: string;
   notes: string | null;
+  amount_paid: number;
+  deposit_amount: number;
+  payment_status: string;
   created_at: string;
   updated_at: string;
   customer_profile?: { display_name: string | null } | null;
