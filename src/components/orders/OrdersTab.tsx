@@ -13,7 +13,7 @@ import { format } from "date-fns";
 import CreateOrderDialog from "./CreateOrderDialog";
 import OrderDetailSheet from "./OrderDetailSheet";
 import { motion } from "framer-motion";
-import { Plus, ShoppingBag, Filter, Trash2, Search, CalendarIcon, X, Download } from "lucide-react";
+import { Plus, ShoppingBag, Filter, Trash2, Search, CalendarIcon, X, Download, CreditCard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const exportOrdersCSV = (orders: Order[], currency: string) => {
@@ -58,6 +58,7 @@ const OrdersTab = ({ orgId, currency, role, orgName, orgSettings }: OrdersTabPro
   const { members } = useOrgMembers(orgId);
   const { createNotification } = useNotifications();
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [paymentFilter, setPaymentFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFrom, setDateFrom] = useState<Date | undefined>();
   const [dateTo, setDateTo] = useState<Date | undefined>();
@@ -74,6 +75,7 @@ const OrdersTab = ({ orgId, currency, role, orgName, orgSettings }: OrdersTabPro
   const filteredOrders = useMemo(() => {
     let result = orders;
     if (statusFilter !== "all") result = result.filter((o) => o.status === statusFilter);
+    if (paymentFilter !== "all") result = result.filter((o) => o.payment_status === paymentFilter);
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter(
@@ -90,10 +92,10 @@ const OrdersTab = ({ orgId, currency, role, orgName, orgSettings }: OrdersTabPro
       result = result.filter((o) => new Date(o.created_at) <= end);
     }
     return result;
-  }, [orders, statusFilter, searchQuery, dateFrom, dateTo]);
+  }, [orders, statusFilter, paymentFilter, searchQuery, dateFrom, dateTo]);
 
-  const hasFilters = searchQuery || dateFrom || dateTo || statusFilter !== "all";
-  const clearFilters = () => { setSearchQuery(""); setDateFrom(undefined); setDateTo(undefined); setStatusFilter("all"); };
+  const hasFilters = searchQuery || dateFrom || dateTo || statusFilter !== "all" || paymentFilter !== "all";
+  const clearFilters = () => { setSearchQuery(""); setDateFrom(undefined); setDateTo(undefined); setStatusFilter("all"); setPaymentFilter("all"); };
 
   const handleStatusChange = async (orderId: string, newStatus: OrderStatus) => {
     const order = orders.find((o) => o.id === orderId);
@@ -191,6 +193,18 @@ const OrdersTab = ({ orgId, currency, role, orgName, orgSettings }: OrdersTabPro
               {(Object.entries(statusLabels) as [OrderStatus, string][]).map(([value, label]) => (
                 <SelectItem key={value} value={value}>{label}</SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+          <Select value={paymentFilter} onValueChange={setPaymentFilter}>
+            <SelectTrigger className="w-32 h-9 text-xs">
+              <CreditCard size={12} className="mr-1" />
+              <SelectValue placeholder="Payment" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Payments</SelectItem>
+              <SelectItem value="unpaid">Unpaid</SelectItem>
+              <SelectItem value="partial">Partial</SelectItem>
+              <SelectItem value="paid">Paid</SelectItem>
             </SelectContent>
           </Select>
           <Popover>
