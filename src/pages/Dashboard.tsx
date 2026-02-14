@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { LogOut, User, Users, Settings, BarChart3, ShoppingBag, Palette, Plus, Trash2, Shield, Package, Clock } from "lucide-react";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import OrdersTab from "@/components/orders/OrdersTab";
+import InviteMemberDialog from "@/components/members/InviteMemberDialog";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { useUserGlobalRole } from "@/hooks/useOrganization";
@@ -280,7 +281,7 @@ const OverviewTab = ({ org, role }: { org: any; role: AppRole | null }) => {
 };
 
 const MembersTab = ({ orgId, role }: { orgId: string; role: AppRole | null }) => {
-  const { members, loading, updateMemberRole, removeMember } = useOrgMembers(orgId);
+  const { members, loading, updateMemberRole, removeMember, refetch } = useOrgMembers(orgId);
   const { toast } = useToast();
   const canManage = role === "org_admin" || role === "super_admin";
 
@@ -305,9 +306,11 @@ const MembersTab = ({ orgId, role }: { orgId: string; role: AppRole | null }) =>
       <div className="flex items-center justify-between mb-6">
         <h2 className="font-heading font-bold text-2xl">Team Members</h2>
         {canManage && (
-          <Button variant="hero" size="sm">
-            <Plus size={16} className="mr-1" /> Invite Member
-          </Button>
+          <InviteMemberDialog orgId={orgId} onInvited={refetch}>
+            <Button variant="hero" size="sm">
+              <Plus size={16} className="mr-1" /> Invite Member
+            </Button>
+          </InviteMemberDialog>
         )}
       </div>
 

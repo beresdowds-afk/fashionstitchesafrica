@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { useOrderDetail, statusLabels, statusColors, ORDER_STATUS_FLOW, type Order, type OrderStatus } from "@/hooks/useOrders";
 import type { AppRole } from "@/hooks/useOrganization";
-import { Calendar, User, Clock, Package, ArrowRight } from "lucide-react";
+import { Calendar, User, Clock, Package, ArrowRight, Ruler } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface OrderDetailSheetProps {
@@ -125,20 +125,42 @@ const OrderDetailSheet = ({ order, open, onOpenChange, role, tailors, onStatusCh
               <p className="text-sm text-muted-foreground">No items</p>
             ) : (
               <div className="space-y-2">
-                {items.map((item) => (
-                  <div key={item.id} className="p-3 rounded-lg border border-border bg-card">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="text-sm font-medium">{item.name}</p>
-                        {item.fabric_details && <p className="text-xs text-muted-foreground mt-0.5">{item.fabric_details}</p>}
+                {items.map((item) => {
+                  const measurements = item.measurements as Record<string, string> | null;
+                  const hasMeasurements = measurements && Object.values(measurements).some((v) => v && String(v).trim() !== "");
+
+                  return (
+                    <div key={item.id} className="p-3 rounded-lg border border-border bg-card">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="text-sm font-medium">{item.name}</p>
+                          {item.fabric_details && <p className="text-xs text-muted-foreground mt-0.5">{item.fabric_details}</p>}
+                        </div>
+                        <div className="text-right">
+                          <p className="text-sm font-medium">{(item.quantity * Number(item.unit_price)).toLocaleString()} {order.currency}</p>
+                          <p className="text-xs text-muted-foreground">{item.quantity} × {Number(item.unit_price).toLocaleString()}</p>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="text-sm font-medium">{(item.quantity * Number(item.unit_price)).toLocaleString()} {order.currency}</p>
-                        <p className="text-xs text-muted-foreground">{item.quantity} × {Number(item.unit_price).toLocaleString()}</p>
-                      </div>
+                      {hasMeasurements && (
+                        <div className="mt-3 pt-3 border-t border-border">
+                          <p className="text-xs font-medium text-muted-foreground flex items-center gap-1 mb-2">
+                            <Ruler size={10} /> Measurements
+                          </p>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-1">
+                            {Object.entries(measurements!)
+                              .filter(([, v]) => v && String(v).trim() !== "")
+                              .map(([key, value]) => (
+                                <div key={key} className="flex justify-between text-xs">
+                                  <span className="text-muted-foreground capitalize">{key.replace(/_/g, " ")}</span>
+                                  <span className="font-medium">{value} cm</span>
+                                </div>
+                              ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

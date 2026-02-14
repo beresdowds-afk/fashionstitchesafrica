@@ -118,16 +118,28 @@ export const useOrgMembers = (orgId: string | undefined) => {
 
     const { data } = await supabase
       .from("org_members")
-      .select("*, profiles:user_id(display_name, avatar_url)")
+      .select("*")
       .eq("org_id", orgId)
       .order("joined_at", { ascending: true });
 
-    setMembers(
-      (data || []).map((m: any) => ({
-        ...m,
-        profile: m.profiles,
-      }))
-    );
+    if (data && data.length > 0) {
+      const userIds = data.map((m) => m.user_id);
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, display_name, avatar_url")
+        .in("id", userIds);
+
+      const profileMap = new Map(profiles?.map((p) => [p.id, p]) || []);
+
+      setMembers(
+        data.map((m) => ({
+          ...m,
+          profile: profileMap.get(m.user_id) || undefined,
+        }))
+      );
+    } else {
+      setMembers([]);
+    }
     setLoading(false);
   };
 
