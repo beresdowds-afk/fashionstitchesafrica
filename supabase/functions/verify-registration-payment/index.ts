@@ -1,0 +1,83 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { reference } = await req.json();
+    if (!reference) {
+      return new Response(JSON.stringify({ error: "Missing reference" }), { status: 400, headers: corsHeaders });
+    }
+
+    const serviceClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+
+    // Find registration by reference
+    const { data: reg } = await serviceClient
+      .from("customer_registrations")
+      .select("*")
+      .eq("gateway_reference", reference)
+      .single();
+
+    if (!reg) {
+      return new Response(JSON.stringify({ error: "Registration not found" }), { status: 404, headers: corsHeaders });
+    }
+
+    if (reg.status === "paid") {
+      return new Response(JSON.stringify({ status: "already_paid" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Get org Paystack key
+    const { data: apiKeys } = await serviceClient
+      .from("org_api_keys")
+      .select("key_name, key_value")
+      .eq("org_id", reg.org_id)
+      .eq("provider", "paystack")
+      .eq("is_active", true);
+
+    const keys = Object.fromEntries((apiKeys || []).map((k: any) => [k.key_name, k.key_value]));
+    const secretKey = keys["secret_key"] || keys["PAYSTACK_SECRET_KEY"];
+
+    if (!secretKey) {
+      return new Response(JSON.stringify({ error: "Paystack not configured" }), { status: 400, headers: corsHeaders });
+    }
+
+    // Verify with Paystack
+    const verifyRes = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
+      headers: { Authorization: `Bearer ${secretKey}` },
+    });
+    const verifyData = await verifyRes.json();
+
+    if (verifyData.data?.status === "success") {
+      await serviceClient.from("customer_registrations").update({
+        status: "paid",
+        paid_at: new Date().toISOString(),
+      }).eq("id", reg.id);
+
+      return new Response(JSON.stringify({ status: "success" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    return new Response(JSON.stringify({ status: "pending" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+
+  } catch (err) {
+    return new Response(JSON.stringify({ error: (err as Error).message }), {
+      status: 500,
+      headers: corsHeaders,
+    });
+  }
+});
