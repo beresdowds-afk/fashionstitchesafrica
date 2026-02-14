@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -9,6 +10,8 @@ import InvoiceGenerator from "./InvoiceGenerator";
 import PaymentHistory from "@/components/payments/PaymentHistory";
 import RecordPaymentDialog from "@/components/payments/RecordPaymentDialog";
 import { usePayments } from "@/hooks/usePayments";
+import { useNotifications } from "@/hooks/useNotifications";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface InvoiceSettings {
   invoice_address?: string | null;
@@ -25,16 +28,50 @@ interface OrderDetailSheetProps {
   tailors: { id: string; display_name: string | null }[];
   onStatusChange: (orderId: string, status: OrderStatus) => void;
   onAssignTailor: (orderId: string, tailorId: string) => void;
+  onRefetchOrders?: () => void;
   orgId: string;
   orgName?: string;
   orgSettings?: InvoiceSettings;
 }
 
-const OrderDetailSheet = ({ order, open, onOpenChange, role, tailors, onStatusChange, onAssignTailor, orgId, orgName, orgSettings }: OrderDetailSheetProps) => {
+const paymentTypeLabels: Record<string, string> = { deposit: "Deposit", partial: "Partial payment", full: "Full payment" };
+
+const OrderDetailSheet = ({ order, open, onOpenChange, role, tailors, onStatusChange, onAssignTailor, onRefetchOrders, orgId, orgName, orgSettings }: OrderDetailSheetProps) => {
+  const { user } = useAuth();
   const { items, history, loading } = useOrderDetail(open && order ? order.id : undefined);
   const { recordPayment } = usePayments(orgId, order?.id);
+  const { createNotification } = useNotifications();
   const canManage = role === "org_admin" || role === "super_admin";
   const canUpdateStatus = canManage || role === "tailor";
+
+  const handleRecordPayment = useCallback(async (data: Parameters<typeof recordPayment>[0]) => {
+    const result = await recordPayment(data);
+    if (!result.error && order && user) {
+      // Send in-app notification to the customer
+      if (order.customer_id && order.customer_id !== user.id) {
+        const typeLabel = paymentTypeLabels[data.payment_type] || data.payment_type;
+        await createNotification({
+          org_id: orgId,
+          user_id: order.customer_id,
+          order_id: order.id,
+          title: "Payment Received",
+          message: `${typeLabel} of ${Number(data.amount).toLocaleString()} ${data.currency} received for "${order.title}" (${order.order_number}).`,
+        });
+      }
+      // Notify assigned tailor if different from current user
+      if (order.assigned_tailor_id && order.assigned_tailor_id !== user.id && order.assigned_tailor_id !== order.customer_id) {
+        await createNotification({
+          org_id: orgId,
+          user_id: order.assigned_tailor_id,
+          order_id: order.id,
+          title: "Payment Received",
+          message: `Payment of ${Number(data.amount).toLocaleString()} ${data.currency} received for "${order.title}" (${order.order_number}).`,
+        });
+      }
+    }
+    if (!result.error) onRefetchOrders?.();
+    return result;
+  }, [recordPayment, order, user, orgId, createNotification, onRefetchOrders]);
 
   if (!order) return null;
 
@@ -194,7 +231,7 @@ const OrderDetailSheet = ({ order, open, onOpenChange, role, tailors, onStatusCh
                   currency={order.currency}
                   totalAmount={Number(order.total_amount || 0)}
                   amountPaid={Number(order.amount_paid || 0)}
-                  onRecord={recordPayment}
+                  onRecord={handleRecordPayment}
                 >
                   <Button size="sm" variant="outline" className="h-7 text-xs">
                     <Banknote size={12} className="mr-1" /> Record Payment
@@ -217,9 +254,9 @@ const OrderDetailSheet = ({ order, open, onOpenChange, role, tailors, onStatusCh
               <div className="flex-1 p-2 rounded-lg bg-muted/50 border border-border text-center">
                 <p className="text-[10px] text-muted-foreground">Status</p>
                 <p className={`text-xs font-medium mt-0.5 ${
-                  order.payment_status === "paid" ? "text-secondary" : order.payment_status === "partial" ? "text-primary" : "text-muted-foreground"
+                  order.payment_status === "paid" ? "text-secondary" : (order.payment_status === "partially_paid" || order.payment_status === "deposit_paid") ? "text-primary" : "text-muted-foreground"
                 }`}>
-                  {order.payment_status === "paid" ? "Paid" : order.payment_status === "partial" ? "Partial" : "Unpaid"}
+                  {order.payment_status === "paid" ? "Paid" : order.payment_status === "partially_paid" ? "Partial" : order.payment_status === "deposit_paid" ? "Deposit" : "Unpaid"}
                 </p>
               </div>
             </div>
