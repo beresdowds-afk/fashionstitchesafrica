@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { calculateFees, PLATFORM_FEE_PERCENT, ADMIN_FEE_PERCENT } from "@/hooks/usePlatformFees";
+import { dispatchNotifications } from "@/lib/notificationDispatcher";
 
 export type OrderStatus =
   | "pending"
@@ -247,6 +248,20 @@ export const useOrders = (orgId: string | undefined) => {
       changed_by: user.id,
       note: note || null,
     });
+
+    // Dispatch notifications (fire-and-forget)
+    if (currentOrder) {
+      dispatchNotifications({
+        orgId: currentOrder.org_id,
+        orderId,
+        orderNumber: currentOrder.order_number,
+        orderTitle: currentOrder.title,
+        eventType: "order_status_change",
+        oldStatus: currentOrder.status,
+        newStatus,
+        currency: currentOrder.currency,
+      });
+    }
 
     await fetchOrders();
     return { error: null };

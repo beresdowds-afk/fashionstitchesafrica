@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { dispatchNotifications } from "@/lib/notificationDispatcher";
 
 export interface Payment {
   id: string;
@@ -75,7 +76,7 @@ export const usePayments = (orgId: string | undefined, orderId?: string) => {
 
       const { data: order } = await supabase
         .from("orders")
-        .select("total_amount, deposit_amount")
+        .select("total_amount, deposit_amount, order_number, title, org_id")
         .eq("id", paymentData.order_id)
         .single();
 
@@ -93,6 +94,19 @@ export const usePayments = (orgId: string | undefined, orderId?: string) => {
           deposit_amount: paymentData.payment_type === "deposit" ? paymentData.amount : undefined,
         })
         .eq("id", paymentData.order_id);
+
+      // Dispatch payment notification (fire-and-forget)
+      if (orgId && order) {
+        dispatchNotifications({
+          orgId,
+          orderId: paymentData.order_id,
+          orderNumber: order.order_number,
+          orderTitle: order.title,
+          eventType: "payment_received",
+          amount: paymentData.amount,
+          currency: paymentData.currency,
+        });
+      }
 
       await fetchPayments();
     }

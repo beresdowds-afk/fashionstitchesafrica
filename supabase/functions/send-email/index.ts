@@ -1,0 +1,194 @@
+import "https://deno.land/std@0.168.0/dotenv/load.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+    if (!RESEND_API_KEY) {
+      return new Response(
+        JSON.stringify({ error: "RESEND_API_KEY is not configured" }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const {
+      to,
+      subject,
+      event_type,
+      order_number,
+      order_title,
+      new_status,
+      old_status,
+      amount,
+      currency,
+      org_name,
+      brand_color,
+      email_footer_text,
+      recipient_name,
+      // For logging
+      org_id,
+      order_id,
+      recipient_id,
+      recipient_type,
+    } = await req.json();
+
+    if (!to || !subject) {
+      return new Response(
+        JSON.stringify({ error: "Missing required fields: to, subject" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const brandColor = brand_color || "#000000";
+    const footerText = email_footer_text || `Thank you for choosing ${org_name || "our services"}.`;
+
+    // Build HTML email
+    let contentBlock = "";
+    if (event_type === "order_status_change") {
+      contentBlock = `
+        <h2 style="color: ${brandColor}; margin: 0 0 8px;">Order Status Updated</h2>
+        <p style="margin: 0 0 16px; color: #555;">Your order <strong>${order_number || ""}</strong> — "${order_title || ""}" has been updated.</p>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+          <tr>
+            <td style="padding: 12px; background: #f5f5f5; border-radius: 8px;">
+              <span style="color: #888; font-size: 12px;">Previous Status</span><br/>
+              <strong style="font-size: 16px; text-transform: capitalize;">${old_status || "N/A"}</strong>
+            </td>
+            <td style="padding: 12px; text-align: center; font-size: 20px;">→</td>
+            <td style="padding: 12px; background: ${brandColor}10; border-radius: 8px;">
+              <span style="color: #888; font-size: 12px;">New Status</span><br/>
+              <strong style="font-size: 16px; color: ${brandColor}; text-transform: capitalize;">${new_status || ""}</strong>
+            </td>
+          </tr>
+        </table>
+      `;
+    } else if (event_type === "payment_received") {
+      contentBlock = `
+        <h2 style="color: ${brandColor}; margin: 0 0 8px;">Payment Received</h2>
+        <p style="margin: 0 0 16px; color: #555;">A payment has been recorded for order <strong>${order_number || ""}</strong>.</p>
+        <div style="padding: 16px; background: ${brandColor}10; border-radius: 8px; text-align: center; margin-bottom: 20px;">
+          <span style="font-size: 14px; color: #888;">Amount Paid</span><br/>
+          <strong style="font-size: 28px; color: ${brandColor};">${currency || ""} ${(amount || 0).toLocaleString()}</strong>
+        </div>
+      `;
+    } else if (event_type === "due_date_reminder") {
+      contentBlock = `
+        <h2 style="color: ${brandColor}; margin: 0 0 8px;">Due Date Reminder</h2>
+        <p style="margin: 0 0 16px; color: #555;">Order <strong>${order_number || ""}</strong> — "${order_title || ""}" is approaching its due date.</p>
+      `;
+    } else {
+      contentBlock = `
+        <h2 style="color: ${brandColor}; margin: 0 0 8px;">${subject}</h2>
+        <p style="margin: 0 0 16px; color: #555;">You have a new notification from ${org_name || "your organization"}.</p>
+      `;
+    }
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f0f0;">
+        <div style="max-width: 600px; margin: 0 auto; padding: 40px 20px;">
+          <div style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+            <div style="height: 4px; background: ${brandColor};"></div>
+            <div style="padding: 32px;">
+              ${recipient_name ? `<p style="margin: 0 0 20px; color: #333;">Hi ${recipient_name},</p>` : ""}
+              ${contentBlock}
+            </div>
+            <div style="padding: 20px 32px; background: #fafafa; border-top: 1px solid #eee;">
+              <p style="margin: 0; font-size: 12px; color: #999;">${footerText}</p>
+              ${org_name ? `<p style="margin: 4px 0 0; font-size: 12px; color: #bbb;">${org_name}</p>` : ""}
+            </div>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    // Send via Resend
+    const resendRes = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: Deno.env.get("RESEND_FROM_EMAIL") || "onboarding@resend.dev",
+        to: [to],
+        subject,
+        html,
+      }),
+    });
+
+    const resendData = await resendRes.json();
+
+    if (!resendRes.ok) {
+      // Log failure
+      if (org_id) {
+        const supabaseAdmin = createClient(
+          Deno.env.get("SUPABASE_URL")!,
+          Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+        );
+        await supabaseAdmin.from("message_logs").insert({
+          org_id,
+          order_id: order_id || null,
+          channel: "email",
+          recipient_type: recipient_type || "customer",
+          recipient_id: recipient_id || "00000000-0000-0000-0000-000000000000",
+          recipient_contact: to,
+          event_type: event_type || "general",
+          subject,
+          body: contentBlock,
+          status: "failed",
+          error_message: JSON.stringify(resendData),
+        });
+      }
+
+      return new Response(
+        JSON.stringify({ error: "Failed to send email", details: resendData }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Log success
+    if (org_id) {
+      const supabaseAdmin = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      );
+      await supabaseAdmin.from("message_logs").insert({
+        org_id,
+        order_id: order_id || null,
+        channel: "email",
+        recipient_type: recipient_type || "customer",
+        recipient_id: recipient_id || "00000000-0000-0000-0000-000000000000",
+        recipient_contact: to,
+        event_type: event_type || "general",
+        subject,
+        status: "sent",
+        external_id: resendData.id || null,
+        sent_at: new Date().toISOString(),
+      });
+    }
+
+    return new Response(
+      JSON.stringify({ success: true, id: resendData.id }),
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  } catch (err) {
+    console.error("send-email error:", err);
+    return new Response(
+      JSON.stringify({ error: err.message }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
+  }
+});
