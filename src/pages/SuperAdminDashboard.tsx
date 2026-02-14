@@ -1,5 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import KeysSecretsPanel from "@/components/super-admin/KeysSecretsPanel";
+import ExchangeRatesPanel from "@/components/super-admin/ExchangeRatesPanel";
 import { useUserGlobalRole } from "@/hooks/useOrganization";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -36,7 +37,7 @@ const SuperAdminDashboard = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState({ orgs: 0, users: 0 });
   const [orgs, setOrgs] = useState<OrgRow[]>([]);
-  const [activeTab, setActiveTab] = useState<"overview" | "organizations" | "users" | "keys">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "organizations" | "users" | "keys" | "rates">("overview");
 
   useEffect(() => {
     if (!authLoading && !roleLoading) {
@@ -73,6 +74,7 @@ const SuperAdminDashboard = () => {
     { id: "organizations" as const, icon: Building2, label: "Organizations" },
     { id: "users" as const, icon: Users, label: "Users & Roles" },
     { id: "keys" as const, icon: Shield, label: "Keys & Secrets" },
+    { id: "rates" as const, icon: Globe, label: "Exchange Rates" },
   ];
 
   return (
@@ -169,6 +171,7 @@ const SuperAdminDashboard = () => {
           {activeTab === "organizations" && <OrganizationsPanel orgs={orgs} />}
           {activeTab === "users" && <UsersPanel />}
           {activeTab === "keys" && <KeysSecretsPanel />}
+          {activeTab === "rates" && <ExchangeRatesPanel />}
         </main>
       </div>
     </div>
