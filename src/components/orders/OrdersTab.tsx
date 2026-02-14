@@ -244,6 +244,7 @@ const OrdersTab = ({ orgId, currency, role, orgName, orgSettings }: OrdersTabPro
                   <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3 hidden sm:table-cell">Customer</th>
                   <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3 hidden md:table-cell">Tailor</th>
                   <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3 hidden lg:table-cell">Due Date</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3 hidden md:table-cell">Payment</th>
                   <th className="text-right text-xs font-medium text-muted-foreground px-4 py-3">Amount</th>
                   {canManage && <th className="text-right text-xs font-medium text-muted-foreground px-4 py-3 w-12"></th>}
                 </tr>
@@ -273,6 +274,17 @@ const OrdersTab = ({ orgId, currency, role, orgName, orgSettings }: OrdersTabPro
                     <td className="px-4 py-3 text-sm text-muted-foreground hidden lg:table-cell">
                       {order.due_date ? new Date(order.due_date).toLocaleDateString() : "—"}
                     </td>
+                    <td className="px-4 py-3 hidden md:table-cell">
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                        order.payment_status === "paid"
+                          ? "bg-secondary/15 text-secondary"
+                          : order.payment_status === "partial"
+                          ? "bg-primary/15 text-primary"
+                          : "bg-muted text-muted-foreground"
+                      }`}>
+                        {order.payment_status === "paid" ? "Paid" : order.payment_status === "partial" ? "Partial" : "Unpaid"}
+                      </span>
+                    </td>
                     <td className="px-4 py-3 text-sm font-medium text-right">
                       {Number(order.total_amount).toLocaleString()} {order.currency}
                     </td>
@@ -299,6 +311,7 @@ const OrdersTab = ({ orgId, currency, role, orgName, orgSettings }: OrdersTabPro
         tailors={tailors}
         onStatusChange={handleStatusChange}
         onAssignTailor={handleAssignTailor}
+        orgId={orgId}
         orgName={orgName}
         orgSettings={orgSettings}
       />

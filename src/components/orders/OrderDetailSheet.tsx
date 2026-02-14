@@ -3,9 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useOrderDetail, statusLabels, statusColors, ORDER_STATUS_FLOW, type Order, type OrderStatus } from "@/hooks/useOrders";
 import type { AppRole } from "@/hooks/useOrganization";
-import { Calendar, User, Clock, Package, ArrowRight, Ruler } from "lucide-react";
+import { Calendar, User, Clock, Package, ArrowRight, Ruler, Banknote } from "lucide-react";
 import { motion } from "framer-motion";
 import InvoiceGenerator from "./InvoiceGenerator";
+import PaymentHistory from "@/components/payments/PaymentHistory";
+import RecordPaymentDialog from "@/components/payments/RecordPaymentDialog";
+import { usePayments } from "@/hooks/usePayments";
 
 interface InvoiceSettings {
   invoice_address?: string | null;
@@ -22,12 +25,14 @@ interface OrderDetailSheetProps {
   tailors: { id: string; display_name: string | null }[];
   onStatusChange: (orderId: string, status: OrderStatus) => void;
   onAssignTailor: (orderId: string, tailorId: string) => void;
+  orgId: string;
   orgName?: string;
   orgSettings?: InvoiceSettings;
 }
 
-const OrderDetailSheet = ({ order, open, onOpenChange, role, tailors, onStatusChange, onAssignTailor, orgName, orgSettings }: OrderDetailSheetProps) => {
+const OrderDetailSheet = ({ order, open, onOpenChange, role, tailors, onStatusChange, onAssignTailor, orgId, orgName, orgSettings }: OrderDetailSheetProps) => {
   const { items, history, loading } = useOrderDetail(open && order ? order.id : undefined);
+  const { recordPayment } = usePayments(orgId, order?.id);
   const canManage = role === "org_admin" || role === "super_admin";
   const canUpdateStatus = canManage || role === "tailor";
 
@@ -179,7 +184,48 @@ const OrderDetailSheet = ({ order, open, onOpenChange, role, tailors, onStatusCh
             )}
           </div>
 
-          {/* Status History */}
+          {/* Payment Tracking */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="font-heading font-semibold text-sm">Payments</h4>
+              {canManage && (
+                <RecordPaymentDialog
+                  orderId={order.id}
+                  currency={order.currency}
+                  totalAmount={Number(order.total_amount || 0)}
+                  amountPaid={Number(order.amount_paid || 0)}
+                  onRecord={recordPayment}
+                >
+                  <Button size="sm" variant="outline" className="h-7 text-xs">
+                    <Banknote size={12} className="mr-1" /> Record Payment
+                  </Button>
+                </RecordPaymentDialog>
+              )}
+            </div>
+            {/* Payment summary */}
+            <div className="flex gap-3 mb-3">
+              <div className="flex-1 p-2 rounded-lg bg-muted/50 border border-border text-center">
+                <p className="text-[10px] text-muted-foreground">Paid</p>
+                <p className="text-sm font-bold text-secondary">{Number(order.amount_paid || 0).toLocaleString()} {order.currency}</p>
+              </div>
+              <div className="flex-1 p-2 rounded-lg bg-muted/50 border border-border text-center">
+                <p className="text-[10px] text-muted-foreground">Balance</p>
+                <p className={`text-sm font-bold ${Number(order.total_amount || 0) - Number(order.amount_paid || 0) > 0 ? "text-accent" : "text-secondary"}`}>
+                  {(Number(order.total_amount || 0) - Number(order.amount_paid || 0)).toLocaleString()} {order.currency}
+                </p>
+              </div>
+              <div className="flex-1 p-2 rounded-lg bg-muted/50 border border-border text-center">
+                <p className="text-[10px] text-muted-foreground">Status</p>
+                <p className={`text-xs font-medium mt-0.5 ${
+                  order.payment_status === "paid" ? "text-secondary" : order.payment_status === "partial" ? "text-primary" : "text-muted-foreground"
+                }`}>
+                  {order.payment_status === "paid" ? "Paid" : order.payment_status === "partial" ? "Partial" : "Unpaid"}
+                </p>
+              </div>
+            </div>
+            <PaymentHistory orgId={orgId} orderId={order.id} currency={order.currency} />
+          </div>
+
           <div>
             <h4 className="font-heading font-semibold text-sm mb-3">Status History</h4>
             {loading ? (
