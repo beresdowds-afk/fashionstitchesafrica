@@ -82,7 +82,8 @@ export const usePayments = (orgId: string | undefined, orderId?: string) => {
       const totalAmount = Number(order?.total_amount || 0);
       let paymentStatus = "unpaid";
       if (totalPaid >= totalAmount && totalAmount > 0) paymentStatus = "paid";
-      else if (totalPaid > 0) paymentStatus = "partial";
+      else if (paymentData.payment_type === "deposit" && totalPaid > 0) paymentStatus = "deposit_paid";
+      else if (totalPaid > 0) paymentStatus = "partially_paid";
 
       await supabase
         .from("orders")

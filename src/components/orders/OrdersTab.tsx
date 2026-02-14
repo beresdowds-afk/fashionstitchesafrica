@@ -54,7 +54,7 @@ interface OrdersTabProps {
 
 const OrdersTab = ({ orgId, currency, role, orgName, orgSettings }: OrdersTabProps) => {
   const { user } = useAuth();
-  const { orders, loading, createOrder, updateOrderStatus, assignTailor, deleteOrder } = useOrders(orgId);
+  const { orders, loading, createOrder, updateOrderStatus, assignTailor, deleteOrder, refetch } = useOrders(orgId);
   const { members } = useOrgMembers(orgId);
   const { createNotification } = useNotifications();
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -203,7 +203,8 @@ const OrdersTab = ({ orgId, currency, role, orgName, orgSettings }: OrdersTabPro
             <SelectContent>
               <SelectItem value="all">All Payments</SelectItem>
               <SelectItem value="unpaid">Unpaid</SelectItem>
-              <SelectItem value="partial">Partial</SelectItem>
+              <SelectItem value="deposit_paid">Deposit Paid</SelectItem>
+              <SelectItem value="partially_paid">Partially Paid</SelectItem>
               <SelectItem value="paid">Paid</SelectItem>
             </SelectContent>
           </Select>
@@ -292,11 +293,11 @@ const OrdersTab = ({ orgId, currency, role, orgName, orgSettings }: OrdersTabPro
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                         order.payment_status === "paid"
                           ? "bg-secondary/15 text-secondary"
-                          : order.payment_status === "partial"
+                          : order.payment_status === "partially_paid" || order.payment_status === "deposit_paid"
                           ? "bg-primary/15 text-primary"
                           : "bg-muted text-muted-foreground"
                       }`}>
-                        {order.payment_status === "paid" ? "Paid" : order.payment_status === "partial" ? "Partial" : "Unpaid"}
+                        {order.payment_status === "paid" ? "Paid" : order.payment_status === "partially_paid" ? "Partial" : order.payment_status === "deposit_paid" ? "Deposit" : "Unpaid"}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-sm font-medium text-right">
@@ -325,6 +326,7 @@ const OrdersTab = ({ orgId, currency, role, orgName, orgSettings }: OrdersTabPro
         tailors={tailors}
         onStatusChange={handleStatusChange}
         onAssignTailor={handleAssignTailor}
+        onRefetchOrders={refetch}
         orgId={orgId}
         orgName={orgName}
         orgSettings={orgSettings}
