@@ -32,3 +32,9 @@ verify_jwt = false
 
 [functions.verify-measurement-payment]
 verify_jwt = false
+
+[functions.ai-measure-detect]
+verify_jwt = false
+
+[functions.notify-admin-registration]
+verify_jwt = false

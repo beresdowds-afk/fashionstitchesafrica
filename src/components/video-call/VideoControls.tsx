@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Mic, MicOff, Video, VideoOff, PhoneOff, Users } from "lucide-react";
+import { Mic, MicOff, Video, VideoOff, PhoneOff, Users, MonitorUp, MonitorOff, Circle, CircleStop } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 interface VideoControlsProps {
@@ -10,6 +10,10 @@ interface VideoControlsProps {
   onEndCall: () => void;
   onInviteHuman?: () => void;
   isAiMode: boolean;
+  isScreenSharing?: boolean;
+  onToggleScreenShare?: () => void;
+  isRecording?: boolean;
+  onToggleRecording?: () => void;
 }
 
 const VideoControls = ({
@@ -20,17 +24,16 @@ const VideoControls = ({
   onEndCall,
   onInviteHuman,
   isAiMode,
+  isScreenSharing,
+  onToggleScreenShare,
+  isRecording,
+  onToggleRecording,
 }: VideoControlsProps) => {
   return (
     <div className="flex items-center justify-center gap-3 py-3 px-4 bg-card/80 backdrop-blur-md rounded-2xl border border-border shadow-lg">
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button
-            size="icon"
-            variant={isMuted ? "destructive" : "outline"}
-            className="h-12 w-12 rounded-full"
-            onClick={onToggleMute}
-          >
+          <Button size="icon" variant={isMuted ? "destructive" : "outline"} className="h-12 w-12 rounded-full" onClick={onToggleMute}>
             {isMuted ? <MicOff size={20} /> : <Mic size={20} />}
           </Button>
         </TooltipTrigger>
@@ -39,27 +42,51 @@ const VideoControls = ({
 
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button
-            size="icon"
-            variant={isCameraOff ? "destructive" : "outline"}
-            className="h-12 w-12 rounded-full"
-            onClick={onToggleCamera}
-          >
+          <Button size="icon" variant={isCameraOff ? "destructive" : "outline"} className="h-12 w-12 rounded-full" onClick={onToggleCamera}>
             {isCameraOff ? <VideoOff size={20} /> : <Video size={20} />}
           </Button>
         </TooltipTrigger>
         <TooltipContent>{isCameraOff ? "Turn camera on" : "Turn camera off"}</TooltipContent>
       </Tooltip>
 
-      {isAiMode && onInviteHuman && (
+      {/* Screen Share */}
+      {onToggleScreenShare && (
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
               size="icon"
-              variant="secondary"
+              variant={isScreenSharing ? "secondary" : "outline"}
               className="h-12 w-12 rounded-full"
-              onClick={onInviteHuman}
+              onClick={onToggleScreenShare}
             >
+              {isScreenSharing ? <MonitorOff size={20} /> : <MonitorUp size={20} />}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{isScreenSharing ? "Stop sharing" : "Share screen"}</TooltipContent>
+        </Tooltip>
+      )}
+
+      {/* Recording */}
+      {onToggleRecording && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              size="icon"
+              variant={isRecording ? "destructive" : "outline"}
+              className={`h-12 w-12 rounded-full ${isRecording ? "animate-pulse" : ""}`}
+              onClick={onToggleRecording}
+            >
+              {isRecording ? <CircleStop size={20} /> : <Circle size={20} />}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{isRecording ? "Stop recording" : "Start recording"}</TooltipContent>
+        </Tooltip>
+      )}
+
+      {isAiMode && onInviteHuman && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button size="icon" variant="secondary" className="h-12 w-12 rounded-full" onClick={onInviteHuman}>
               <Users size={20} />
             </Button>
           </TooltipTrigger>
@@ -69,12 +96,7 @@ const VideoControls = ({
 
       <Tooltip>
         <TooltipTrigger asChild>
-          <Button
-            size="icon"
-            variant="destructive"
-            className="h-12 w-12 rounded-full"
-            onClick={onEndCall}
-          >
+          <Button size="icon" variant="destructive" className="h-12 w-12 rounded-full" onClick={onEndCall}>
             <PhoneOff size={20} />
           </Button>
         </TooltipTrigger>

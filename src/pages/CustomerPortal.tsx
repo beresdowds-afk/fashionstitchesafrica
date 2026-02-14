@@ -239,6 +239,17 @@ const CustomerPortal = () => {
       setOrgs((prev) => [...prev, { id: org.id, name: org.name }]);
       setSelectedOrgId(org.id);
       setInviteCode("");
+
+      // Notify org admins (fire-and-forget)
+      supabase.functions.invoke("notify-admin-registration", {
+        body: {
+          org_id: org.id,
+          user_id: user.id,
+          user_name: profile?.display_name || undefined,
+          user_email: user.email,
+          org_name: org.name,
+        },
+      }).catch(console.error);
     }
     setJoiningOrg(false);
   };
