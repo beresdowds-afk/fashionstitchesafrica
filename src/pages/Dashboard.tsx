@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { LogOut, User, Users, Building2, Settings, BarChart3, ShoppingBag, Palette, Plus, Trash2 } from "lucide-react";
+import { LogOut, User, Users, Settings, BarChart3, ShoppingBag, Palette, Plus, Trash2, Shield } from "lucide-react";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
 import { useUserGlobalRole } from "@/hooks/useOrganization";
@@ -48,10 +48,10 @@ const Dashboard = () => {
   }, [user]);
 
   useEffect(() => {
-    if (!authLoading && !orgLoading && user && !currentOrg) {
+    if (!authLoading && !orgLoading && user && !currentOrg && !isSuperAdmin) {
       navigate("/create-organization");
     }
-  }, [authLoading, orgLoading, user, currentOrg, navigate]);
+  }, [authLoading, orgLoading, user, currentOrg, isSuperAdmin, navigate]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -66,7 +66,40 @@ const Dashboard = () => {
     );
   }
 
-  if (!user || !currentOrg) return null;
+  if (!user) return null;
+
+  // Super admin without an org - show a simplified view
+  if (!currentOrg && isSuperAdmin) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-brand" />
+        <header className="border-b border-border bg-card">
+          <div className="container mx-auto px-4 lg:px-8 flex items-center justify-between h-16">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-gradient-brand flex items-center justify-center">
+                <span className="font-heading font-bold text-primary-foreground text-sm">FS</span>
+              </div>
+              <span className="font-heading font-bold text-sm">Fashion Stitches Africa</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" onClick={() => navigate("/super-admin")}>Super Admin Panel</Button>
+              <Button variant="ghost" size="sm" onClick={handleSignOut}><LogOut size={16} /></Button>
+            </div>
+          </div>
+        </header>
+        <main className="container mx-auto px-4 lg:px-8 py-12 text-center">
+          <h2 className="font-heading font-bold text-2xl mb-4">Welcome, Super Admin</h2>
+          <p className="text-muted-foreground mb-6">You can manage the platform or create an organization.</p>
+          <div className="flex gap-3 justify-center">
+            <Button variant="hero" onClick={() => navigate("/super-admin")}>Go to Super Admin Panel</Button>
+            <Button variant="heroOutline" onClick={() => navigate("/create-organization")}>Create Organization</Button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (!currentOrg) return null;
 
   return (
     <div className="min-h-screen bg-background">
@@ -96,6 +129,11 @@ const Dashboard = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {isSuperAdmin && (
+              <Button variant="ghost" size="sm" onClick={() => navigate("/super-admin")} className="text-xs">
+                <Shield size={14} className="mr-1" /> Admin Panel
+              </Button>
+            )}
             <span className="text-sm text-muted-foreground hidden sm:block">
               {profile?.display_name || user.email}
             </span>
