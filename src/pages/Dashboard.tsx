@@ -194,7 +194,7 @@ const Dashboard = () => {
           </div>
 
           {activeTab === "overview" && <OverviewTab org={currentOrg} role={role} />}
-          {activeTab === "orders" && <OrdersTab orgId={currentOrg.id} currency={currentOrg.currency || "NGN"} role={role} />}
+          {activeTab === "orders" && <OrdersTab orgId={currentOrg.id} currency={currentOrg.currency || "NGN"} role={role} orgName={currentOrg.name} />}
           {activeTab === "customers" && <CustomersTab orgId={currentOrg.id} currency={currentOrg.currency || "NGN"} />}
           {activeTab === "members" && <MembersTab orgId={currentOrg.id} role={role} />}
           {activeTab === "settings" && <SettingsTab org={currentOrg} role={role} />}

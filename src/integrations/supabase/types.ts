@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      measurement_profiles: {
+        Row: {
+          created_at: string
+          customer_id: string
+          id: string
+          measurements: Json
+          org_id: string
+          profile_name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          id?: string
+          measurements?: Json
+          org_id: string
+          profile_name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          id?: string
+          measurements?: Json
+          org_id?: string
+          profile_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "measurement_profiles_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string

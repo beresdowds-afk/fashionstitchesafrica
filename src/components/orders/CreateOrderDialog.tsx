@@ -5,8 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Ruler } from "lucide-react";
+import { Plus, Trash2, Ruler, Save, FolderOpen } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useMeasurementProfiles } from "@/hooks/useMeasurementProfiles";
 import type { useOrders } from "@/hooks/useOrders";
 
 const DRESS_TYPES = [
@@ -60,14 +61,17 @@ const emptyItem = (): OrderItemInput => ({
   fabric_details: "", measurements: {}, showMeasurements: false,
 });
 
-const CreateOrderDialog = ({ currency, userId, createOrder, children }: CreateOrderDialogProps) => {
+const CreateOrderDialog = ({ orgId, currency, userId, createOrder, children }: CreateOrderDialogProps) => {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [items, setItems] = useState<OrderItemInput[]>([emptyItem()]);
   const [submitting, setSubmitting] = useState(false);
+  const [savingProfile, setSavingProfile] = useState<number | null>(null);
+  const [profileName, setProfileName] = useState("");
   const { toast } = useToast();
+  const { profiles, saveProfile } = useMeasurementProfiles(orgId, userId);
 
   const addItem = () => setItems([...items, emptyItem()]);
 
@@ -86,6 +90,43 @@ const CreateOrderDialog = ({ currency, userId, createOrder, children }: CreateOr
     const updated = [...items];
     updated[itemIndex].measurements = { ...updated[itemIndex].measurements, [key]: value };
     setItems(updated);
+  };
+
+  const loadProfile = (itemIndex: number, profileId: string) => {
+    const profile = profiles.find((p) => p.id === profileId);
+    if (profile) {
+      const updated = [...items];
+      updated[itemIndex].measurements = { ...profile.measurements };
+      updated[itemIndex].showMeasurements = true;
+      setItems(updated);
+      toast({ title: `Loaded "${profile.profile_name}" measurements` });
+    }
+  };
+
+  const handleSaveProfile = async (itemIndex: number) => {
+    if (!profileName.trim()) {
+      toast({ title: "Enter a profile name", variant: "destructive" });
+      return;
+    }
+    const measurements = Object.fromEntries(
+      Object.entries(items[itemIndex].measurements).filter(([, v]) => v.trim() !== "")
+    );
+    if (Object.keys(measurements).length === 0) {
+      toast({ title: "Add measurements first", variant: "destructive" });
+      return;
+    }
+    const { error } = await saveProfile({
+      org_id: orgId,
+      customer_id: userId,
+      profile_name: profileName,
+      measurements,
+    });
+    if (error) toast({ title: "Error saving profile", variant: "destructive" });
+    else {
+      toast({ title: `Profile "${profileName}" saved!` });
+      setSavingProfile(null);
+      setProfileName("");
+    }
   };
 
   const total = items.reduce((sum, item) => sum + item.quantity * item.unit_price, 0);
@@ -181,7 +222,6 @@ const CreateOrderDialog = ({ currency, userId, createOrder, children }: CreateOr
                   <Input type="number" placeholder="Unit price" min={0} step={0.01} value={item.unit_price || ""} onChange={(e) => updateItem(index, "unit_price", parseFloat(e.target.value) || 0)} />
                 </div>
 
-                {/* Dress Type & Material Type dropdowns */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-[10px] font-medium text-muted-foreground">Dress Type</label>
@@ -213,32 +253,79 @@ const CreateOrderDialog = ({ currency, userId, createOrder, children }: CreateOr
 
                 <Input placeholder="Additional fabric details (optional)" value={item.fabric_details} onChange={(e) => updateItem(index, "fabric_details", e.target.value)} />
                 
-                {/* Measurements toggle */}
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs gap-1"
-                  onClick={() => updateItem(index, "showMeasurements", !item.showMeasurements)}
-                >
-                  <Ruler size={12} />
-                  {item.showMeasurements ? "Hide Measurements" : "Add Measurements"}
-                </Button>
+                {/* Measurements section */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs gap-1"
+                    onClick={() => updateItem(index, "showMeasurements", !item.showMeasurements)}
+                  >
+                    <Ruler size={12} />
+                    {item.showMeasurements ? "Hide Measurements" : "Add Measurements"}
+                  </Button>
+
+                  {/* Load saved profile */}
+                  {profiles.length > 0 && (
+                    <Select onValueChange={(val) => loadProfile(index, val)}>
+                      <SelectTrigger className="h-7 w-auto min-w-[140px] text-xs gap-1">
+                        <FolderOpen size={10} />
+                        <SelectValue placeholder="Load profile" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover z-50">
+                        {profiles.map((p) => (
+                          <SelectItem key={p.id} value={p.id}>{p.profile_name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
 
                 {item.showMeasurements && (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 pt-1">
-                    {MEASUREMENT_FIELDS.map((field) => (
-                      <div key={field.key} className="space-y-1">
-                        <label className="text-[10px] font-medium text-muted-foreground">{field.label}</label>
+                  <>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 pt-1">
+                      {MEASUREMENT_FIELDS.map((field) => (
+                        <div key={field.key} className="space-y-1">
+                          <label className="text-[10px] font-medium text-muted-foreground">{field.label}</label>
+                          <Input
+                            placeholder="cm"
+                            className="h-8 text-xs"
+                            value={item.measurements[field.key] || ""}
+                            onChange={(e) => updateMeasurement(index, field.key, e.target.value)}
+                          />
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Save as profile */}
+                    {savingProfile === index ? (
+                      <div className="flex items-center gap-2 pt-1">
                         <Input
-                          placeholder="cm"
-                          className="h-8 text-xs"
-                          value={item.measurements[field.key] || ""}
-                          onChange={(e) => updateMeasurement(index, field.key, e.target.value)}
+                          placeholder="Profile name (e.g. 'Standard')"
+                          className="h-8 text-xs flex-1"
+                          value={profileName}
+                          onChange={(e) => setProfileName(e.target.value)}
                         />
+                        <Button type="button" variant="outline" size="sm" className="h-8 text-xs" onClick={() => handleSaveProfile(index)}>
+                          Save
+                        </Button>
+                        <Button type="button" variant="ghost" size="sm" className="h-8 text-xs" onClick={() => { setSavingProfile(null); setProfileName(""); }}>
+                          Cancel
+                        </Button>
                       </div>
-                    ))}
-                  </div>
+                    ) : (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs gap-1"
+                        onClick={() => setSavingProfile(index)}
+                      >
+                        <Save size={10} /> Save as Profile
+                      </Button>
+                    )}
+                  </>
                 )}
               </div>
             ))}

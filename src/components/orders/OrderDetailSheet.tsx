@@ -1,11 +1,11 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { useOrderDetail, statusLabels, statusColors, ORDER_STATUS_FLOW, type Order, type OrderStatus } from "@/hooks/useOrders";
 import type { AppRole } from "@/hooks/useOrganization";
 import { Calendar, User, Clock, Package, ArrowRight, Ruler } from "lucide-react";
 import { motion } from "framer-motion";
+import InvoiceGenerator from "./InvoiceGenerator";
 
 interface OrderDetailSheetProps {
   order: Order | null;
@@ -15,9 +15,10 @@ interface OrderDetailSheetProps {
   tailors: { id: string; display_name: string | null }[];
   onStatusChange: (orderId: string, status: OrderStatus) => void;
   onAssignTailor: (orderId: string, tailorId: string) => void;
+  orgName?: string;
 }
 
-const OrderDetailSheet = ({ order, open, onOpenChange, role, tailors, onStatusChange, onAssignTailor }: OrderDetailSheetProps) => {
+const OrderDetailSheet = ({ order, open, onOpenChange, role, tailors, onStatusChange, onAssignTailor, orgName }: OrderDetailSheetProps) => {
   const { items, history, loading } = useOrderDetail(open && order ? order.id : undefined);
   const canManage = role === "org_admin" || role === "super_admin";
   const canUpdateStatus = canManage || role === "tailor";
@@ -28,6 +29,8 @@ const OrderDetailSheet = ({ order, open, onOpenChange, role, tailors, onStatusCh
   const nextStatus = order.status !== "cancelled" && currentStepIndex < ORDER_STATUS_FLOW.length - 1
     ? ORDER_STATUS_FLOW[currentStepIndex + 1]
     : null;
+
+  const showInvoice = ["completed", "delivered"].includes(order.status);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -44,7 +47,7 @@ const OrderDetailSheet = ({ order, open, onOpenChange, role, tailors, onStatusCh
           <div>
             <h3 className="font-heading font-semibold text-lg">{order.title}</h3>
             {order.description && <p className="text-sm text-muted-foreground mt-1">{order.description}</p>}
-            <div className="flex items-center gap-2 mt-3">
+            <div className="flex items-center gap-2 mt-3 flex-wrap">
               <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusColors[order.status as OrderStatus]}`}>
                 {statusLabels[order.status as OrderStatus]}
               </span>
@@ -52,6 +55,9 @@ const OrderDetailSheet = ({ order, open, onOpenChange, role, tailors, onStatusCh
                 <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => onStatusChange(order.id, nextStatus)}>
                   Move to {statusLabels[nextStatus]} <ArrowRight size={12} className="ml-1" />
                 </Button>
+              )}
+              {showInvoice && (
+                <InvoiceGenerator order={order} orgName={orgName || "Fashion Stitches"} />
               )}
             </div>
           </div>
