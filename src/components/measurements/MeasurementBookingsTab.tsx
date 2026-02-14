@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { dispatchNotifications } from "@/lib/notificationDispatcher";
 import { Video, Clock, DollarSign, CheckCircle2, XCircle, Calendar } from "lucide-react";
 
 interface Booking {
@@ -51,6 +52,7 @@ const MeasurementBookingsTab = ({ orgId, isAdmin = false }: { orgId: string; isA
   useEffect(() => { fetchBookings(); }, [orgId]);
 
   const handleStatusUpdate = async (bookingId: string, newStatus: string) => {
+    const booking = bookings.find(b => b.id === bookingId);
     const { error } = await supabase
       .from("ai_measurement_bookings")
       .update({ booking_status: newStatus })
@@ -60,6 +62,21 @@ const MeasurementBookingsTab = ({ orgId, isAdmin = false }: { orgId: string; isA
     } else {
       toast({ title: `Booking ${newStatus}` });
       fetchBookings();
+
+      // Dispatch notifications for confirmed/completed
+      if (booking && (newStatus === "confirmed" || newStatus === "completed")) {
+        const eventType = newStatus === "confirmed" ? "measurement_confirmed" : "measurement_completed";
+        dispatchNotifications({
+          orgId,
+          eventType,
+          bookingId: booking.id,
+          customerId: booking.customer_id,
+          hoursBooked: booking.hours_booked,
+          amount: Number(booking.total_amount),
+          currency: booking.currency,
+          scheduledAt: booking.scheduled_at || undefined,
+        }).catch(console.error);
+      }
     }
   };
 

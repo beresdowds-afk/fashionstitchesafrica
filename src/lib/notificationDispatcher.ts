@@ -5,11 +5,15 @@ interface NotifyParams {
   orderId?: string;
   orderNumber?: string;
   orderTitle?: string;
-  eventType: "order_status_change" | "payment_received" | "due_date_reminder";
+  eventType: "order_status_change" | "payment_received" | "due_date_reminder" | "measurement_confirmed" | "measurement_completed";
   oldStatus?: string;
   newStatus?: string;
   amount?: number;
   currency?: string;
+  bookingId?: string;
+  hoursBooked?: number;
+  scheduledAt?: string;
+  customerId?: string;
 }
 
 /**
@@ -48,6 +52,13 @@ export const dispatchNotifications = async (params: NotifyParams) => {
     } else if (params.eventType === "due_date_reminder") {
       emailSubject = `Reminder: Order ${params.orderNumber} Due Soon`;
       smsMessage = `[${orgName}] Reminder: Order ${params.orderNumber} "${params.orderTitle}" is due soon.`;
+    } else if (params.eventType === "measurement_confirmed") {
+      const schedText = params.scheduledAt ? ` scheduled for ${new Date(params.scheduledAt).toLocaleString()}` : "";
+      emailSubject = `AI Measurement Session Confirmed — ${params.hoursBooked || 1}h${schedText}`;
+      smsMessage = `[${orgName}] Your AI measurement session (${params.hoursBooked || 1}h) is confirmed${schedText}.`;
+    } else if (params.eventType === "measurement_completed") {
+      emailSubject = `AI Measurement Session Completed`;
+      smsMessage = `[${orgName}] Your AI measurement session has been completed. Your measurements are now on file.`;
     }
 
     // 4. Get recipients (admins, tailors based on order)

@@ -86,6 +86,22 @@ Deno.serve(async (req) => {
         <h2 style="color: ${brandColor}; margin: 0 0 8px;">Due Date Reminder</h2>
         <p style="margin: 0 0 16px; color: #555;">Order <strong>${order_number || ""}</strong> — "${order_title || ""}" is approaching its due date.</p>
       `;
+    } else if (event_type === "measurement_confirmed") {
+      contentBlock = `
+        <h2 style="color: ${brandColor}; margin: 0 0 8px;">AI Measurement Session Confirmed</h2>
+        <p style="margin: 0 0 16px; color: #555;">Your AI-powered measurement session has been confirmed.</p>
+        <div style="padding: 16px; background: ${brandColor}10; border-radius: 8px; margin-bottom: 20px;">
+          <p style="margin: 0; font-size: 14px; color: #555;"><strong>Duration:</strong> ${amount || 1} hour(s)</p>
+          ${old_status ? `<p style="margin: 4px 0 0; font-size: 14px; color: #555;"><strong>Scheduled:</strong> ${old_status}</p>` : ""}
+        </div>
+        <p style="margin: 0; color: #555;">You'll receive a video call link before your session begins.</p>
+      `;
+    } else if (event_type === "measurement_completed") {
+      contentBlock = `
+        <h2 style="color: ${brandColor}; margin: 0 0 8px;">AI Measurement Session Completed</h2>
+        <p style="margin: 0 0 16px; color: #555;">Your AI measurement session has been completed successfully.</p>
+        <p style="margin: 0; color: #555;">Your measurements are now on file and ready for use in your next order.</p>
+      `;
     } else {
       contentBlock = `
         <h2 style="color: ${brandColor}; margin: 0 0 8px;">${subject}</h2>
