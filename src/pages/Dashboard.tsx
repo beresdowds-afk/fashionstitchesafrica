@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { LogOut, User, Users, Settings, BarChart3, ShoppingBag, Palette, Plus, Trash2, Shield, Package, Clock, UserCheck, Bell, CreditCard, Crown, MessageCircle } from "lucide-react";
+import { LogOut, User, Users, Settings, BarChart3, ShoppingBag, Palette, Plus, Trash2, Shield, Package, Clock, UserCheck, Bell, CreditCard, Crown, MessageCircle, ClipboardList } from "lucide-react";
 import CommunicationsTab from "@/components/communications/CommunicationsTab";
 import SubscriptionTab from "@/components/billing/SubscriptionTab";
 import { useOrgSubscription } from "@/hooks/useSubscription";
@@ -16,6 +16,7 @@ import InviteMemberDialog from "@/components/members/InviteMemberDialog";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import { motion } from "framer-motion";
 import OrgExchangeRates from "@/components/shared/OrgExchangeRates";
+import CustomerRegistrationsTab from "@/components/customers/CustomerRegistrationsTab";
 import { useToast } from "@/hooks/use-toast";
 import { useUserGlobalRole } from "@/hooks/useOrganization";
 
@@ -39,7 +40,7 @@ const Dashboard = () => {
   const { isSuperAdmin } = useUserGlobalRole();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<{ display_name: string | null } | null>(null);
-  const [activeTab, setActiveTab] = useState<"overview" | "orders" | "customers" | "members" | "communications" | "billing" | "settings">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "orders" | "customers" | "registrations" | "members" | "communications" | "billing" | "settings">("overview");
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth");
@@ -162,6 +163,7 @@ const Dashboard = () => {
             { id: "overview" as const, icon: BarChart3, label: "Overview" },
             { id: "orders" as const, icon: Package, label: "Orders" },
             { id: "customers" as const, icon: UserCheck, label: "Customers" },
+            { id: "registrations" as const, icon: ClipboardList, label: "Registrations" },
             { id: "members" as const, icon: Users, label: "Team Members" },
             { id: "communications" as const, icon: MessageCircle, label: "Communications" },
             { id: "billing" as const, icon: CreditCard, label: "Billing" },
@@ -186,7 +188,7 @@ const Dashboard = () => {
         <main className="flex-1 min-w-0">
           {/* Mobile tabs */}
           <div className="flex md:hidden gap-2 mb-6 overflow-x-auto">
-            {["overview", "orders", "customers", "members", "communications", "billing", "settings"].map((tab) => (
+            {["overview", "orders", "customers", "registrations", "members", "communications", "billing", "settings"].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab as typeof activeTab)}
@@ -202,6 +204,7 @@ const Dashboard = () => {
           {activeTab === "overview" && <OverviewTab org={currentOrg} role={role} />}
           {activeTab === "orders" && <OrdersTab orgId={currentOrg.id} currency={currentOrg.currency || "NGN"} role={role} orgName={currentOrg.name} orgSettings={currentOrg} />}
           {activeTab === "customers" && <CustomersTab orgId={currentOrg.id} currency={currentOrg.currency || "NGN"} />}
+          {activeTab === "registrations" && <CustomerRegistrationsTab orgId={currentOrg.id} />}
           {activeTab === "members" && <MembersTab orgId={currentOrg.id} role={role} />}
           {activeTab === "communications" && <CommunicationsTab orgId={currentOrg.id} role={role} />}
           {activeTab === "billing" && <SubscriptionTab orgId={currentOrg.id} role={role} />}
@@ -600,6 +603,31 @@ const SettingsTab = ({ org, role }: { org: any; role: AppRole | null }) => {
             Country: <span className="font-medium text-foreground">{org.country}</span>
           </div>
         </div>
+
+        {/* Invite Code */}
+        {canEdit && org.invite_code && (
+          <div className="space-y-2 pt-2 border-t border-border mt-4">
+            <label className="text-sm font-medium">Customer Invite Code</label>
+            <div className="flex items-center gap-2">
+              <code className="px-3 py-2 bg-muted rounded-lg text-sm font-mono tracking-widest flex-1">
+                {org.invite_code}
+              </code>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  navigator.clipboard.writeText(org.invite_code);
+                  toast({ title: "Copied!" });
+                }}
+              >
+                Copy
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Share this code with customers so they can self-register at <strong>/portal</strong>
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Invoice Settings */}

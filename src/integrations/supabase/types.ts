@@ -627,6 +627,7 @@ export type Database = {
           description: string | null
           email: string | null
           id: string
+          invite_code: string
           invoice_address: string | null
           invoice_logo_url: string | null
           invoice_notes: string | null
@@ -646,6 +647,7 @@ export type Database = {
           description?: string | null
           email?: string | null
           id?: string
+          invite_code?: string
           invoice_address?: string | null
           invoice_logo_url?: string | null
           invoice_notes?: string | null
@@ -665,6 +667,7 @@ export type Database = {
           description?: string | null
           email?: string | null
           id?: string
+          invite_code?: string
           invoice_address?: string | null
           invoice_logo_url?: string | null
           invoice_notes?: string | null

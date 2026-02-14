@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,8 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const isPortal = searchParams.get("portal") === "1";
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -56,7 +58,7 @@ const Auth = () => {
         description: "We've sent you a confirmation link to verify your account.",
       });
     } else {
-      navigate("/dashboard");
+      navigate(isPortal ? "/portal" : "/dashboard");
     }
   };
 

@@ -1,17 +1,19 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   LogOut, Package, CreditCard, Bell, Ruler, Clock, ChevronRight,
-  CheckCircle2, AlertCircle, Lock
+  CheckCircle2, AlertCircle, Lock, KeyRound, Loader2
 } from "lucide-react";
 import UserNotificationPreferences from "@/components/communications/UserNotificationPreferences";
+import { useToast } from "@/hooks/use-toast";
 
 const statusLabels: Record<string, string> = {
   pending: "Pending", confirmed: "Confirmed", measuring: "Measuring",
@@ -35,6 +37,8 @@ const paymentStatusLabels: Record<string, string> = {
 const CustomerPortal = () => {
   const { user, loading: authLoading, signOut } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { toast } = useToast();
   const [profile, setProfile] = useState<{ display_name: string | null } | null>(null);
   const [orgs, setOrgs] = useState<any[]>([]);
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null);
@@ -45,10 +49,32 @@ const CustomerPortal = () => {
   const [registration, setRegistration] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [exchangeRate, setExchangeRate] = useState<number | null>(null);
+  const [payingReg, setPayingReg] = useState(false);
+
+  // Self-registration state
+  const [inviteCode, setInviteCode] = useState("");
+  const [joiningOrg, setJoiningOrg] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && !user) navigate("/auth");
+    if (!authLoading && !user) navigate("/auth?portal=1");
   }, [user, authLoading, navigate]);
+
+  // Verify registration payment callback
+  useEffect(() => {
+    const regStatus = searchParams.get("reg_status");
+    const trxref = searchParams.get("trxref") || searchParams.get("reference");
+    if (regStatus === "success" && trxref) {
+      // Verify payment with backend
+      supabase.functions.invoke("verify-registration-payment", {
+        body: { reference: trxref },
+      }).then(({ data }) => {
+        if (data?.status === "success" || data?.status === "already_paid") {
+          toast({ title: "Registration payment confirmed!" });
+          setRegistration((prev: any) => prev ? { ...prev, status: "paid" } : prev);
+        }
+      });
+    }
+  }, [searchParams]);
 
   // Fetch profile & orgs
   useEffect(() => {
@@ -64,7 +90,7 @@ const CustomerPortal = () => {
         const orgIds = membershipsRes.data.map((m) => m.org_id);
         const { data: orgData } = await supabase
           .from("organizations")
-          .select("id, name, currency")
+          .select("id, name, currency, invite_code")
           .in("id", orgIds);
         setOrgs(orgData || []);
         if (orgData && orgData.length > 0) {
@@ -88,7 +114,6 @@ const CustomerPortal = () => {
       ]);
 
       setOrders(ordersRes.data || []);
-      // Filter payments to only customer's orders
       const customerOrderIds = new Set((ordersRes.data || []).map((o: any) => o.id));
       setPayments((paymentsRes.data || []).filter((p: any) => customerOrderIds.has(p.order_id)));
       setRegistration(regRes.data);
@@ -114,29 +139,95 @@ const CustomerPortal = () => {
   const selectedOrg = orgs.find((o) => o.id === selectedOrgId);
   const orgCurrency = selectedOrg?.currency || "NGN";
 
-  // Calculate local equivalent of $5
   const localFeeAmount = exchangeRate && exchangeRate > 0 ? Math.round(5 / exchangeRate) : null;
 
   const handlePayRegistration = async () => {
     if (!user || !selectedOrgId) return;
-    // Create registration record if not exists
-    if (!registration) {
-      await supabase.from("customer_registrations").insert({
-        user_id: user.id,
-        org_id: selectedOrgId,
-        fee_amount: 5,
-        fee_currency: "USD",
-        local_amount: localFeeAmount,
-        local_currency: orgCurrency,
+    setPayingReg(true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("initialize-registration-payment", {
+        body: {
+          org_id: selectedOrgId,
+          callback_url: `${window.location.origin}/portal?reg_status=success`,
+        },
       });
+
+      if (error || !data?.checkout_url) {
+        // Fallback to manual if Paystack not configured
+        if (!registration) {
+          await supabase.from("customer_registrations").insert({
+            user_id: user.id,
+            org_id: selectedOrgId,
+            fee_amount: 5,
+            fee_currency: "USD",
+            local_amount: localFeeAmount,
+            local_currency: orgCurrency,
+          });
+        }
+        toast({ title: "Payment gateway not configured", description: "Contact your tailor to complete registration.", variant: "destructive" });
+        setPayingReg(false);
+        return;
+      }
+
+      // Redirect to Paystack checkout
+      window.location.href = data.checkout_url;
+    } catch {
+      toast({ title: "Error", description: "Failed to initialize payment", variant: "destructive" });
+      setPayingReg(false);
     }
-    // For now, simulate payment success (real integration would redirect to Paystack/Stripe)
-    await supabase.from("customer_registrations")
-      .update({ status: "paid", paid_at: new Date().toISOString(), payment_gateway: "manual" })
+  };
+
+  // Join org via invite code
+  const handleJoinOrg = async () => {
+    if (!user || !inviteCode.trim()) return;
+    setJoiningOrg(true);
+
+    // Lookup org by invite code
+    const { data: org, error: orgError } = await supabase
+      .from("organizations")
+      .select("id, name")
+      .eq("invite_code", inviteCode.trim().toLowerCase())
+      .single();
+
+    if (orgError || !org) {
+      toast({ title: "Invalid invite code", description: "No organization found with this code.", variant: "destructive" });
+      setJoiningOrg(false);
+      return;
+    }
+
+    // Check if already a member
+    const { data: existing } = await supabase
+      .from("org_members")
+      .select("id")
+      .eq("org_id", org.id)
       .eq("user_id", user.id)
-      .eq("org_id", selectedOrgId);
-    
-    setRegistration((prev: any) => ({ ...prev, status: "paid", paid_at: new Date().toISOString() }));
+      .maybeSingle();
+
+    if (existing) {
+      toast({ title: "Already a member", description: `You're already part of ${org.name}.` });
+      setSelectedOrgId(org.id);
+      setJoiningOrg(false);
+      return;
+    }
+
+    // Add as customer member
+    const { error: joinError } = await supabase.from("org_members").insert({
+      org_id: org.id,
+      user_id: user.id,
+      role: "customer",
+    });
+
+    if (joinError) {
+      toast({ title: "Error", description: joinError.message, variant: "destructive" });
+    } else {
+      toast({ title: "Joined!", description: `You've been added to ${org.name} as a customer.` });
+      // Refresh orgs
+      setOrgs((prev) => [...prev, { id: org.id, name: org.name }]);
+      setSelectedOrgId(org.id);
+      setInviteCode("");
+    }
+    setJoiningOrg(false);
   };
 
   if (authLoading || loading) {
@@ -179,6 +270,34 @@ const CustomerPortal = () => {
       </header>
 
       <div className="container mx-auto px-4 lg:px-8 py-8 max-w-4xl">
+        {/* No org - show join flow */}
+        {!selectedOrgId && (
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+            className="rounded-xl bg-card border border-border p-8 text-center"
+          >
+            <KeyRound size={40} className="mx-auto text-primary mb-4" />
+            <h2 className="font-heading font-bold text-xl mb-2">Join an Organization</h2>
+            <p className="text-muted-foreground text-sm mb-6">
+              Enter the invite code provided by your tailor to get started.
+            </p>
+            <div className="max-w-sm mx-auto space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="invite-code">Invite Code</Label>
+                <Input
+                  id="invite-code"
+                  value={inviteCode}
+                  onChange={(e) => setInviteCode(e.target.value)}
+                  placeholder="e.g. a1b2c3d4"
+                  className="text-center text-lg tracking-widest"
+                />
+              </div>
+              <Button variant="hero" className="w-full" onClick={handleJoinOrg} disabled={joiningOrg || !inviteCode.trim()}>
+                {joiningOrg ? <><Loader2 size={16} className="mr-2 animate-spin" /> Joining...</> : "Join Organization"}
+              </Button>
+            </div>
+          </motion.div>
+        )}
+
         {/* Registration Fee Gate */}
         {!isPaid && selectedOrgId && (
           <motion.div
@@ -192,12 +311,15 @@ const CustomerPortal = () => {
               A one-time registration fee of <strong>$5.00 USD</strong>
               {localFeeAmount && ` (≈ ${orgCurrency} ${localFeeAmount.toLocaleString()})`} is required to access your orders and portal features.
             </p>
-            <Button variant="hero" onClick={handlePayRegistration} className="min-w-[200px]">
-              <CreditCard size={16} className="mr-2" />
-              Pay Registration Fee
+            <Button variant="hero" onClick={handlePayRegistration} className="min-w-[200px]" disabled={payingReg}>
+              {payingReg ? (
+                <><Loader2 size={16} className="mr-2 animate-spin" /> Redirecting to Paystack...</>
+              ) : (
+                <><CreditCard size={16} className="mr-2" /> Pay with Paystack</>
+              )}
             </Button>
             <p className="text-[10px] text-muted-foreground mt-3">
-              You'll be able to choose your preferred payment method
+              Secure payment powered by Paystack
             </p>
           </motion.div>
         )}
@@ -310,12 +432,6 @@ const CustomerPortal = () => {
               </TabsContent>
             </Tabs>
           </motion.div>
-        )}
-
-        {!selectedOrgId && (
-          <div className="rounded-xl bg-card border border-border p-12 text-center">
-            <p className="text-muted-foreground">You're not associated with any organization yet. Ask your tailor to add you.</p>
-          </div>
         )}
       </div>
     </div>
