@@ -5,7 +5,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { LogOut, User, Users, Settings, BarChart3, ShoppingBag, Palette, Plus, Trash2, Shield, Package } from "lucide-react";
+import { LogOut, User, Users, Settings, BarChart3, ShoppingBag, Palette, Plus, Trash2, Shield, Package, Clock } from "lucide-react";
+import { useDashboardStats } from "@/hooks/useDashboardStats";
 import OrdersTab from "@/components/orders/OrdersTab";
 import { motion } from "framer-motion";
 import { useToast } from "@/hooks/use-toast";
@@ -197,38 +198,86 @@ const Dashboard = () => {
   );
 };
 
-const OverviewTab = ({ org, role }: { org: any; role: AppRole | null }) => (
-  <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
-    <h2 className="font-heading font-bold text-2xl mb-6">Dashboard Overview</h2>
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-      {[
-        { icon: ShoppingBag, label: "Orders", value: "0", desc: "Active orders", color: "text-primary" },
-        { icon: Users, label: "Customers", value: "0", desc: "Total customers", color: "text-secondary" },
-        { icon: Palette, label: "Products", value: "0", desc: "Listed items", color: "text-accent" },
-        { icon: BarChart3, label: "Revenue", value: `0 ${org.currency || "NGN"}`, desc: "This month", color: "text-primary" },
-      ].map((stat) => (
-        <div key={stat.label} className="p-5 rounded-xl bg-card border border-border">
-          <div className="flex items-center justify-between mb-3">
-            <stat.icon size={20} className={stat.color} />
-          </div>
-          <p className="font-heading font-bold text-2xl">{stat.value}</p>
-          <p className="text-muted-foreground text-xs mt-1">{stat.label} · {stat.desc}</p>
-        </div>
-      ))}
-    </div>
+const statusLabelsMap: Record<string, string> = {
+  pending: "Pending", confirmed: "Confirmed", measuring: "Measuring",
+  cutting: "Cutting", sewing: "Sewing", fitting: "Fitting",
+  completed: "Completed", delivered: "Delivered", cancelled: "Cancelled",
+};
 
-    <div className="rounded-xl bg-card border border-border p-6">
-      <h3 className="font-heading font-semibold text-lg mb-2">Welcome to {org.name}</h3>
-      <p className="text-muted-foreground text-sm">
-        {role === "org_admin"
-          ? "As an Organization Admin, you can manage team members, settings, and orders."
-          : role === "tailor"
-          ? "View and manage your assigned orders and production workflow."
-          : "Browse and place orders with your favorite tailors."}
-      </p>
-    </div>
-  </motion.div>
-);
+const statusDotColors: Record<string, string> = {
+  pending: "bg-muted-foreground", confirmed: "bg-primary", measuring: "bg-secondary",
+  cutting: "bg-accent", sewing: "bg-primary", fitting: "bg-secondary",
+  completed: "bg-green-500", delivered: "bg-green-600", cancelled: "bg-destructive",
+};
+
+const OverviewTab = ({ org, role }: { org: any; role: AppRole | null }) => {
+  const { stats, loading } = useDashboardStats(org.id);
+  const currency = org.currency || "NGN";
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+      <h2 className="font-heading font-bold text-2xl mb-6">Dashboard Overview</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {[
+          { icon: ShoppingBag, label: "Orders", value: loading ? "…" : String(stats.activeOrders), desc: "Active orders", color: "text-primary" },
+          { icon: Users, label: "Customers", value: loading ? "…" : String(stats.totalCustomers), desc: "Total customers", color: "text-secondary" },
+          { icon: Package, label: "Items", value: loading ? "…" : String(stats.recentOrders.length), desc: "Recent orders", color: "text-accent" },
+          { icon: BarChart3, label: "Revenue", value: loading ? "…" : `${stats.monthlyRevenue.toLocaleString()} ${currency}`, desc: "This month", color: "text-primary" },
+        ].map((stat) => (
+          <div key={stat.label} className="p-5 rounded-xl bg-card border border-border">
+            <div className="flex items-center justify-between mb-3">
+              <stat.icon size={20} className={stat.color} />
+            </div>
+            <p className="font-heading font-bold text-2xl">{stat.value}</p>
+            <p className="text-muted-foreground text-xs mt-1">{stat.label} · {stat.desc}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Recent Orders */}
+      <div className="rounded-xl bg-card border border-border p-6 mb-6">
+        <h3 className="font-heading font-semibold text-lg mb-4">Recent Orders</h3>
+        {loading ? (
+          <div className="flex justify-center py-6"><div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
+        ) : stats.recentOrders.length === 0 ? (
+          <p className="text-muted-foreground text-sm">No orders yet. Create your first order from the Orders tab.</p>
+        ) : (
+          <div className="space-y-3">
+            {stats.recentOrders.map((order) => (
+              <div key={order.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                <div className="flex items-center gap-3">
+                  <div className={`w-2 h-2 rounded-full ${statusDotColors[order.status] || "bg-muted-foreground"}`} />
+                  <div>
+                    <p className="text-sm font-medium">{order.title}</p>
+                    <p className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Clock size={10} /> {new Date(order.created_at).toLocaleDateString()}
+                      <span className="ml-2">{order.order_number}</span>
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-semibold">{(order.total_amount || 0).toLocaleString()} {currency}</p>
+                  <p className="text-xs text-muted-foreground">{statusLabelsMap[order.status] || order.status}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="rounded-xl bg-card border border-border p-6">
+        <h3 className="font-heading font-semibold text-lg mb-2">Welcome to {org.name}</h3>
+        <p className="text-muted-foreground text-sm">
+          {role === "org_admin"
+            ? "As an Organization Admin, you can manage team members, settings, and orders."
+            : role === "tailor"
+            ? "View and manage your assigned orders and production workflow."
+            : "Browse and place orders with your favorite tailors."}
+        </p>
+      </div>
+    </motion.div>
+  );
+};
 
 const MembersTab = ({ orgId, role }: { orgId: string; role: AppRole | null }) => {
   const { members, loading, updateMemberRole, removeMember } = useOrgMembers(orgId);
