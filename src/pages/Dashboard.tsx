@@ -5,8 +5,9 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { LogOut, User, Users, Settings, BarChart3, ShoppingBag, Palette, Plus, Trash2, Shield, Package, Clock, UserCheck, Bell, CreditCard } from "lucide-react";
+import { LogOut, User, Users, Settings, BarChart3, ShoppingBag, Palette, Plus, Trash2, Shield, Package, Clock, UserCheck, Bell, CreditCard, Crown } from "lucide-react";
 import SubscriptionTab from "@/components/billing/SubscriptionTab";
+import { useOrgSubscription } from "@/hooks/useSubscription";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import OrdersTab from "@/components/orders/OrdersTab";
 import CustomersTab from "@/components/customers/CustomersTab";
@@ -221,6 +222,7 @@ const statusDotColors: Record<string, string> = {
 
 const OverviewTab = ({ org, role }: { org: any; role: AppRole | null }) => {
   const { stats, loading } = useDashboardStats(org.id);
+  const { subscription, loading: subLoading } = useOrgSubscription(org.id);
   const currency = org.currency || "NGN";
 
   return (
@@ -332,6 +334,45 @@ const OverviewTab = ({ org, role }: { org: any; role: AppRole | null }) => {
           )}
         </div>
       )}
+
+      {/* Billing Overview */}
+      <div className="rounded-xl bg-card border border-border p-6 mb-6">
+        <div className="flex items-center gap-2 mb-3">
+          <Crown size={18} className="text-primary" />
+          <h3 className="font-heading font-semibold text-lg">Billing Overview</h3>
+        </div>
+        {subLoading ? (
+          <div className="flex justify-center py-4"><div className="w-5 h-5 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="p-4 rounded-lg bg-muted/50 border border-border">
+              <p className="text-xs text-muted-foreground mb-1">Current Plan</p>
+              <p className="font-heading font-bold text-lg">{subscription?.plan?.name || "No Plan"}</p>
+              {subscription && (
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  {subscription.billing_cycle === "yearly" ? "Annual" : "Monthly"} · {subscription.status}
+                </p>
+              )}
+            </div>
+            <div className="p-4 rounded-lg bg-muted/50 border border-border">
+              <p className="text-xs text-muted-foreground mb-1">This Month Revenue</p>
+              <p className="font-heading font-bold text-lg">{loading ? "…" : `₦${stats.monthlyRevenue.toLocaleString()}`}</p>
+              <p className="text-[10px] text-muted-foreground mt-1">{currency}</p>
+            </div>
+            <div className="p-4 rounded-lg bg-muted/50 border border-border">
+              <p className="text-xs text-muted-foreground mb-1">Plan Cost</p>
+              <p className="font-heading font-bold text-lg">
+                {subscription?.plan
+                  ? `₦${(subscription.billing_cycle === "yearly" ? subscription.plan.price_yearly : subscription.plan.price_monthly).toLocaleString()}`
+                  : "Free"}
+              </p>
+              <p className="text-[10px] text-muted-foreground mt-1">
+                {subscription?.plan ? `/${subscription.billing_cycle === "yearly" ? "yr" : "mo"}` : ""}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
 
       <div className="rounded-xl bg-card border border-border p-6">
         <h3 className="font-heading font-semibold text-lg mb-2">Welcome to {org.name}</h3>
