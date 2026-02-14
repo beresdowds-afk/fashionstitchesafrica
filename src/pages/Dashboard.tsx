@@ -269,6 +269,65 @@ const OverviewTab = ({ org, role }: { org: any; role: AppRole | null }) => {
         )}
       </div>
 
+      {/* Charts */}
+      {!loading && (stats.statusDistribution.length > 0 || stats.monthlyRevenueTrend.length > 0) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          {/* Status Distribution */}
+          {stats.statusDistribution.length > 0 && (
+            <div className="rounded-xl bg-card border border-border p-6">
+              <h3 className="font-heading font-semibold text-lg mb-4">Order Status Distribution</h3>
+              <div className="space-y-2">
+                {stats.statusDistribution
+                  .sort((a, b) => b.count - a.count)
+                  .map((item) => {
+                    const total = stats.statusDistribution.reduce((s, i) => s + i.count, 0);
+                    const pct = total > 0 ? Math.round((item.count / total) * 100) : 0;
+                    return (
+                      <div key={item.status} className="flex items-center gap-3">
+                        <span className="text-xs w-20 text-muted-foreground capitalize">{item.status}</span>
+                        <div className="flex-1 h-6 bg-muted rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-primary rounded-full transition-all"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                        <span className="text-xs font-medium w-12 text-right">{item.count} ({pct}%)</span>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+          )}
+
+          {/* Monthly Revenue Trend */}
+          {stats.monthlyRevenueTrend.length > 0 && (
+            <div className="rounded-xl bg-card border border-border p-6">
+              <h3 className="font-heading font-semibold text-lg mb-4">Monthly Revenue</h3>
+              <div className="flex items-end gap-2 h-40">
+                {stats.monthlyRevenueTrend.map((item) => {
+                  const maxRev = Math.max(...stats.monthlyRevenueTrend.map((i) => i.revenue), 1);
+                  const heightPct = Math.max((item.revenue / maxRev) * 100, 4);
+                  return (
+                    <div key={item.month} className="flex-1 flex flex-col items-center gap-1">
+                      <span className="text-[10px] font-medium text-muted-foreground">
+                        {item.revenue > 0 ? `${(item.revenue / 1000).toFixed(0)}k` : "0"}
+                      </span>
+                      <div className="w-full flex justify-center">
+                        <div
+                          className="w-8 bg-primary/80 rounded-t-md transition-all hover:bg-primary"
+                          style={{ height: `${heightPct}%`, minHeight: "4px", maxHeight: "120px" }}
+                        />
+                      </div>
+                      <span className="text-[10px] text-muted-foreground">{item.month}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="rounded-xl bg-card border border-border p-6">
         <h3 className="font-heading font-semibold text-lg mb-2">Welcome to {org.name}</h3>
         <p className="text-muted-foreground text-sm">

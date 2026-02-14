@@ -12,8 +12,31 @@ import { format } from "date-fns";
 import CreateOrderDialog from "./CreateOrderDialog";
 import OrderDetailSheet from "./OrderDetailSheet";
 import { motion } from "framer-motion";
-import { Plus, ShoppingBag, Filter, Trash2, Search, CalendarIcon, X } from "lucide-react";
+import { Plus, ShoppingBag, Filter, Trash2, Search, CalendarIcon, X, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+
+const exportOrdersCSV = (orders: Order[], currency: string) => {
+  const headers = ["Order Number", "Title", "Status", "Customer", "Tailor", "Due Date", "Amount", "Currency", "Created"];
+  const rows = orders.map((o) => [
+    o.order_number,
+    `"${o.title.replace(/"/g, '""')}"`,
+    o.status,
+    o.customer_profile?.display_name || "Unknown",
+    o.tailor_profile?.display_name || "Unassigned",
+    o.due_date || "",
+    String(o.total_amount || 0),
+    o.currency || currency,
+    new Date(o.created_at).toLocaleDateString(),
+  ]);
+  const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `orders-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+};
 
 interface OrdersTabProps {
   orgId: string;
@@ -100,6 +123,11 @@ const OrdersTab = ({ orgId, currency, role }: OrdersTabProps) => {
         <div className="flex items-center justify-between">
           <h2 className="font-heading font-bold text-2xl">Orders</h2>
           <div className="flex items-center gap-2">
+            {orders.length > 0 && (
+              <Button variant="outline" size="sm" className="text-xs h-9" onClick={() => exportOrdersCSV(filteredOrders, currency)}>
+                <Download size={12} className="mr-1" /> Export
+              </Button>
+            )}
             {hasFilters && (
               <Button variant="ghost" size="sm" className="text-xs h-9" onClick={clearFilters}>
                 <X size={12} className="mr-1" /> Clear
