@@ -92,6 +92,20 @@ Deno.serve(async (req) => {
         });
       }
 
+      // Fetch org details for email
+      const { data: orgData } = await serviceClient
+        .from("organizations")
+        .select("name, email")
+        .eq("id", org_id)
+        .single();
+
+      // Fetch notification settings for branding
+      const { data: notifSettings } = await serviceClient
+        .from("org_notification_settings")
+        .select("brand_color, email_footer_text, email_enabled")
+        .eq("org_id", org_id)
+        .maybeSingle();
+
       // Create in-app notification
       const { data: orgMembers } = await serviceClient
         .from("org_members")
@@ -109,6 +123,64 @@ Deno.serve(async (req) => {
             ? "Your 6-month Website Builder Lite trial has started. Your public website is live!"
             : "Your Pro plan payment has been received. Our team will contact you within 24 hours to set up your custom website.",
         });
+      }
+
+      // Send confirmation email to org
+      if (orgData?.email && (!notifSettings || notifSettings.email_enabled !== false)) {
+        const eventType = plan === "lite" ? "website_lite_activated" : "website_pro_confirmed";
+        const emailSubject = plan === "lite"
+          ? "Your Website Builder Lite Plan is Active!"
+          : "Your Website Builder Pro Purchase Confirmation";
+
+        // Fire-and-forget email to org
+        fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-email`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+          },
+          body: JSON.stringify({
+            to: orgData.email,
+            subject: emailSubject,
+            event_type: eventType,
+            org_name: orgData.name,
+            org_id,
+            recipient_id: orgMembers?.[0]?.user_id || "00000000-0000-0000-0000-000000000000",
+            recipient_type: "org_admin",
+            brand_color: notifSettings?.brand_color || "#D4AF37",
+            email_footer_text: notifSettings?.email_footer_text,
+          }),
+        }).catch((e) => console.error("Email dispatch failed:", e));
+      }
+
+      // For Pro plan, also notify super admins
+      if (plan === "pro") {
+        const { data: superAdmins } = await serviceClient
+          .from("user_roles")
+          .select("user_id")
+          .eq("role", "super_admin");
+
+        for (const sa of superAdmins || []) {
+          // In-app notification for super admin
+          await serviceClient.from("notifications").insert({
+            org_id,
+            user_id: sa.user_id,
+            title: `New Pro Website Request — ${orgData?.name || "Unknown Org"}`,
+            message: `${orgData?.name} has purchased Website Builder Pro. Payment confirmed. Please assign and set up their custom website.`,
+          });
+        }
+
+        // Email to super admins (use org email as fallback contact)
+        if (orgData?.name) {
+          const { data: saProfiles } = await serviceClient
+            .from("profiles")
+            .select("id")
+            .in("id", (superAdmins || []).map(s => s.user_id));
+
+          // We don't have super admin emails directly, so we log the notification
+          // The in-app notification above ensures they see it
+          console.log(`Pro website request notification sent to ${(superAdmins || []).length} super admins for org ${orgData.name}`);
+        }
       }
 
       return new Response(JSON.stringify({ status: "success", plan }), {

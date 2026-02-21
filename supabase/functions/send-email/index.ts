@@ -102,6 +102,39 @@ Deno.serve(async (req) => {
         <p style="margin: 0 0 16px; color: #555;">Your AI measurement session has been completed successfully.</p>
         <p style="margin: 0; color: #555;">Your measurements are now on file and ready for use in your next order.</p>
       `;
+    } else if (event_type === "website_lite_activated") {
+      contentBlock = `
+        <h2 style="color: ${brandColor}; margin: 0 0 8px;">Website Builder Lite Activated!</h2>
+        <p style="margin: 0 0 16px; color: #555;">Your Website Builder Lite plan is now active.</p>
+        <div style="padding: 16px; background: ${brandColor}10; border-radius: 8px; margin-bottom: 20px;">
+          <p style="margin: 0; font-size: 14px; color: #555;"><strong>Plan:</strong> Website Builder Lite</p>
+          <p style="margin: 4px 0 0; font-size: 14px; color: #555;"><strong>Monthly fee:</strong> $17/month</p>
+          <p style="margin: 4px 0 0; font-size: 14px; color: #555;"><strong>Trial period:</strong> 6 months (starts today)</p>
+        </div>
+        <p style="margin: 0; color: #555;">Your public website is now live! You can customize it from your dashboard.</p>
+      `;
+    } else if (event_type === "website_pro_confirmed") {
+      contentBlock = `
+        <h2 style="color: ${brandColor}; margin: 0 0 8px;">Website Builder Pro — Payment Confirmed!</h2>
+        <p style="margin: 0 0 16px; color: #555;">Your Website Builder Pro purchase has been confirmed.</p>
+        <div style="padding: 16px; background: ${brandColor}10; border-radius: 8px; margin-bottom: 20px;">
+          <p style="margin: 0; font-size: 14px; color: #555;"><strong>Plan:</strong> Website Builder Pro</p>
+          <p style="margin: 4px 0 0; font-size: 14px; color: #555;"><strong>One-time fee:</strong> $199</p>
+          <p style="margin: 4px 0 0; font-size: 14px; color: #555;"><strong>Monthly maintenance:</strong> $7/month</p>
+        </div>
+        <p style="margin: 0; color: #555;">Our team will contact you within 24 hours to set up your custom website.</p>
+      `;
+    } else if (event_type === "website_pro_request") {
+      contentBlock = `
+        <h2 style="color: ${brandColor}; margin: 0 0 8px;">🔔 New Pro Website Request</h2>
+        <p style="margin: 0 0 16px; color: #555;">A new Website Builder Pro request has been submitted.</p>
+        <div style="padding: 16px; background: #fff3cd; border-radius: 8px; margin-bottom: 20px;">
+          <p style="margin: 0; font-size: 14px; color: #555;"><strong>Organization:</strong> ${org_name || "Unknown"}</p>
+          <p style="margin: 4px 0 0; font-size: 14px; color: #555;"><strong>Amount paid:</strong> ${currency || "USD"} ${(amount || 0).toLocaleString()}</p>
+          <p style="margin: 4px 0 0; font-size: 14px; color: #555;"><strong>Platform fee:</strong> $140</p>
+        </div>
+        <p style="margin: 0; color: #555;">Please review and assign this request from the Super Admin dashboard.</p>
+      `;
     } else {
       contentBlock = `
         <h2 style="color: ${brandColor}; margin: 0 0 8px;">${subject}</h2>
