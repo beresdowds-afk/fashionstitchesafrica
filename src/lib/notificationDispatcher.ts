@@ -5,7 +5,7 @@ interface NotifyParams {
   orderId?: string;
   orderNumber?: string;
   orderTitle?: string;
-  eventType: "order_status_change" | "payment_received" | "due_date_reminder" | "measurement_confirmed" | "measurement_completed";
+  eventType: "order_status_change" | "payment_received" | "due_date_reminder" | "measurement_confirmed" | "measurement_completed" | "website_lite_activated" | "website_pro_confirmed";
   oldStatus?: string;
   newStatus?: string;
   amount?: number;
@@ -59,6 +59,12 @@ export const dispatchNotifications = async (params: NotifyParams) => {
     } else if (params.eventType === "measurement_completed") {
       emailSubject = `AI Measurement Session Completed`;
       smsMessage = `[${orgName}] Your AI measurement session has been completed. Your measurements are now on file.`;
+    } else if (params.eventType === "website_lite_activated") {
+      emailSubject = `Website Builder Lite Plan Activated!`;
+      smsMessage = `[${orgName}] Your Website Builder Lite plan is now active with a 6-month trial. Your public website is live!`;
+    } else if (params.eventType === "website_pro_confirmed") {
+      emailSubject = `Website Builder Pro — Payment Confirmed!`;
+      smsMessage = `[${orgName}] Your Website Builder Pro purchase is confirmed. Our team will contact you within 24 hours.`;
     }
 
     // 4. Get recipients (admins, tailors based on order)
