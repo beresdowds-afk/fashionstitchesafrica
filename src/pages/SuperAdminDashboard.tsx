@@ -2,12 +2,14 @@ import { useAuth } from "@/contexts/AuthContext";
 import KeysSecretsPanel from "@/components/super-admin/KeysSecretsPanel";
 import ExchangeRatesPanel from "@/components/super-admin/ExchangeRatesPanel";
 import PlatformRevenuePanel from "@/components/super-admin/PlatformRevenuePanel";
+import WebsitePricingPanel from "@/components/super-admin/WebsitePricingPanel";
 import { useUserGlobalRole } from "@/hooks/useOrganization";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { DollarSign } from "lucide-react";
 import {
   LogOut,
   Users,
@@ -42,7 +44,7 @@ const SuperAdminDashboard = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState({ orgs: 0, users: 0 });
   const [orgs, setOrgs] = useState<OrgRow[]>([]);
-  const [activeTab, setActiveTab] = useState<"overview" | "organizations" | "users" | "revenue" | "keys" | "rates" | "websites">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "organizations" | "users" | "revenue" | "keys" | "rates" | "websites" | "pricing">("overview");
 
   useEffect(() => {
     if (!authLoading && !roleLoading) {
@@ -80,6 +82,7 @@ const SuperAdminDashboard = () => {
     { id: "users" as const, icon: Users, label: "Users & Roles" },
     { id: "revenue" as const, icon: TrendingUp, label: "Platform Revenue" },
     { id: "websites" as const, icon: Crown, label: "Website Requests" },
+    { id: "pricing" as const, icon: DollarSign, label: "Pricing" },
     { id: "keys" as const, icon: Shield, label: "Keys & Secrets" },
     { id: "rates" as const, icon: Globe, label: "Exchange Rates" },
   ];
@@ -179,6 +182,7 @@ const SuperAdminDashboard = () => {
           {activeTab === "users" && <UsersPanel />}
           {activeTab === "revenue" && <PlatformRevenuePanel />}
           {activeTab === "websites" && <WebsiteRequestsPanel />}
+          {activeTab === "pricing" && <WebsitePricingPanel />}
           {activeTab === "keys" && <KeysSecretsPanel />}
           {activeTab === "rates" && <ExchangeRatesPanel />}
         </main>
