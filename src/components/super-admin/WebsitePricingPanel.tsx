@@ -1,5 +1,6 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,6 +29,7 @@ import {
   Copy,
   ToggleLeft,
   ToggleRight,
+  Upload,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
@@ -37,15 +39,19 @@ interface Feature {
   category: "basic" | "advanced" | "premium";
 }
 
-interface PlanPricing {
-  liteMonthly: number;
-  litePlatformFee: number;
-  liteTrialMonths: number;
-  proOneTime: number;
-  proPlatformFee: number;
-  proMaintenance: number;
-  liteFeatures: Feature[];
-  proFeatures: Feature[];
+interface PricingConfig {
+  lite: {
+    monthly: number;
+    platformFee: number;
+    trial: number;
+    features: Feature[];
+  };
+  pro: {
+    oneTime: number;
+    monthly: number;
+    platformFee: number;
+    features: Feature[];
+  };
 }
 
 interface PriceChangeEntry {
@@ -85,24 +91,23 @@ const defaultProFeatures: Feature[] = [
   { name: "Analytics dashboard", enabled: true, category: "premium" },
 ];
 
-const DEFAULT_PRICING: PlanPricing = {
-  liteMonthly: 17,
-  litePlatformFee: 10,
-  liteTrialMonths: 6,
-  proOneTime: 199,
-  proPlatformFee: 140,
-  proMaintenance: 7,
-  liteFeatures: defaultLiteFeatures,
-  proFeatures: defaultProFeatures,
+const DEFAULT_CONFIG: PricingConfig = {
+  lite: { monthly: 17, platformFee: 10, trial: 6, features: defaultLiteFeatures },
+  pro: { oneTime: 199, monthly: 7, platformFee: 140, features: defaultProFeatures },
 };
 
 const WebsitePricingPanel = () => {
   const { toast } = useToast();
-  const [pricing, setPricing] = useState<PlanPricing>(DEFAULT_PRICING);
+  const { user } = useAuth();
+  const [config, setConfig] = useState<PricingConfig>(DEFAULT_CONFIG);
+  const savedConfigRef = useRef<PricingConfig>(DEFAULT_CONFIG);
   const [stats, setStats] = useState({ activeLite: 0, activePro: 0, mrr: 0, totalPlatformFees: 0 });
   const [loading, setLoading] = useState(true);
+  const [publishing, setPublishing] = useState(false);
+  const [unsavedChanges, setUnsavedChanges] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [priceHistory, setPriceHistory] = useState<PriceChangeEntry[]>([]);
+  const [latestConfigVersion, setLatestConfigVersion] = useState(0);
 
   // Edit price modal
   const [editModal, setEditModal] = useState<{
@@ -111,6 +116,7 @@ const WebsitePricingPanel = () => {
     label: string;
     value: number;
     oldValue: number;
+    confirmed: boolean;
   } | null>(null);
 
   // Features modal
@@ -122,13 +128,30 @@ const WebsitePricingPanel = () => {
   const [createPlanModal, setCreatePlanModal] = useState(false);
   const [newPlan, setNewPlan] = useState({ name: "", price: "", platformFee: "", billing: "monthly", description: "" });
 
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    const [subsResult, reqsResult] = await Promise.all([
-      supabase.from("website_builder_subscriptions").select("*, organizations(name, slug)"),
-      supabase.from("website_builder_requests").select("*, organizations(name, slug, email)"),
-    ]);
+  // ─── Load persisted config ───
+  const loadConfig = useCallback(async () => {
+    const { data } = await supabase
+      .from("website_pricing_config")
+      .select("*")
+      .order("created_at", { ascending: false })
+      .limit(1);
 
+    if (data && data.length > 0) {
+      const parsed = data[0].config_data as unknown as PricingConfig;
+      if (parsed?.lite && parsed?.pro) {
+        setConfig(parsed);
+        savedConfigRef.current = parsed;
+        setLatestConfigVersion(data[0].version);
+      }
+    }
+  }, []);
+
+  // ─── Load stats ───
+  const loadStats = useCallback(async () => {
+    const [subsResult, reqsResult] = await Promise.all([
+      supabase.from("website_builder_subscriptions").select("*"),
+      supabase.from("website_builder_requests").select("*"),
+    ]);
     const subs = subsResult.data || [];
     const reqs = reqsResult.data || [];
 
@@ -142,89 +165,154 @@ const WebsitePricingPanel = () => {
       reqs.filter((r: any) => r.payment_status === "paid").reduce((sum: number, r: any) => sum + (r.platform_fee || 0), 0);
 
     setStats({ activeLite, activePro, mrr, totalPlatformFees });
-
-    if (subs.length > 0) {
-      const latest = subs[0];
-      setPricing((prev) => ({
-        ...prev,
-        liteMonthly: latest.monthly_fee ?? prev.liteMonthly,
-        litePlatformFee: latest.platform_fee ?? prev.litePlatformFee,
-      }));
-    }
-    if (reqs.length > 0) {
-      const latest = reqs[0];
-      setPricing((prev) => ({
-        ...prev,
-        proOneTime: latest.one_time_fee ?? prev.proOneTime,
-        proPlatformFee: latest.platform_fee ?? prev.proPlatformFee,
-        proMaintenance: latest.monthly_maintenance ?? prev.proMaintenance,
-      }));
-    }
-
-    setLoading(false);
   }, []);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  // ─── Load history ───
+  const loadHistory = useCallback(async () => {
+    const { data } = await supabase
+      .from("website_pricing_history")
+      .select("*")
+      .order("changed_at", { ascending: false })
+      .limit(50);
 
-  const getPricingKey = (plan: "lite" | "pro", field: string): keyof PlanPricing => {
-    if (plan === "lite") {
-      if (field === "monthly") return "liteMonthly";
-      if (field === "platformFee") return "litePlatformFee";
-      return "liteTrialMonths";
+    if (data) {
+      setPriceHistory(
+        data.map((h: any) => ({
+          date: h.changed_at,
+          plan: h.plan,
+          field: h.field,
+          oldValue: h.old_value,
+          newValue: h.new_value,
+          changedBy: h.changed_by,
+        }))
+      );
     }
-    if (field === "oneTime") return "proOneTime";
-    if (field === "platformFee") return "proPlatformFee";
-    return "proMaintenance";
+  }, []);
+
+  const loadAll = useCallback(async () => {
+    setLoading(true);
+    await Promise.all([loadConfig(), loadStats(), loadHistory()]);
+    setLoading(false);
+  }, [loadConfig, loadStats, loadHistory]);
+
+  useEffect(() => { loadAll(); }, [loadAll]);
+
+  // ─── Compare configs to detect changes for audit ───
+  const compareConfigs = (oldCfg: PricingConfig, newCfg: PricingConfig) => {
+    const changes: { plan: string; field: string; oldValue: string; newValue: string }[] = [];
+    // Lite
+    if (oldCfg.lite.monthly !== newCfg.lite.monthly) changes.push({ plan: "lite", field: "monthly", oldValue: String(oldCfg.lite.monthly), newValue: String(newCfg.lite.monthly) });
+    if (oldCfg.lite.platformFee !== newCfg.lite.platformFee) changes.push({ plan: "lite", field: "platformFee", oldValue: String(oldCfg.lite.platformFee), newValue: String(newCfg.lite.platformFee) });
+    if (oldCfg.lite.trial !== newCfg.lite.trial) changes.push({ plan: "lite", field: "trial", oldValue: String(oldCfg.lite.trial), newValue: String(newCfg.lite.trial) });
+    // Pro
+    if (oldCfg.pro.oneTime !== newCfg.pro.oneTime) changes.push({ plan: "pro", field: "oneTime", oldValue: String(oldCfg.pro.oneTime), newValue: String(newCfg.pro.oneTime) });
+    if (oldCfg.pro.monthly !== newCfg.pro.monthly) changes.push({ plan: "pro", field: "monthly", oldValue: String(oldCfg.pro.monthly), newValue: String(newCfg.pro.monthly) });
+    if (oldCfg.pro.platformFee !== newCfg.pro.platformFee) changes.push({ plan: "pro", field: "platformFee", oldValue: String(oldCfg.pro.platformFee), newValue: String(newCfg.pro.platformFee) });
+    return changes;
   };
 
+  // ─── Publish all pending changes to DB ───
+  const publishChanges = async () => {
+    if (!unsavedChanges || !user) return;
+    setPublishing(true);
+
+    const newVersion = latestConfigVersion + 1;
+    const { data: inserted, error } = await supabase
+      .from("website_pricing_config")
+      .insert({
+        config_data: config as any,
+        version: newVersion,
+        created_by: user.id,
+      })
+      .select("id")
+      .single();
+
+    if (error || !inserted) {
+      toast({ title: "Error publishing", description: error?.message || "Unknown error", variant: "destructive" });
+      setPublishing(false);
+      return;
+    }
+
+    // Write audit history rows
+    const changes = compareConfigs(savedConfigRef.current, config);
+    if (changes.length > 0) {
+      await supabase.from("website_pricing_history").insert(
+        changes.map((c) => ({
+          config_id: inserted.id,
+          plan: c.plan,
+          field: c.field,
+          old_value: c.oldValue,
+          new_value: c.newValue,
+          changed_by: user.id,
+        }))
+      );
+    }
+
+    savedConfigRef.current = config;
+    setLatestConfigVersion(newVersion);
+    setUnsavedChanges(false);
+    setPublishing(false);
+
+    toast({ title: "✅ Pricing published", description: `Version ${newVersion} saved. ${changes.length} change(s) logged.` });
+    loadHistory();
+  };
+
+  // ─── Handle edit modal save (local only) ───
   const handleSavePrice = () => {
     if (!editModal) return;
-    const key = getPricingKey(editModal.plan, editModal.field);
 
-    // Record history
-    setPriceHistory((prev) => [
-      {
-        date: new Date().toISOString(),
-        plan: editModal.plan === "lite" ? "Lite" : "Pro",
-        field: editModal.label,
-        oldValue: `$${editModal.oldValue}`,
-        newValue: `$${editModal.value}`,
-        changedBy: "Super Admin",
-      },
-      ...prev,
-    ]);
+    if (!editModal.confirmed) {
+      setEditModal({ ...editModal, confirmed: true });
+      return;
+    }
 
-    setPricing((prev) => ({ ...prev, [key]: editModal.value }));
-    toast({ title: "Price updated", description: `${editModal.label} set to $${editModal.value}. Changes apply to new subscriptions.` });
+    setConfig((prev) => {
+      const next = structuredClone(prev);
+      if (editModal.plan === "lite") {
+        if (editModal.field === "monthly") next.lite.monthly = editModal.value;
+        else if (editModal.field === "platformFee") next.lite.platformFee = editModal.value;
+        else if (editModal.field === "trial") next.lite.trial = editModal.value;
+      } else {
+        if (editModal.field === "oneTime") next.pro.oneTime = editModal.value;
+        else if (editModal.field === "platformFee") next.pro.platformFee = editModal.value;
+        else if (editModal.field === "maintenance") next.pro.monthly = editModal.value;
+      }
+      return next;
+    });
+
+    setUnsavedChanges(true);
+    toast({ title: "Price updated locally", description: 'Click "Publish Changes" to save to database.' });
     setEditModal(null);
   };
 
   const toggleFeature = (plan: "lite" | "pro", index: number) => {
-    const key = plan === "lite" ? "liteFeatures" : "proFeatures";
-    setPricing((prev) => {
-      const features = [...prev[key]];
-      features[index] = { ...features[index], enabled: !features[index].enabled };
-      return { ...prev, [key]: features };
+    setConfig((prev) => {
+      const next = structuredClone(prev);
+      next[plan].features[index].enabled = !next[plan].features[index].enabled;
+      return next;
     });
+    setUnsavedChanges(true);
   };
 
   const addFeature = () => {
     if (!newFeatureName.trim() || !featuresModal) return;
-    const key = featuresModal === "lite" ? "liteFeatures" : "proFeatures";
-    setPricing((prev) => ({
-      ...prev,
-      [key]: [...prev[key], { name: newFeatureName.trim(), enabled: true, category: newFeatureCategory }],
-    }));
+    setConfig((prev) => {
+      const next = structuredClone(prev);
+      next[featuresModal].features.push({ name: newFeatureName.trim(), enabled: true, category: newFeatureCategory });
+      return next;
+    });
     setNewFeatureName("");
+    setUnsavedChanges(true);
     toast({ title: "Feature added" });
   };
 
   const removeFeature = (plan: "lite" | "pro", index: number) => {
-    const key = plan === "lite" ? "liteFeatures" : "proFeatures";
-    setPricing((prev) => ({
-      ...prev,
-      [key]: prev[key].filter((_, i) => i !== index),
-    }));
+    setConfig((prev) => {
+      const next = structuredClone(prev);
+      next[plan].features.splice(index, 1);
+      return next;
+    });
+    setUnsavedChanges(true);
   };
 
   const handleCreatePlan = () => {
@@ -233,8 +321,8 @@ const WebsitePricingPanel = () => {
     setNewPlan({ name: "", price: "", platformFee: "", billing: "monthly", description: "" });
   };
 
-  const proNetRevenue = pricing.proOneTime - pricing.proPlatformFee;
-  const proRevenueLabel = `$${proNetRevenue} first year + $${pricing.proMaintenance}/month thereafter`;
+  const proNetRevenue = config.pro.oneTime - config.pro.platformFee;
+  const proRevenueLabel = `$${proNetRevenue} first year + $${config.pro.monthly}/month thereafter`;
 
   if (loading) {
     return (
@@ -259,7 +347,20 @@ const WebsitePricingPanel = () => {
           <Button variant="outline" size="sm" onClick={() => setShowHistory(!showHistory)}>
             <History size={14} className="mr-1" /> {showHistory ? "Hide" : "View"} History
           </Button>
-          <Button variant="outline" size="sm" onClick={loadData}>
+          <Button
+            size="sm"
+            onClick={publishChanges}
+            disabled={!unsavedChanges || publishing}
+            className={unsavedChanges ? "bg-primary text-primary-foreground hover:bg-primary/90" : ""}
+            variant={unsavedChanges ? "default" : "outline"}
+          >
+            {publishing ? (
+              <><div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin mr-1" /> Publishing...</>
+            ) : (
+              <><Upload size={14} className="mr-1" /> Publish Changes{unsavedChanges ? " *" : ""}</>
+            )}
+          </Button>
+          <Button variant="outline" size="sm" onClick={loadAll}>
             <RefreshCw size={14} className="mr-1" /> Refresh
           </Button>
         </div>
@@ -293,15 +394,15 @@ const WebsitePricingPanel = () => {
           badgeClass="bg-primary/20 text-primary"
           borderClass="border-primary"
           rows={[
-            { label: "Monthly Subscription", value: `$${pricing.liteMonthly}`, onEdit: () => setEditModal({ plan: "lite", field: "monthly", label: "Lite Monthly Subscription", value: pricing.liteMonthly, oldValue: pricing.liteMonthly }) },
-            { label: "Platform Fee (to FSA)", value: `$${pricing.litePlatformFee}`, onEdit: () => setEditModal({ plan: "lite", field: "platformFee", label: "Lite Platform Fee", value: pricing.litePlatformFee, oldValue: pricing.litePlatformFee }) },
-            { label: "Trial Period", value: `${pricing.liteTrialMonths} months`, onEdit: () => setEditModal({ plan: "lite", field: "trial", label: "Lite Trial (months)", value: pricing.liteTrialMonths, oldValue: pricing.liteTrialMonths }) },
+            { label: "Monthly Subscription", value: `$${config.lite.monthly}`, onEdit: () => setEditModal({ plan: "lite", field: "monthly", label: "Lite Monthly Subscription", value: config.lite.monthly, oldValue: config.lite.monthly, confirmed: false }) },
+            { label: "Platform Fee (to FSA)", value: `$${config.lite.platformFee}`, onEdit: () => setEditModal({ plan: "lite", field: "platformFee", label: "Lite Platform Fee", value: config.lite.platformFee, oldValue: config.lite.platformFee, confirmed: false }) },
+            { label: "Trial Period", value: `${config.lite.trial} months`, onEdit: () => setEditModal({ plan: "lite", field: "trial", label: "Lite Trial (months)", value: config.lite.trial, oldValue: config.lite.trial, confirmed: false }) },
           ]}
           revenueLabel="💰 Your Revenue (after platform fee)"
-          revenueValue={`$${pricing.liteMonthly - pricing.litePlatformFee}/month`}
+          revenueValue={`$${config.lite.monthly - config.lite.platformFee}/month`}
           revenueAccent="border-l-primary"
           revenueBg="bg-primary/5"
-          features={pricing.liteFeatures}
+          features={config.lite.features}
           featureIcon={<CheckCircle2 size={14} className="text-secondary shrink-0" />}
           onManageFeatures={() => setFeaturesModal("lite")}
         />
@@ -315,15 +416,15 @@ const WebsitePricingPanel = () => {
           borderClass="border-secondary"
           bgClass="bg-gradient-to-br from-card to-secondary/5"
           rows={[
-            { label: "One-time Build Fee", value: `$${pricing.proOneTime}`, onEdit: () => setEditModal({ plan: "pro", field: "oneTime", label: "Pro One-Time Fee", value: pricing.proOneTime, oldValue: pricing.proOneTime }) },
-            { label: "Monthly Maintenance", value: `$${pricing.proMaintenance}/mo`, onEdit: () => setEditModal({ plan: "pro", field: "maintenance", label: "Pro Monthly Maintenance", value: pricing.proMaintenance, oldValue: pricing.proMaintenance }) },
-            { label: "Platform Fee (to FSA)", value: `$${pricing.proPlatformFee}`, onEdit: () => setEditModal({ plan: "pro", field: "platformFee", label: "Pro Platform Fee", value: pricing.proPlatformFee, oldValue: pricing.proPlatformFee }) },
+            { label: "One-time Build Fee", value: `$${config.pro.oneTime}`, onEdit: () => setEditModal({ plan: "pro", field: "oneTime", label: "Pro One-Time Fee", value: config.pro.oneTime, oldValue: config.pro.oneTime, confirmed: false }) },
+            { label: "Monthly Maintenance", value: `$${config.pro.monthly}/mo`, onEdit: () => setEditModal({ plan: "pro", field: "maintenance", label: "Pro Monthly Maintenance", value: config.pro.monthly, oldValue: config.pro.monthly, confirmed: false }) },
+            { label: "Platform Fee (to FSA)", value: `$${config.pro.platformFee}`, onEdit: () => setEditModal({ plan: "pro", field: "platformFee", label: "Pro Platform Fee", value: config.pro.platformFee, oldValue: config.pro.platformFee, confirmed: false }) },
           ]}
           revenueLabel="💰 Your Revenue (after platform fee)"
           revenueValue={proRevenueLabel}
           revenueAccent="border-l-secondary"
           revenueBg="bg-secondary/5"
-          features={pricing.proFeatures}
+          features={config.pro.features}
           featureIcon={<Zap size={14} className="text-primary shrink-0" />}
           onManageFeatures={() => setFeaturesModal("pro")}
         />
@@ -372,13 +473,13 @@ const WebsitePricingPanel = () => {
                   {priceHistory.map((entry, i) => (
                     <tr key={i} className="border-t border-border hover:bg-muted/30">
                       <td className="px-4 py-3 text-sm text-muted-foreground">{new Date(entry.date).toLocaleDateString()}</td>
-                      <td className="px-4 py-3 text-sm font-medium">{entry.plan}</td>
+                      <td className="px-4 py-3 text-sm font-medium">{entry.plan.toUpperCase()}</td>
                       <td className="px-4 py-3 text-sm text-muted-foreground">{entry.field}</td>
                       <td className="px-4 py-3">
-                        <span className="text-xs px-2 py-0.5 rounded bg-destructive/10 text-destructive line-through">{entry.oldValue}</span>
+                        <span className="text-xs px-2 py-0.5 rounded bg-destructive/10 text-destructive line-through">${entry.oldValue}</span>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="text-xs px-2 py-0.5 rounded bg-secondary/10 text-secondary font-medium">{entry.newValue}</span>
+                        <span className="text-xs px-2 py-0.5 rounded bg-secondary/10 text-secondary font-medium">${entry.newValue}</span>
                       </td>
                       <td className="px-4 py-3 text-sm text-muted-foreground">{entry.changedBy}</td>
                     </tr>
@@ -405,7 +506,7 @@ const WebsitePricingPanel = () => {
                 <Input
                   type="number"
                   value={editModal?.value ?? 0}
-                  onChange={(e) => setEditModal((prev) => prev ? { ...prev, value: parseFloat(e.target.value) || 0 } : null)}
+                  onChange={(e) => setEditModal((prev) => prev ? { ...prev, value: parseFloat(e.target.value) || 0, confirmed: false } : null)}
                   min={0}
                   step={editModal?.field === "trial" ? 1 : 0.01}
                 />
@@ -428,16 +529,31 @@ const WebsitePricingPanel = () => {
                   <div className="flex justify-between text-sm border-t border-border pt-2 mt-2">
                     <span className="text-muted-foreground">Revenue after platform fee:</span>
                     <span className="font-bold">
-                      ${editModal.value - (editModal.plan === "lite" ? pricing.litePlatformFee : pricing.proPlatformFee)}
+                      ${editModal.value - (editModal.plan === "lite" ? config.lite.platformFee : config.pro.platformFee)}
                     </span>
                   </div>
                 )}
               </div>
             )}
+
+            {/* Confirmation step */}
+            {editModal?.confirmed && (
+              <div className="rounded-lg bg-primary/5 border border-primary/20 p-4 space-y-2">
+                <p className="text-sm font-medium">Are you sure you want to change the {editModal.field} price?</p>
+                <p className="text-sm">
+                  <span className="line-through text-destructive">${editModal.oldValue}</span>
+                  {" → "}
+                  <span className="font-bold text-secondary">${editModal.value}</span>
+                </p>
+                <p className="text-xs text-muted-foreground mt-2">This change will affect all new subscriptions. Existing subscribers will keep their current price.</p>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditModal(null)}>Cancel</Button>
-            <Button variant="hero" onClick={handleSavePrice}>Save Changes</Button>
+            <Button variant="hero" onClick={handleSavePrice}>
+              {editModal?.confirmed ? "Confirm Change" : "Save Changes"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -446,24 +562,16 @@ const WebsitePricingPanel = () => {
       <Dialog open={!!featuresModal} onOpenChange={(open) => !open && setFeaturesModal(null)}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>
-              Manage {featuresModal === "lite" ? "Lite" : "Pro"} Features
-            </DialogTitle>
+            <DialogTitle>Manage {featuresModal === "lite" ? "Lite" : "Pro"} Features</DialogTitle>
             <DialogDescription>Toggle, add, or remove features for this plan.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 max-h-[400px] overflow-y-auto">
-            {(featuresModal === "lite" ? pricing.liteFeatures : pricing.proFeatures).map((feature, index) => (
+            {(featuresModal === "lite" ? config.lite.features : config.pro.features).map((feature, index) => (
               <div key={index} className="flex items-center gap-3 py-2 border-b border-border last:border-b-0">
                 <button onClick={() => featuresModal && toggleFeature(featuresModal, index)} className="shrink-0">
-                  {feature.enabled ? (
-                    <ToggleRight size={24} className="text-secondary" />
-                  ) : (
-                    <ToggleLeft size={24} className="text-muted-foreground" />
-                  )}
+                  {feature.enabled ? <ToggleRight size={24} className="text-secondary" /> : <ToggleLeft size={24} className="text-muted-foreground" />}
                 </button>
-                <span className={`flex-1 text-sm ${feature.enabled ? "" : "text-muted-foreground line-through"}`}>
-                  {feature.name}
-                </span>
+                <span className={`flex-1 text-sm ${feature.enabled ? "" : "text-muted-foreground line-through"}`}>{feature.name}</span>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">{feature.category}</span>
                 <button onClick={() => featuresModal && removeFeature(featuresModal, index)} className="text-muted-foreground hover:text-destructive">
                   <X size={14} />
@@ -471,37 +579,21 @@ const WebsitePricingPanel = () => {
               </div>
             ))}
           </div>
-
-          {/* Add new feature */}
           <div className="border-t border-border pt-4 space-y-2">
             <Label>Add New Feature</Label>
             <div className="flex gap-2">
-              <Input
-                placeholder="e.g., Custom domain support"
-                value={newFeatureName}
-                onChange={(e) => setNewFeatureName(e.target.value)}
-                className="flex-1"
-              />
-              <select
-                value={newFeatureCategory}
-                onChange={(e) => setNewFeatureCategory(e.target.value as "basic" | "advanced" | "premium")}
-                className="rounded-lg border border-input bg-background px-3 py-2 text-sm w-28"
-              >
+              <Input placeholder="e.g., Custom domain support" value={newFeatureName} onChange={(e) => setNewFeatureName(e.target.value)} className="flex-1" />
+              <select value={newFeatureCategory} onChange={(e) => setNewFeatureCategory(e.target.value as "basic" | "advanced" | "premium")} className="rounded-lg border border-input bg-background px-3 py-2 text-sm w-28">
                 <option value="basic">Basic</option>
                 <option value="advanced">Advanced</option>
                 <option value="premium">Premium</option>
               </select>
-              <Button variant="secondary" size="sm" onClick={addFeature} disabled={!newFeatureName.trim()}>
-                Add
-              </Button>
+              <Button variant="secondary" size="sm" onClick={addFeature} disabled={!newFeatureName.trim()}>Add</Button>
             </div>
           </div>
-
           <DialogFooter>
             <Button variant="outline" onClick={() => setFeaturesModal(null)}>Close</Button>
-            <Button variant="hero" onClick={() => { toast({ title: "Features saved" }); setFeaturesModal(null); }}>
-              Save Features
-            </Button>
+            <Button variant="hero" onClick={() => { toast({ title: "Features saved locally. Publish to persist." }); setFeaturesModal(null); }}>Save Features</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -525,11 +617,7 @@ const WebsitePricingPanel = () => {
               </div>
               <div>
                 <Label>Billing Cycle</Label>
-                <select
-                  value={newPlan.billing}
-                  onChange={(e) => setNewPlan((p) => ({ ...p, billing: e.target.value }))}
-                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm h-10"
-                >
+                <select value={newPlan.billing} onChange={(e) => setNewPlan((p) => ({ ...p, billing: e.target.value }))} className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm h-10">
                   <option value="monthly">Monthly</option>
                   <option value="yearly">Yearly</option>
                   <option value="one-time">One-time</option>
@@ -543,13 +631,7 @@ const WebsitePricingPanel = () => {
             </div>
             <div>
               <Label>Description</Label>
-              <textarea
-                rows={3}
-                placeholder="Describe this plan..."
-                value={newPlan.description}
-                onChange={(e) => setNewPlan((p) => ({ ...p, description: e.target.value }))}
-                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm resize-none"
-              />
+              <textarea rows={3} placeholder="Describe this plan..." value={newPlan.description} onChange={(e) => setNewPlan((p) => ({ ...p, description: e.target.value }))} className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm resize-none" />
             </div>
           </div>
           <DialogFooter>

@@ -1418,6 +1418,71 @@ export type Database = {
           },
         ]
       }
+      website_pricing_config: {
+        Row: {
+          config_data: Json
+          created_at: string
+          created_by: string
+          id: string
+          version: number
+        }
+        Insert: {
+          config_data?: Json
+          created_at?: string
+          created_by: string
+          id?: string
+          version?: number
+        }
+        Update: {
+          config_data?: Json
+          created_at?: string
+          created_by?: string
+          id?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      website_pricing_history: {
+        Row: {
+          changed_at: string
+          changed_by: string
+          config_id: string | null
+          field: string
+          id: string
+          new_value: string
+          old_value: string
+          plan: string
+        }
+        Insert: {
+          changed_at?: string
+          changed_by: string
+          config_id?: string | null
+          field: string
+          id?: string
+          new_value: string
+          old_value: string
+          plan: string
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string
+          config_id?: string | null
+          field?: string
+          id?: string
+          new_value?: string
+          old_value?: string
+          plan?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "website_pricing_history_config_id_fkey"
+            columns: ["config_id"]
+            isOneToOne: false
+            referencedRelation: "website_pricing_config"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
