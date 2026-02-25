@@ -6,9 +6,10 @@ import { motion } from "framer-motion";
 import {
   Globe, Zap, Link2, Eye, Plus, Trash2, Edit2, Save, X, Package,
   ExternalLink, Copy, Key, Crown, Clock, CheckCircle2, AlertCircle,
-  ArrowRight, Sparkles, Star
+  ArrowRight, Sparkles, Star, Lock
 } from "lucide-react";
 import type { AppRole } from "@/hooks/useOrganization";
+import { getTierFeatures, getTierLimits } from "./tierConfig";
 
 interface WebsiteSettings {
   id?: string;
@@ -92,6 +93,138 @@ const defaultSettings = (orgId: string): WebsiteSettings => ({
   facebook_url: "",
   whatsapp_number: "",
 });
+
+// ── Tier Banner with Usage ────────────────────────────────────────────────────
+const TierBanner = ({
+  subscription,
+  proRequest,
+  catalogueCount,
+  onUpgrade,
+}: {
+  subscription: WebsiteSubscription | null;
+  proRequest: WebsiteRequest | null;
+  catalogueCount: number;
+  onUpgrade: () => void;
+}) => {
+  const tier = proRequest?.payment_status === "paid" ? "pro" : subscription ? subscription.plan : null;
+  if (!tier) return null;
+
+  const limits = getTierLimits(tier);
+  const features = getTierFeatures(tier);
+  const isLite = tier === "lite";
+  const isTrial = subscription?.status === "trial";
+
+  const trialDaysLeft = subscription
+    ? Math.max(0, Math.ceil((new Date(subscription.trial_end).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+    : 0;
+
+
+  return (
+    <div className={`rounded-xl border p-4 mb-6 space-y-3 ${
+      isTrial ? "bg-destructive/5 border-destructive/20" :
+      isLite ? "bg-primary/5 border-primary/20" :
+      "bg-accent/5 border-accent/20"
+    }`}>
+      {/* Top row: badge + status + trial countdown */}
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <span className={`text-xs font-semibold px-3 py-1 rounded-full ${
+            isLite ? "bg-primary/10 text-primary" : "bg-accent/20 text-accent"
+          }`}>
+            {tier.toUpperCase()}
+          </span>
+          <span className="text-sm font-medium">
+            {isTrial ? `Trial · ${trialDaysLeft} days left` : subscription?.status === "active" ? "Active" : proRequest?.status === "completed" ? "Live" : "Setup In Progress"}
+          </span>
+        </div>
+        {isLite && (
+          <Button variant="outline" size="sm" className="text-xs h-7 border-accent text-accent hover:bg-accent/10" onClick={onUpgrade}>
+            <Crown size={12} className="mr-1" /> Upgrade to Pro
+          </Button>
+        )}
+      </div>
+
+      {/* Usage bars */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <UsageBar label="Templates" used={1} max={limits.maxTemplates} />
+        <UsageBar label="Pages" used={0} max={limits.maxPages} unlimited={limits.maxPages === 999} />
+        <UsageBar label="Catalogue" used={catalogueCount} max={limits.maxProducts} locked={limits.maxProducts === 0} />
+        <UsageBar label="Storage" used={0} max={limits.maxStorageMB} suffix="MB" />
+      </div>
+
+      {/* Feature highlights */}
+      <div className="flex flex-wrap gap-2">
+        {[
+          { label: "Custom Domain", available: features.customDomain },
+          { label: "E-commerce", available: features.ecommerce },
+          { label: "SEO Tools", available: features.seoTools },
+          { label: "Priority Support", available: features.prioritySupport },
+        ].map((f) => (
+          <span key={f.label} className={`text-xs px-2 py-0.5 rounded-full flex items-center gap-1 ${
+            f.available
+              ? "bg-green-500/10 text-green-600"
+              : "bg-muted text-muted-foreground"
+          }`}>
+            {f.available ? <CheckCircle2 size={10} /> : <Lock size={10} />}
+            {f.label}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// ── Usage Bar ─────────────────────────────────────────────────────────────────
+const UsageBar = ({
+  label, used, max, suffix, unlimited, locked,
+}: {
+  label: string; used: number; max: number; suffix?: string; unlimited?: boolean; locked?: boolean;
+}) => {
+  const percent = unlimited ? 0 : locked ? 100 : max === 0 ? 0 : Math.min(100, (used / max) * 100);
+  const isWarning = percent >= 80;
+
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between text-xs">
+        <span className="text-muted-foreground">{label}</span>
+        <span className="font-medium">
+          {locked ? (
+            <span className="flex items-center gap-0.5"><Lock size={10} /> N/A</span>
+          ) : unlimited ? (
+            "∞"
+          ) : (
+            `${used}/${max}${suffix ? ` ${suffix}` : ""}`
+          )}
+        </span>
+      </div>
+      <div className="h-1.5 w-full rounded-full bg-secondary overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all ${
+            locked ? "bg-muted-foreground/30" :
+            isWarning ? "bg-destructive" : "bg-primary"
+          }`}
+          style={{ width: `${locked ? 100 : percent}%` }}
+        />
+      </div>
+    </div>
+  );
+};
+
+// ── Upgrade Prompt ────────────────────────────────────────────────────────────
+const UpgradePrompt = ({ featureName, onUpgrade }: { featureName: string; onUpgrade: () => void }) => (
+  <div className="rounded-lg border border-accent/30 bg-accent/5 p-4 flex items-center justify-between gap-3">
+    <div className="flex items-center gap-2 min-w-0">
+      <Lock size={16} className="text-accent shrink-0" />
+      <div>
+        <p className="text-sm font-medium">{featureName} requires Pro</p>
+        <p className="text-xs text-muted-foreground">Upgrade to unlock this feature and more.</p>
+      </div>
+    </div>
+    <Button size="sm" className="bg-accent text-accent-foreground hover:bg-accent/90 shrink-0" onClick={onUpgrade}>
+      <Crown size={12} className="mr-1" /> Upgrade
+    </Button>
+  </div>
+);
 
 // ── Subscription Status Banner ────────────────────────────────────────────────
 const SubscriptionBanner = ({
@@ -402,6 +535,8 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
 
   const hasActivePlan = subscription && (subscription.status === "trial" || subscription.status === "active")
     || (proRequest && proRequest.payment_status === "paid");
+  const currentTier = proRequest?.payment_status === "paid" ? "pro" : subscription ? subscription.plan : "none";
+  const isLiteTier = currentTier === "lite";
 
   const load = async () => {
     setLoading(true);
@@ -508,6 +643,13 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
       {/* Subscription status banner */}
       <SubscriptionBanner subscription={subscription} proRequest={proRequest} />
 
+      {/* Tier banner with usage tracking */}
+      <TierBanner
+        subscription={subscription}
+        proRequest={proRequest}
+        catalogueCount={catalogue.length}
+        onUpgrade={() => setActiveSection("plans")}
+      />
       {/* Website URL display (only if has active plan) */}
       {hasActivePlan && (
         <div className="rounded-xl bg-primary/5 border border-primary/20 p-4 mb-6 flex items-center gap-3">
@@ -762,6 +904,11 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
             <h3 className="font-heading font-semibold text-base mb-1">API Integration</h3>
             <p className="text-xs text-muted-foreground">Use these credentials to connect your own website or app to sync data with Fashion Stitches.</p>
           </div>
+
+          {/* Upgrade prompt for Lite users on custom integration */}
+          {isLiteTier && (
+            <UpgradePrompt featureName="Custom Integration & API Access" onUpgrade={() => setActiveSection("plans")} />
+          )}
 
           {settings.mode === "auto_builder" ? (
             <div className="rounded-lg bg-muted/50 border border-border p-4 text-sm text-muted-foreground">
