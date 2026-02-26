@@ -9,7 +9,7 @@ import {
   ArrowRight, Sparkles, Star, Lock
 } from "lucide-react";
 import type { AppRole } from "@/hooks/useOrganization";
-import { getTierFeatures, getTierLimits, checkFeatureAccess, calculateUpgradeCost } from "./tierConfig";
+import { getTierFeatures, getTierLimits, checkFeatureAccess, calculateUpgradeCost, isActiveStatus } from "./tierConfig";
 
 interface WebsiteSettings {
   id?: string;
@@ -106,7 +106,8 @@ const TierBanner = ({
   catalogueCount: number;
   onUpgrade: () => void;
 }) => {
-  const tier = proRequest?.payment_status === "paid" ? "pro" : subscription ? subscription.plan : null;
+  const isGrandfathered = subscription?.status === "grandfathered" || subscription?.status === "special";
+  const tier = proRequest?.payment_status === "paid" ? "pro" : isGrandfathered ? "pro" : subscription ? subscription.plan : null;
   if (!tier) return null;
 
   const limits = getTierLimits(tier);
@@ -289,6 +290,21 @@ const SubscriptionBanner = ({
     );
   }
 
+  if (subscription && (subscription.status === "grandfathered" || subscription.status === "special")) {
+    return (
+      <div className="rounded-xl bg-accent/10 border border-accent/30 p-4 mb-6 flex items-start gap-3">
+        <Crown size={18} className="text-accent shrink-0 mt-0.5" />
+        <div className="flex-1 min-w-0">
+          <p className="font-semibold text-sm text-accent">Website Builder Pro — Grandfathered</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            You have Pro access as an early adopter. Thank you for being with us! {subscription.status === "special" ? "Special discount applied." : "No charges apply."}
+          </p>
+        </div>
+        <span className="text-xs px-2 py-1 rounded-full bg-accent/20 text-accent font-medium shrink-0">PRO</span>
+      </div>
+    );
+  }
+
   return null;
 };
 
@@ -310,7 +326,8 @@ const PricingSection = ({
   const [loading, setLoading] = useState<"lite" | "pro" | null>(null);
 
   const hasActiveLite = subscription && (subscription.status === "trial" || subscription.status === "active");
-  const hasActivePro = proRequest && proRequest.payment_status === "paid";
+  const hasActivePro = proRequest && proRequest.payment_status === "paid"
+    || (subscription && (subscription.status === "grandfathered" || subscription.status === "special"));
 
   const handleSubscribe = async (plan: "lite" | "pro") => {
     if (!canEdit) return;
@@ -533,9 +550,10 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
   const canEdit = role === "org_admin" || role === "super_admin";
   const websiteUrl = `${window.location.origin}/site/${org.slug}`;
 
-  const hasActivePlan = subscription && (subscription.status === "trial" || subscription.status === "active")
+  const hasActivePlan = (subscription && isActiveStatus(subscription.status))
     || (proRequest && proRequest.payment_status === "paid");
-  const currentTier = proRequest?.payment_status === "paid" ? "pro" : subscription ? subscription.plan : "none";
+  const isGrandfathered = subscription?.status === "grandfathered" || subscription?.status === "special";
+  const currentTier = proRequest?.payment_status === "paid" ? "pro" : isGrandfathered ? "pro" : subscription ? subscription.plan : "none";
   const isLiteTier = currentTier === "lite";
 
   const load = async () => {
