@@ -94,68 +94,17 @@ const defaultSettings = (orgId: string): WebsiteSettings => ({
   whatsapp_number: "",
 });
 
-// ── Upgrade handler ───────────────────────────────────────────────────────────
-const useUpgradeToProHandler = (orgId: string, onSuccess: () => void) => {
-  const { toast } = useToast();
-  const [upgrading, setUpgrading] = useState(false);
-
-  const handleUpgrade = async () => {
-    setUpgrading(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { toast({ title: "Please log in", variant: "destructive" }); return; }
-
-      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/upgrade-website-plan`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({
-            org_id: orgId,
-            callback_url: `${window.location.origin}/dashboard?upgrade_payment=success`,
-          }),
-        }
-      );
-
-      const data = await response.json();
-      if (data.error) {
-        toast({ title: "Upgrade Error", description: data.error, variant: "destructive" });
-        return;
-      }
-
-      toast({
-        title: "Upgrade Payment",
-        description: `Total: $${data.total}. Redirecting to payment...`,
-      });
-      window.open(data.checkout_url, "_blank");
-      onSuccess();
-    } catch (err: any) {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
-    } finally {
-      setUpgrading(false);
-    }
-  };
-
-  return { handleUpgrade, upgrading };
-};
-
 // ── Tier Banner with Usage ────────────────────────────────────────────────────
 const TierBanner = ({
   subscription,
   proRequest,
   catalogueCount,
-  orgId,
-  onReload,
+  onUpgrade,
 }: {
   subscription: WebsiteSubscription | null;
   proRequest: WebsiteRequest | null;
   catalogueCount: number;
-  orgId: string;
-  onReload: () => void;
+  onUpgrade: () => void;
 }) => {
   const tier = proRequest?.payment_status === "paid" ? "pro" : subscription ? subscription.plan : null;
   if (!tier) return null;
@@ -169,7 +118,6 @@ const TierBanner = ({
     ? Math.max(0, Math.ceil((new Date(subscription.trial_end).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
     : 0;
 
-  const { handleUpgrade, upgrading } = useUpgradeToProHandler(orgId, onReload);
 
   return (
     <div className={`rounded-xl border p-4 mb-6 space-y-3 ${
@@ -190,29 +138,11 @@ const TierBanner = ({
           </span>
         </div>
         {isLite && (
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-xs h-7 border-accent text-accent hover:bg-accent/10"
-            onClick={handleUpgrade}
-            disabled={upgrading}
-          >
-            <Crown size={12} className="mr-1" /> {upgrading ? "Processing…" : "Upgrade to Pro"}
+          <Button variant="outline" size="sm" className="text-xs h-7 border-accent text-accent hover:bg-accent/10" onClick={onUpgrade}>
+            <Crown size={12} className="mr-1" /> Upgrade to Pro
           </Button>
         )}
       </div>
-
-      {/* Trial info with after-trial pricing */}
-      {isTrial && trialDaysLeft > 0 && (
-        <p className="text-xs text-muted-foreground">
-          After trial: ${subscription?.monthly_fee || 17}/month. Upgrade now for prorated Pro pricing.
-        </p>
-      )}
-      {isTrial && trialDaysLeft <= 0 && (
-        <p className="text-xs text-destructive font-medium">
-          Trial expired. Please pay to continue or upgrade to Pro.
-        </p>
-      )}
 
       {/* Usage bars */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -728,8 +658,7 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
         subscription={subscription}
         proRequest={proRequest}
         catalogueCount={catalogue.length}
-        orgId={org.id}
-        onReload={load}
+        onUpgrade={() => setActiveSection("plans")}
       />
       {/* Website URL display (only if has active plan) */}
       {hasActivePlan && (
