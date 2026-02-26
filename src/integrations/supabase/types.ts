@@ -1361,8 +1361,10 @@ export type Database = {
           created_at: string
           gateway_checkout_url: string | null
           gateway_reference: string | null
+          grandfathered_at: string | null
           id: string
           monthly_fee: number
+          notes: string | null
           org_id: string
           payment_gateway: string | null
           plan: string
@@ -1379,8 +1381,10 @@ export type Database = {
           created_at?: string
           gateway_checkout_url?: string | null
           gateway_reference?: string | null
+          grandfathered_at?: string | null
           id?: string
           monthly_fee?: number
+          notes?: string | null
           org_id: string
           payment_gateway?: string | null
           plan?: string
@@ -1397,8 +1401,10 @@ export type Database = {
           created_at?: string
           gateway_checkout_url?: string | null
           gateway_reference?: string | null
+          grandfathered_at?: string | null
           id?: string
           monthly_fee?: number
+          notes?: string | null
           org_id?: string
           payment_gateway?: string | null
           plan?: string

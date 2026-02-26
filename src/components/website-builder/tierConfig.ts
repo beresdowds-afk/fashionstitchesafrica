@@ -113,12 +113,17 @@ export interface WebsiteBuilderPermissions {
   limits: TierLimits;
 }
 
+export function isActiveStatus(status: string): boolean {
+  return ["trial", "active", "grandfathered", "special"].includes(status);
+}
+
 export function checkPermissions(
   subscription: { plan: string; status: string; trial_end: string; monthly_fee: number } | null,
   proRequest: { payment_status: string; status: string; monthly_maintenance: number } | null,
 ): WebsiteBuilderPermissions {
   const hasPro = proRequest?.payment_status === "paid";
-  const tier = hasPro ? "pro" : subscription ? subscription.plan : "none";
+  const isGrandfathered = subscription?.status === "grandfathered" || subscription?.status === "special";
+  const tier = hasPro ? "pro" : isGrandfathered ? "pro" : subscription ? subscription.plan : "none";
 
   if (!subscription && !hasPro) {
     return {
