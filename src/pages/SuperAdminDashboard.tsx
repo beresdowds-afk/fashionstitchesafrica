@@ -438,6 +438,211 @@ const UsersPanel = () => {
   );
 };
 
+/* ───────────── Migration Tool ───────────── */
+const MigrationTool = ({
+  onComplete,
+}: {
+  subscriptions: any[];
+  onComplete: () => void;
+}) => {
+  const { toast } = useToast();
+  const [assessment, setAssessment] = useState<{
+    total: number;
+    alreadySubscribed: number;
+    needsMigration: number;
+    withProFeatures: number;
+    sites: { org_id: string; org_name: string; slug: string; hasProFeatures: boolean; productCount: number }[];
+  } | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [migrating, setMigrating] = useState(false);
+  const [results, setResults] = useState<{ migrated: number; grandfathered: number; errors: number } | null>(null);
+
+  const assess = async () => {
+    setLoading(true);
+    setResults(null);
+    try {
+      const [{ data: websites }, { data: subs }, { data: catalogueItems }] = await Promise.all([
+        supabase.from("org_websites").select("org_id, organizations(name, slug)"),
+        supabase.from("website_builder_subscriptions").select("org_id"),
+        supabase.from("org_catalogue_items").select("org_id"),
+      ]);
+
+      const subOrgIds = new Set((subs || []).map((s: any) => s.org_id));
+
+      const catalogueCounts: Record<string, number> = {};
+      (catalogueItems || []).forEach((item: any) => {
+        catalogueCounts[item.org_id] = (catalogueCounts[item.org_id] || 0) + 1;
+      });
+
+      const sites = (websites || []).map((w: any) => {
+        const productCount = catalogueCounts[w.org_id] || 0;
+        return {
+          org_id: w.org_id,
+          org_name: (w.organizations as any)?.name || "Unknown",
+          slug: (w.organizations as any)?.slug || "",
+          hasProFeatures: productCount > 0,
+          productCount,
+        };
+      });
+
+      const needsMigration = sites.filter((s) => !subOrgIds.has(s.org_id));
+
+      setAssessment({
+        total: sites.length,
+        alreadySubscribed: sites.length - needsMigration.length,
+        needsMigration: needsMigration.length,
+        withProFeatures: needsMigration.filter((s) => s.hasProFeatures).length,
+        sites: needsMigration,
+      });
+    } catch (err: any) {
+      toast({ title: "Assessment failed", description: err.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const runMigration = async () => {
+    if (!assessment) return;
+    setMigrating(true);
+    let migrated = 0;
+    let grandfathered = 0;
+    let errors = 0;
+
+    for (const site of assessment.sites) {
+      try {
+        const trialEnd = new Date();
+        trialEnd.setMonth(trialEnd.getMonth() + 6);
+
+        if (site.hasProFeatures) {
+          const { error } = await supabase.from("website_builder_subscriptions").insert({
+            org_id: site.org_id,
+            plan: "pro",
+            status: "grandfathered",
+            monthly_fee: 0,
+            platform_fee: 0,
+            trial_start: new Date().toISOString(),
+            trial_end: trialEnd.toISOString(),
+            grandfathered_at: new Date().toISOString(),
+            notes: "Auto-grandfathered: existing website with Pro features",
+          });
+          if (error) throw error;
+          grandfathered++;
+        } else {
+          const { error } = await supabase.from("website_builder_subscriptions").insert({
+            org_id: site.org_id,
+            plan: "lite",
+            status: "trial",
+            monthly_fee: 17,
+            platform_fee: 10,
+            trial_start: new Date().toISOString(),
+            trial_end: trialEnd.toISOString(),
+            notes: "Auto-migrated from legacy website",
+          });
+          if (error) throw error;
+          migrated++;
+        }
+      } catch (err) {
+        console.error(`Migration error for org ${site.org_id}:`, err);
+        errors++;
+      }
+    }
+
+    setResults({ migrated, grandfathered, errors });
+    toast({
+      title: "Migration complete",
+      description: `${migrated} Lite trials, ${grandfathered} grandfathered, ${errors} errors`,
+    });
+    onComplete();
+    setMigrating(false);
+  };
+
+  return (
+    <div className="rounded-xl border border-border bg-card p-5 space-y-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Activity size={16} className="text-primary" />
+          <h2 className="font-heading font-semibold text-lg">Tier Migration Tool</h2>
+        </div>
+        <Button variant="outline" size="sm" onClick={assess} disabled={loading}>
+          {loading ? "Assessing…" : "Assess Websites"}
+        </Button>
+      </div>
+
+      <p className="text-xs text-muted-foreground">
+        Scan existing websites without subscriptions and batch-create Lite trials. Sites with e-commerce products are auto-grandfathered into Pro.
+      </p>
+
+      {assessment && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label: "Total Websites", value: assessment.total },
+              { label: "Already Subscribed", value: assessment.alreadySubscribed },
+              { label: "Needs Migration", value: assessment.needsMigration },
+              { label: "With Pro Features", value: assessment.withProFeatures },
+            ].map((s) => (
+              <div key={s.label} className="rounded-lg bg-muted/50 p-3 text-center">
+                <p className="font-heading font-bold text-xl">{s.value}</p>
+                <p className="text-xs text-muted-foreground">{s.label}</p>
+              </div>
+            ))}
+          </div>
+
+          {assessment.sites.length > 0 && (
+            <div className="rounded-lg border border-border overflow-hidden">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-muted/50">
+                    <th className="text-left text-xs font-medium text-muted-foreground px-4 py-2">Organization</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground px-4 py-2">Products</th>
+                    <th className="text-left text-xs font-medium text-muted-foreground px-4 py-2">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {assessment.sites.map((site) => (
+                    <tr key={site.org_id} className="border-t border-border">
+                      <td className="px-4 py-2">
+                        <p className="text-sm font-medium">{site.org_name}</p>
+                        <p className="text-xs text-muted-foreground">{site.slug}</p>
+                      </td>
+                      <td className="px-4 py-2 text-sm text-muted-foreground">{site.productCount}</td>
+                      <td className="px-4 py-2">
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                          site.hasProFeatures ? "bg-accent/10 text-accent" : "bg-primary/10 text-primary"
+                        }`}>
+                          {site.hasProFeatures ? "→ Grandfather Pro" : "→ Lite Trial"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {assessment.needsMigration > 0 && !results && (
+            <Button variant="hero" onClick={runMigration} disabled={migrating} className="w-full sm:w-auto">
+              {migrating ? "Migrating…" : `Migrate ${assessment.needsMigration} Website${assessment.needsMigration > 1 ? "s" : ""}`}
+            </Button>
+          )}
+
+          {results && (
+            <div className="rounded-lg bg-green-500/5 border border-green-500/20 p-4 flex items-center gap-3">
+              <CheckCircle2 size={18} className="text-green-600 shrink-0" />
+              <div>
+                <p className="text-sm font-medium text-green-600">Migration Complete</p>
+                <p className="text-xs text-muted-foreground">
+                  {results.migrated} Lite trials created · {results.grandfathered} grandfathered to Pro · {results.errors} errors
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 /* ───────────── Website Requests Panel ───────────── */
 const WebsiteRequestsPanel = () => {
   const { toast } = useToast();
@@ -567,6 +772,9 @@ const WebsiteRequestsPanel = () => {
           </div>
         ))}
       </div>
+
+      {/* Migration Tool */}
+      <MigrationTool subscriptions={subscriptions} onComplete={load} />
 
       {/* Pro Requests Table */}
       <div className="space-y-4">
