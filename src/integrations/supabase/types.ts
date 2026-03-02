@@ -1532,6 +1532,62 @@ export type Database = {
           },
         ]
       }
+      premium_feature_usage: {
+        Row: {
+          billed_to: string
+          created_at: string
+          credits_used: number
+          currency: string
+          feature_type: string
+          id: string
+          is_included: boolean
+          metadata: Json | null
+          org_id: string
+          session_id: string | null
+          status: string
+          unit_price: number
+          user_id: string
+        }
+        Insert: {
+          billed_to?: string
+          created_at?: string
+          credits_used?: number
+          currency?: string
+          feature_type: string
+          id?: string
+          is_included?: boolean
+          metadata?: Json | null
+          org_id: string
+          session_id?: string | null
+          status?: string
+          unit_price?: number
+          user_id: string
+        }
+        Update: {
+          billed_to?: string
+          created_at?: string
+          credits_used?: number
+          currency?: string
+          feature_type?: string
+          id?: string
+          is_included?: boolean
+          metadata?: Json | null
+          org_id?: string
+          session_id?: string | null
+          status?: string
+          unit_price?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "premium_feature_usage_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -1572,11 +1628,15 @@ export type Database = {
       }
       subscription_plans: {
         Row: {
+          ai_measurement_price: number | null
           created_at: string
           currency: string
           description: string | null
           features: Json
           id: string
+          included_ai_measurements: number | null
+          included_video_minutes: number | null
+          included_virtual_tryons: number | null
           is_active: boolean
           max_customers: number | null
           max_members: number | null
@@ -1588,13 +1648,19 @@ export type Database = {
           sort_order: number
           trial_days: number
           updated_at: string
+          video_minute_price: number | null
+          virtual_tryon_price: number | null
         }
         Insert: {
+          ai_measurement_price?: number | null
           created_at?: string
           currency?: string
           description?: string | null
           features?: Json
           id?: string
+          included_ai_measurements?: number | null
+          included_video_minutes?: number | null
+          included_virtual_tryons?: number | null
           is_active?: boolean
           max_customers?: number | null
           max_members?: number | null
@@ -1606,13 +1672,19 @@ export type Database = {
           sort_order?: number
           trial_days?: number
           updated_at?: string
+          video_minute_price?: number | null
+          virtual_tryon_price?: number | null
         }
         Update: {
+          ai_measurement_price?: number | null
           created_at?: string
           currency?: string
           description?: string | null
           features?: Json
           id?: string
+          included_ai_measurements?: number | null
+          included_video_minutes?: number | null
+          included_virtual_tryons?: number | null
           is_active?: boolean
           max_customers?: number | null
           max_members?: number | null
@@ -1624,6 +1696,8 @@ export type Database = {
           sort_order?: number
           trial_days?: number
           updated_at?: string
+          video_minute_price?: number | null
+          virtual_tryon_price?: number | null
         }
         Relationships: []
       }
@@ -1703,6 +1777,66 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      virtual_tryon_sessions: {
+        Row: {
+          created_at: string
+          customer_id: string
+          error_message: string | null
+          garment_description: string | null
+          id: string
+          input_image_url: string | null
+          measurement_profile_id: string | null
+          metadata: Json | null
+          org_id: string
+          result_image_url: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id: string
+          error_message?: string | null
+          garment_description?: string | null
+          id?: string
+          input_image_url?: string | null
+          measurement_profile_id?: string | null
+          metadata?: Json | null
+          org_id: string
+          result_image_url?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string
+          error_message?: string | null
+          garment_description?: string | null
+          id?: string
+          input_image_url?: string | null
+          measurement_profile_id?: string | null
+          metadata?: Json | null
+          org_id?: string
+          result_image_url?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "virtual_tryon_sessions_measurement_profile_id_fkey"
+            columns: ["measurement_profile_id"]
+            isOneToOne: false
+            referencedRelation: "measurement_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "virtual_tryon_sessions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       website_builder_requests: {
         Row: {

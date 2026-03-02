@@ -41,20 +41,28 @@ Deno.serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `You are an AI body measurement assistant for a tailoring platform. Analyze the image of a person and estimate their body measurements based on visual proportions and standard anthropometric ratios.
+            content: `You are a professional AI body measurement assistant for a premium tailoring platform. Analyze the image of a person and estimate their body measurements with high accuracy based on visual proportions, standard anthropometric ratios, and visible reference points.
 
 Return a JSON array of measurements. Each measurement should have:
-- "label": The measurement name (e.g., "Chest", "Waist", "Hips", "Shoulder Width", "Sleeve Length", "Inseam", "Neck", "Back Length")
+- "label": The measurement name
 - "value": The estimated measurement as a number (in inches)
 - "unit": "in"
 - "confidence": A confidence score between 0.0 and 1.0
 
+Capture ALL of the following measurements when visible in the pose:
+- Chest/Bust, Waist, Hips, Shoulder Width, Sleeve Length (shoulder to wrist)
+- Inseam, Outseam, Neck Circumference, Back Length (nape to waist)
+- Arm Length (shoulder to elbow, elbow to wrist), Bicep Circumference
+- Wrist Circumference, Thigh Circumference, Calf Circumference
+- Ankle Circumference, Torso Length, Rise (front and back)
+- Across Back, Across Front/Chest
+
 Step ${step + 1} instructions: ${prompt}
 
-Based on the pose in this step, provide the most relevant measurements you can estimate. Be conservative with confidence scores.
+Based on the pose in this step, provide ALL relevant measurements you can estimate. Use conservative confidence scores. Cross-reference proportions (e.g., shoulder width ≈ 1/4 height for males) for validation.
 
 IMPORTANT: Return ONLY the JSON array, no other text. Example:
-[{"label":"Chest","value":40,"unit":"in","confidence":0.75},{"label":"Waist","value":34,"unit":"in","confidence":0.7}]`
+[{"label":"Chest","value":40,"unit":"in","confidence":0.75},{"label":"Waist","value":34,"unit":"in","confidence":0.7},{"label":"Hips","value":42,"unit":"in","confidence":0.72}]`
           },
           {
             role: "user",
