@@ -53,3 +53,9 @@ verify_jwt = false
 
 [functions.tracking-webhook]
 verify_jwt = false
+
+[functions.classify-dispute]
+verify_jwt = false
+
+[functions.data-backup]
+verify_jwt = false
