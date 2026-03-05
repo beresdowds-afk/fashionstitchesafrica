@@ -432,13 +432,53 @@ const OrgAppsSection = () => {
     toast({ title: !current ? "App published" : "App unpublished" });
   };
 
-  const generateApp = async (id: string) => {
+  const generateApp = async (id: string, orgId: string) => {
+    // Auto-pull assets from org website and organization data
+    const { data: orgData } = await supabase
+      .from("organizations")
+      .select("name, slug, description, logo_url, currency, country")
+      .eq("id", orgId)
+      .single();
+
+    const { data: websiteData } = await supabase
+      .from("org_websites")
+      .select("brand_color, accent_color, hero_image_url, tagline, hero_description, instagram_url, whatsapp_number")
+      .eq("org_id", orgId)
+      .single();
+
+    const { data: catalogueCount } = await supabase
+      .from("org_catalogue_items")
+      .select("id", { count: "exact", head: true })
+      .eq("org_id", orgId)
+      .eq("is_available", true);
+
+    // Auto-populate app config from website assets
+    const autoUpdates: Record<string, any> = {
+      is_generated: true,
+      last_generated_at: new Date().toISOString(),
+    };
+
+    if (orgData) {
+      autoUpdates.app_name = orgData.name;
+      autoUpdates.app_description = orgData.description || `Official app for ${orgData.name}`;
+      if (websiteData) {
+        autoUpdates.theme_color = (websiteData as any).brand_color || "#8B5CF6";
+        autoUpdates.icon_url = orgData.logo_url || null;
+      }
+    }
+
     await supabase
       .from("org_app_configs")
-      .update({ is_generated: true, last_generated_at: new Date().toISOString() })
+      .update(autoUpdates)
       .eq("id", id);
-    setOrgApps(prev => prev.map(a => a.id === id ? { ...a, is_generated: true, last_generated_at: new Date().toISOString() } : a));
-    toast({ title: "App generated successfully" });
+
+    setOrgApps(prev => prev.map(a => a.id === id ? { ...a, ...autoUpdates } : a));
+    
+    const itemCount = catalogueCount ? (catalogueCount as any).length || 0 : 0;
+    toast({ 
+      title: "App generated successfully",
+      description: `Auto-integrated ${orgData?.name || "org"} website assets${itemCount > 0 ? ` with ${itemCount} catalogue items` : ""}.`
+    });
   };
 
   return (
@@ -446,7 +486,7 @@ const OrgAppsSection = () => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-heading font-semibold text-lg">Organization Apps</h2>
-          <p className="text-xs text-muted-foreground">Auto-generated branded apps for each organization</p>
+          <p className="text-xs text-muted-foreground">Auto-generated branded apps that pull assets (logo, colors, catalogue, description) from each org's website</p>
         </div>
         <Badge className="bg-primary/10 text-primary">{orgApps.length} apps</Badge>
       </div>
@@ -502,7 +542,7 @@ const OrgAppsSection = () => {
 
               <div className="flex gap-2">
                 {!app.is_generated && app.payment_status === "paid" && (
-                  <Button size="sm" variant="hero" onClick={() => generateApp(app.id)} className="gap-1">
+                  <Button size="sm" variant="hero" onClick={() => generateApp(app.id, app.org_id)} className="gap-1">
                     <RefreshCw size={12} /> Generate App
                   </Button>
                 )}

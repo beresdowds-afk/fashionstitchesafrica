@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import { motion } from "framer-motion";
-import { Instagram, MessageCircle, Phone, Mail, MapPin, ExternalLink, Scissors, Calendar, BookOpen, Home, Menu, X } from "lucide-react";
+import { Instagram, MessageCircle, Phone, Mail, MapPin, ExternalLink, Scissors, Calendar, BookOpen, Home, Menu, X, Sparkles, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface OrgWebsiteData {
@@ -48,12 +49,22 @@ interface CatalogueItem {
 
 const OrgWebsite = () => {
   const { slug } = useParams<{ slug: string }>();
+  const navigate = useNavigate();
+  const { user } = useAuth();
   const [org, setOrg] = useState<OrgData | null>(null);
   const [website, setWebsite] = useState<OrgWebsiteData | null>(null);
   const [catalogue, setCatalogue] = useState<CatalogueItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activePage, setActivePage] = useState<"home" | "catalogue" | "booking">("home");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const requireAuth = (action: string) => {
+    if (!user) {
+      navigate(`/auth?redirect=/site/${slug}&feature=${action}`);
+      return false;
+    }
+    return true;
+  };
 
   useEffect(() => {
     const load = async () => {
@@ -186,10 +197,10 @@ const OrgWebsite = () => {
 
       <div className="pt-16">
         {activePage === "home" && (
-          <HomePage org={org} website={website} brandColor={brandColor} accentColor={accentColor} onNavigate={setActivePage} />
+          <HomePage org={org} website={website} brandColor={brandColor} accentColor={accentColor} onNavigate={setActivePage} user={user} requireAuth={requireAuth} />
         )}
         {activePage === "catalogue" && (
-          <CataloguePage items={catalogue} currency={currency} brandColor={brandColor} accentColor={accentColor} />
+          <CataloguePage items={catalogue} currency={currency} brandColor={brandColor} accentColor={accentColor} user={user} requireAuth={requireAuth} />
         )}
         {activePage === "booking" && (
           <BookingPage org={org} brandColor={brandColor} accentColor={accentColor} />
@@ -246,12 +257,14 @@ const OrgWebsite = () => {
 };
 
 // ─── Home Page ───────────────────────────────────────────────────────────────
-const HomePage = ({ org, website, brandColor, accentColor, onNavigate }: {
+const HomePage = ({ org, website, brandColor, accentColor, onNavigate, user, requireAuth }: {
   org: OrgData;
   website: OrgWebsiteData;
   brandColor: string;
   accentColor: string;
   onNavigate: (p: "home" | "catalogue" | "booking") => void;
+  user: any;
+  requireAuth: (action: string) => boolean;
 }) => (
   <div>
     {/* Hero */}
@@ -352,6 +365,56 @@ const HomePage = ({ org, website, brandColor, accentColor, onNavigate }: {
       </div>
     </section>
 
+    {/* FSA Platform Features — visible but auth-gated */}
+    <section className="py-24 border-t border-white/10">
+      <div className="container mx-auto px-4 lg:px-8">
+        <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <Sparkles size={20} className="text-purple-400" />
+            <span className="text-xs font-semibold uppercase tracking-[0.2em] text-purple-400">Powered by Fashion Stitches Africa</span>
+          </div>
+          <h2 className="font-bold text-3xl md:text-4xl mb-4">Smart Fashion Tools</h2>
+          <p className="text-gray-400 max-w-xl mx-auto">Access AI-powered measurements, virtual try-on, and seamless ordering — all from this page.</p>
+        </motion.div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[
+            { icon: Sparkles, title: "AI Body Measurements", desc: "Get precise measurements using your phone camera — powered by AI.", action: "ai_measurements" },
+            { icon: Scissors, title: "Virtual Try-On", desc: "See how garments look on you before ordering — try styles virtually.", action: "virtual_tryon" },
+            { icon: BookOpen, title: "Place an Order", desc: "Commission bespoke garments directly with tracked delivery and payments.", action: "place_order" },
+          ].map((feat, i) => (
+            <motion.div
+              key={feat.action}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+              className="relative p-8 rounded-2xl border border-purple-500/20 bg-purple-500/5 hover:bg-purple-500/10 transition-colors cursor-pointer group"
+              onClick={() => requireAuth(feat.action)}
+            >
+              {!user && (
+                <div className="absolute top-4 right-4">
+                  <Lock size={14} className="text-purple-400/60" />
+                </div>
+              )}
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center mb-5 bg-purple-500/20">
+                <feat.icon size={24} className="text-purple-400" />
+              </div>
+              <h3 className="font-bold text-xl mb-3">{feat.title}</h3>
+              <p className="text-gray-400 text-sm leading-relaxed mb-4">{feat.desc}</p>
+              <span className="text-sm font-medium text-purple-400 group-hover:underline">
+                {user ? "Open →" : "Sign in to access →"}
+              </span>
+            </motion.div>
+          ))}
+        </div>
+        {!user && (
+          <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-center text-sm text-gray-500 mt-8">
+            These features require a free <a href="/auth" className="text-purple-400 hover:underline">Fashion Stitches Africa</a> account.
+          </motion.p>
+        )}
+      </div>
+    </section>
+
     {/* CTA */}
     <section className="py-24">
       <div className="container mx-auto px-4 lg:px-8">
@@ -378,11 +441,13 @@ const HomePage = ({ org, website, brandColor, accentColor, onNavigate }: {
 );
 
 // ─── Catalogue Page ───────────────────────────────────────────────────────────
-const CataloguePage = ({ items, currency, brandColor, accentColor }: {
+const CataloguePage = ({ items, currency, brandColor, accentColor, user, requireAuth }: {
   items: CatalogueItem[];
   currency: string;
   brandColor: string;
   accentColor: string;
+  user: any;
+  requireAuth: (action: string) => boolean;
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const categories = ["All", ...Array.from(new Set(items.map((i) => i.category).filter(Boolean) as string[]))];
@@ -461,7 +526,13 @@ const CataloguePage = ({ items, currency, brandColor, accentColor }: {
                     ) : (
                       <span className="text-sm text-gray-400 italic">Price on request</span>
                     )}
-                    <span className="text-xs text-gray-500">Bespoke</span>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); requireAuth("virtual_tryon"); }}
+                      className="flex items-center gap-1 text-xs font-medium text-purple-400 hover:text-purple-300 transition-colors"
+                    >
+                      {!user && <Lock size={10} />}
+                      Try On
+                    </button>
                   </div>
                 </div>
               </motion.div>
