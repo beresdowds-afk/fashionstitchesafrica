@@ -10,7 +10,8 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   LogOut, Package, CreditCard, Bell, Ruler, Clock, ChevronRight,
-  CheckCircle2, AlertCircle, Lock, KeyRound, Loader2, Video
+  CheckCircle2, AlertCircle, Lock, KeyRound, Loader2, Video, Search,
+  Building2, MapPin
 } from "lucide-react";
 import UserNotificationPreferences from "@/components/communications/UserNotificationPreferences";
 import BookMeasurementDialog from "@/components/measurements/BookMeasurementDialog";
@@ -353,8 +354,9 @@ const CustomerPortal = () => {
         {isPaid && selectedOrgId && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
             <Tabs defaultValue="orders">
-              <TabsList className="mb-6">
+              <TabsList className="mb-6 flex-wrap">
                 <TabsTrigger value="orders" className="gap-2"><Package size={14} /> My Orders</TabsTrigger>
+                <TabsTrigger value="browse" className="gap-2"><Search size={14} /> Browse</TabsTrigger>
                 <TabsTrigger value="measurements" className="gap-2"><Ruler size={14} /> AI Measurements</TabsTrigger>
                 <TabsTrigger value="payments" className="gap-2"><CreditCard size={14} /> Payments</TabsTrigger>
                 <TabsTrigger value="notifications" className="gap-2"><Bell size={14} /> Notifications</TabsTrigger>
@@ -415,6 +417,11 @@ const CustomerPortal = () => {
                     )}
                   </div>
                 )}
+              </TabsContent>
+
+              {/* Browse Organizations Tab */}
+              <TabsContent value="browse">
+                <BrowseOrgsMini navigate={navigate} user={user} />
               </TabsContent>
 
               {/* AI Measurements Tab */}
@@ -571,6 +578,86 @@ const OrderDetail = ({ order, items, currency, onBack }: {
       <div className="mt-8">
         <DisclaimerBanner />
       </div>
+    </div>
+  );
+};
+
+// Inline browse organizations mini component
+const BrowseOrgsMini = ({ navigate, user }: { navigate: any; user: any }) => {
+  const [orgs, setOrgs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const { toast } = useToast();
+  const [myOrgIds, setMyOrgIds] = useState<Set<string>>(new Set());
+  const [joiningId, setJoiningId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const load = async () => {
+      const [{ data: orgData }, { data: memberData }] = await Promise.all([
+        supabase.from("organizations").select("id, name, slug, country, currency, logo_url").eq("is_active", true).order("name"),
+        user ? supabase.from("org_members").select("org_id").eq("user_id", user.id).eq("is_active", true) : { data: [] },
+      ]);
+      setOrgs(orgData || []);
+      setMyOrgIds(new Set((memberData || []).map((m: any) => m.org_id)));
+      setLoading(false);
+    };
+    load();
+  }, [user]);
+
+  const handleJoin = async (org: any) => {
+    if (!user) { navigate("/auth?portal=1"); return; }
+    setJoiningId(org.id);
+    const { error } = await supabase.from("org_members").insert({ org_id: org.id, user_id: user.id, role: "customer" });
+    if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
+    else {
+      toast({ title: "Joined!", description: `Added to ${org.name}` });
+      setMyOrgIds(prev => new Set([...prev, org.id]));
+    }
+    setJoiningId(null);
+  };
+
+  const filtered = orgs.filter(o => o.name.toLowerCase().includes(search.toLowerCase()) || (o.country || "").toLowerCase().includes(search.toLowerCase()));
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="font-heading font-bold text-xl">Browse Fashion Houses</h2>
+        <Button variant="outline" size="sm" onClick={() => navigate("/browse")}>View All</Button>
+      </div>
+      <div className="relative">
+        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+        <Input placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+      </div>
+      {loading ? (
+        <div className="flex justify-center py-8"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
+      ) : filtered.length === 0 ? (
+        <p className="text-center text-muted-foreground py-8">No organizations found.</p>
+      ) : (
+        <div className="space-y-3">
+          {filtered.slice(0, 10).map(org => (
+            <div key={org.id} className="rounded-lg bg-card border border-border p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-gradient-brand flex items-center justify-center">
+                  <span className="font-heading font-bold text-primary-foreground text-sm">{org.name.charAt(0)}</span>
+                </div>
+                <div>
+                  <p className="font-medium text-sm">{org.name}</p>
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    {org.country && <><MapPin size={10} /> {org.country}</>}
+                  </p>
+                </div>
+              </div>
+              {myOrgIds.has(org.id) ? (
+                <Badge>Joined</Badge>
+              ) : (
+                <Button variant="hero" size="sm" onClick={() => handleJoin(org)} disabled={joiningId === org.id}>
+                  {joiningId === org.id ? <Loader2 size={14} className="animate-spin" /> : "Join"}
+                </Button>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
