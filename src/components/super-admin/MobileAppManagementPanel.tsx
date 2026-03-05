@@ -32,6 +32,9 @@ interface OrgAppConfig {
   theme_color: string;
   is_generated: boolean;
   is_published: boolean;
+  is_public_deployment: boolean;
+  api_access_enabled: boolean;
+  app_store_url: string | null;
   generation_fee: number;
   generation_currency: string;
   monthly_maintenance_fee: number;
@@ -540,7 +543,7 @@ const OrgAppsSection = () => {
                 </div>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 {!app.is_generated && app.payment_status === "paid" && (
                   <Button size="sm" variant="hero" onClick={() => generateApp(app.id, app.org_id)} className="gap-1">
                     <RefreshCw size={12} /> Generate App
@@ -551,6 +554,39 @@ const OrgAppsSection = () => {
                     {app.is_published ? <><EyeOff size={12} /> Unpublish</> : <><Eye size={12} /> Publish</>}
                   </Button>
                 )}
+                {app.is_generated && (
+                  <Button
+                    size="sm"
+                    variant={app.is_public_deployment ? "destructive" : "default"}
+                    onClick={async () => {
+                      const newVal = !app.is_public_deployment;
+                      await supabase.from("org_app_configs").update({
+                        is_public_deployment: newVal,
+                        ...(newVal ? { public_deployment_approved_at: new Date().toISOString() } : {}),
+                      } as any).eq("id", app.id);
+                      setOrgApps(prev => prev.map(a => a.id === app.id ? { ...a, is_public_deployment: newVal } : a));
+                      toast({ title: newVal ? "Public deployment enabled" : "Public deployment disabled" });
+                    }}
+                    className="gap-1"
+                  >
+                    {app.is_public_deployment ? <><EyeOff size={12} /> Revoke Public</> : <><Globe size={12} /> Deploy Public</>}
+                  </Button>
+                )}
+                {app.is_generated && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={async () => {
+                      const newVal = !app.api_access_enabled;
+                      await supabase.from("org_app_configs").update({ api_access_enabled: newVal } as any).eq("id", app.id);
+                      setOrgApps(prev => prev.map(a => a.id === app.id ? { ...a, api_access_enabled: newVal } : a));
+                      toast({ title: newVal ? "API access enabled" : "API access disabled" });
+                    }}
+                    className="gap-1"
+                  >
+                    <Settings size={12} /> {app.api_access_enabled ? "Disable API" : "Enable API"}
+                  </Button>
+                )}
                 {app.is_published && (
                   <Button size="sm" variant="outline" onClick={() => {
                     navigator.clipboard.writeText(`${window.location.origin}/install?org=${app.org_id}`);
@@ -558,6 +594,15 @@ const OrgAppsSection = () => {
                   }} className="gap-1">
                     <Copy size={12} /> Copy Link
                   </Button>
+                )}
+              </div>
+              {/* Deployment status badges */}
+              <div className="flex gap-2 mt-3">
+                <Badge className={app.is_public_deployment ? "bg-secondary/10 text-secondary" : "bg-muted text-muted-foreground"}>
+                  {app.is_public_deployment ? "🌍 Public" : "🔒 Internal Only"}
+                </Badge>
+                {app.api_access_enabled && (
+                  <Badge className="bg-primary/10 text-primary">API Enabled</Badge>
                 )}
               </div>
             </div>
