@@ -67,7 +67,20 @@ const Auth = () => {
         description: "We've sent you a confirmation link to verify your account.",
       });
     } else {
-      navigate(isPortal ? "/portal" : "/dashboard");
+      // Check if user is a tailor (no org admin role) and redirect accordingly
+      const { data: memberData } = await supabase
+        .from("org_members")
+        .select("role")
+        .eq("user_id", (await supabase.auth.getUser()).data.user?.id || "")
+        .eq("is_active", true)
+        .limit(1)
+        .single();
+
+      if (memberData?.role === "tailor") {
+        navigate("/tailor-dashboard");
+      } else {
+        navigate(isPortal ? "/portal" : "/dashboard");
+      }
     }
   };
 

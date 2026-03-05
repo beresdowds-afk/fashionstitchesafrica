@@ -77,7 +77,11 @@ const Dashboard = () => {
     if (!authLoading && !orgLoading && user && !currentOrg && !isSuperAdmin) {
       navigate("/create-organization");
     }
-  }, [authLoading, orgLoading, user, currentOrg, isSuperAdmin, navigate]);
+    // Redirect tailors to their dedicated dashboard
+    if (!authLoading && !orgLoading && user && currentOrg && role === "tailor") {
+      navigate("/tailor-dashboard");
+    }
+  }, [authLoading, orgLoading, user, currentOrg, isSuperAdmin, role, navigate]);
 
   const handleSignOut = async () => {
     await signOut();
