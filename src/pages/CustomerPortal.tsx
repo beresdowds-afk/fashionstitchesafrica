@@ -16,6 +16,7 @@ import UserNotificationPreferences from "@/components/communications/UserNotific
 import BookMeasurementDialog from "@/components/measurements/BookMeasurementDialog";
 import MeasurementBookingsTab from "@/components/measurements/MeasurementBookingsTab";
 import { useToast } from "@/hooks/use-toast";
+import { DisclaimerBanner } from "@/components/shared/DisclaimerDialog";
 
 const statusLabels: Record<string, string> = {
   pending: "Pending", confirmed: "Confirmed", measuring: "Measuring",
@@ -566,6 +567,9 @@ const OrderDetail = ({ order, items, currency, onBack }: {
             ))}
           </div>
         )}
+      </div>
+      <div className="mt-8">
+        <DisclaimerBanner />
       </div>
     </div>
   );

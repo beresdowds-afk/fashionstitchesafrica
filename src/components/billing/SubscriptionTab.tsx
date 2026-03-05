@@ -2,12 +2,14 @@ import { useState } from "react";
 import { useSubscriptionPlans, useOrgSubscription } from "@/hooks/useSubscription";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { Check, Crown, Zap, Building2, AlertTriangle, Clock, Receipt } from "lucide-react";
+import { Check, Crown, Zap, Building2, AlertTriangle, Clock, Receipt, Search } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSubscriptionLimits } from "@/hooks/useSubscriptionLimits";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import type { AppRole } from "@/hooks/useOrganization";
 import BillingHistory from "@/components/billing/BillingHistory";
+import BillingQueryDashboard from "@/components/billing/BillingQueryDashboard";
+import { DisclaimerBanner } from "@/components/shared/DisclaimerDialog";
 
 const planIcons: Record<string, any> = {
   basic: Zap,
@@ -27,7 +29,7 @@ const SubscriptionTab = ({ orgId, role }: SubscriptionTabProps) => {
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
   const [selecting, setSelecting] = useState<string | null>(null);
   const [confirmPlan, setConfirmPlan] = useState<{ id: string; name: string; isDowngrade: boolean } | null>(null);
-  const [activeView, setActiveView] = useState<"plans" | "history">("plans");
+  const [activeView, setActiveView] = useState<"plans" | "history" | "queries">("plans");
   const { toast } = useToast();
   const canManage = role === "org_admin" || role === "super_admin";
 
@@ -96,7 +98,13 @@ const SubscriptionTab = ({ orgId, role }: SubscriptionTabProps) => {
             onClick={() => setActiveView("history")}
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1 ${activeView === "history" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
           >
-            <Receipt size={12} /> Billing History
+            <Receipt size={12} /> Fee History
+          </button>
+          <button
+            onClick={() => setActiveView("queries")}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors flex items-center gap-1 ${activeView === "queries" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}
+          >
+            <Search size={12} /> Billing & Payments
           </button>
         </div>
       </div>
@@ -136,7 +144,9 @@ const SubscriptionTab = ({ orgId, role }: SubscriptionTabProps) => {
         </div>
       )}
 
-      {activeView === "history" ? (
+      {activeView === "queries" ? (
+        <BillingQueryDashboard orgId={orgId} role={role} />
+      ) : activeView === "history" ? (
         <BillingHistory orgId={orgId} />
       ) : (
         <>

@@ -189,6 +189,81 @@ export type Database = {
           },
         ]
       }
+      billing_queries: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          org_id: string | null
+          priority: string
+          query_type: string
+          related_order_id: string | null
+          related_payment_id: string | null
+          related_subscription_id: string | null
+          resolution_notes: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          subject: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          org_id?: string | null
+          priority?: string
+          query_type?: string
+          related_order_id?: string | null
+          related_payment_id?: string | null
+          related_subscription_id?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          subject: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          org_id?: string | null
+          priority?: string
+          query_type?: string
+          related_order_id?: string | null
+          related_payment_id?: string | null
+          related_subscription_id?: string | null
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          subject?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_queries_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_queries_related_order_id_fkey"
+            columns: ["related_order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       call_logs: {
         Row: {
           answered_at: string | null
@@ -620,6 +695,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      disclaimer_acknowledgments: {
+        Row: {
+          acknowledged_at: string
+          acknowledgment_type: string
+          context: string
+          created_at: string
+          disclaimer_version: string
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          acknowledged_at?: string
+          acknowledgment_type?: string
+          context?: string
+          created_at?: string
+          disclaimer_version?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          acknowledged_at?: string
+          acknowledgment_type?: string
+          context?: string
+          created_at?: string
+          disclaimer_version?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       disputes: {
         Row: {

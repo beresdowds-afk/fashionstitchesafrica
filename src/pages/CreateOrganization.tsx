@@ -5,10 +5,12 @@ import { useOrganizations, useUserGlobalRole } from "@/hooks/useOrganization";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { motion } from "framer-motion";
 import { Building2, ArrowRight, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { DisclaimerBanner } from "@/components/shared/DisclaimerDialog";
 
 const currencies = [
   { code: "NGN", label: "Nigerian Naira (₦)", country: "NG" },
@@ -24,6 +26,7 @@ const CreateOrganization = () => {
   const [name, setName] = useState("");
   const [currency, setCurrency] = useState("NGN");
   const [submitting, setSubmitting] = useState(false);
+  const [orgTermsAccepted, setOrgTermsAccepted] = useState(false);
   const { createOrg } = useOrganizations();
   const { user } = useAuth();
   const { isSuperAdmin } = useUserGlobalRole();
@@ -36,6 +39,7 @@ const CreateOrganization = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !name.trim()) return;
+    if (!orgTermsAccepted) { toast({ title: "Please accept the intermediary terms", variant: "destructive" }); return; }
     setSubmitting(true);
 
     const { error } = await createOrg(name, slug, selectedCurrency?.country || "NG", currency);
@@ -108,7 +112,19 @@ const CreateOrganization = () => {
               </Select>
             </div>
 
-            <Button variant="hero" className="w-full" type="submit" disabled={submitting}>
+            <DisclaimerBanner compact />
+            <div className="flex items-start gap-2">
+              <Checkbox
+                id="org-terms"
+                checked={orgTermsAccepted}
+                onCheckedChange={(c) => setOrgTermsAccepted(!!c)}
+              />
+              <label htmlFor="org-terms" className="text-xs text-muted-foreground cursor-pointer leading-relaxed">
+                I understand that Fashion Stitches Africa is a neutral intermediary and does not guarantee the quality, integrity, or performance of any Organization, Tailor, or Customer on the platform. All parties operate independently.
+              </label>
+            </div>
+
+            <Button variant="hero" className="w-full" type="submit" disabled={submitting || !orgTermsAccepted}>
               {submitting ? "Creating..." : "Create Organization"}
               <ArrowRight size={16} className="ml-2" />
             </Button>
