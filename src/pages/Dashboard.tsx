@@ -214,7 +214,11 @@ const Dashboard = () => {
             ))}
           </div>
 
-          {activeTab === "overview" && <OverviewTab org={currentOrg} role={role} />}
+          {activeTab === "overview" && role === "tailor" ? (
+            <TailorWorkQueue orgId={currentOrg.id} userId={user.id} currency={currentOrg.currency || "NGN"} />
+          ) : activeTab === "overview" ? (
+            <OverviewTab org={currentOrg} role={role} />
+          ) : null}
           {activeTab === "orders" && <OrdersTab orgId={currentOrg.id} currency={currentOrg.currency || "NGN"} role={role} orgName={currentOrg.name} orgSettings={currentOrg} />}
           {activeTab === "customers" && <CustomersTab orgId={currentOrg.id} currency={currentOrg.currency || "NGN"} />}
           {activeTab === "registrations" && <CustomerRegistrationsTab orgId={currentOrg.id} />}
@@ -424,6 +428,129 @@ const OverviewTab = ({ org, role }: { org: any; role: AppRole | null }) => {
             : "Browse and place orders with your favorite tailors."}
         </p>
       </div>
+    </motion.div>
+  );
+};
+
+/* ─── Tailor Work Queue ─── */
+const TailorWorkQueue = ({ orgId, userId, currency }: { orgId: string; userId: string; currency: string }) => {
+  const [orders, setOrders] = useState<any[]>([]);
+  const [delegations, setDelegations] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const load = async () => {
+      const [{ data: orderData }, { data: delData }] = await Promise.all([
+        supabase.from("orders").select("*").eq("org_id", orgId).eq("assigned_tailor_id", userId).not("status", "eq", "delivered").order("created_at", { ascending: false }),
+        supabase.from("order_delegations").select("*, orders(title, order_number, status, total_amount, currency, due_date)").eq("org_id", orgId).eq("tailor_id", userId).order("created_at", { ascending: false }),
+      ]);
+      setOrders(orderData || []);
+      setDelegations(delData || []);
+      setLoading(false);
+    };
+    load();
+  }, [orgId, userId]);
+
+  const updateStatus = async (orderId: string, newStatus: string) => {
+    const { error } = await supabase.from("orders").update({ status: newStatus as any }).eq("id", orderId);
+    if (error) toast({ title: "Error", variant: "destructive" });
+    else {
+      toast({ title: `Moved to ${statusLabelsMap[newStatus] || newStatus}` });
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+    }
+  };
+
+  const acceptDelegation = async (delId: string) => {
+    await supabase.from("order_delegations").update({ status: "accepted", accepted_at: new Date().toISOString() }).eq("id", delId);
+    setDelegations(prev => prev.map(d => d.id === delId ? { ...d, status: "accepted" } : d));
+    toast({ title: "Delegation accepted" });
+  };
+
+  if (loading) return <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
+
+  const statusFlow = ["pending", "confirmed", "measuring", "cutting", "sewing", "fitting", "completed", "delivered"];
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+      <h2 className="font-heading font-bold text-2xl mb-2">My Work Queue</h2>
+      <p className="text-sm text-muted-foreground mb-6">Orders assigned to you and delegated tasks.</p>
+
+      <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="p-4 rounded-xl bg-card border border-border">
+          <Package size={18} className="text-primary mb-2" />
+          <p className="font-heading font-bold text-2xl">{orders.length}</p>
+          <p className="text-xs text-muted-foreground">Active Orders</p>
+        </div>
+        <div className="p-4 rounded-xl bg-card border border-border">
+          <Clock size={18} className="text-secondary mb-2" />
+          <p className="font-heading font-bold text-2xl">{delegations.filter(d => d.status === "assigned").length}</p>
+          <p className="text-xs text-muted-foreground">Pending Tasks</p>
+        </div>
+        <div className="p-4 rounded-xl bg-card border border-border">
+          <BarChart3 size={18} className="text-accent mb-2" />
+          <p className="font-heading font-bold text-2xl">{delegations.filter(d => d.status === "completed").length}</p>
+          <p className="text-xs text-muted-foreground">Completed</p>
+        </div>
+      </div>
+
+      {delegations.filter(d => d.status === "assigned").length > 0 && (
+        <div className="rounded-xl bg-primary/5 border border-primary/20 p-5 mb-6">
+          <h3 className="font-heading font-semibold text-sm mb-3 flex items-center gap-2">
+            <Shield size={14} className="text-primary" /> Pending Delegation Requests
+          </h3>
+          <div className="space-y-2">
+            {delegations.filter(d => d.status === "assigned").map(del => (
+              <div key={del.id} className="flex items-center justify-between p-3 rounded-lg bg-card border border-border">
+                <div>
+                  <p className="text-sm font-medium">{del.orders?.title || "Order"}</p>
+                  <p className="text-xs text-muted-foreground">{del.orders?.order_number} · Priority: {del.priority}</p>
+                  {del.deadline && <p className="text-xs text-muted-foreground">Deadline: {new Date(del.deadline).toLocaleDateString()}</p>}
+                </div>
+                <Button variant="hero" size="sm" onClick={() => acceptDelegation(del.id)}>Accept</Button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {orders.length === 0 ? (
+        <div className="rounded-xl bg-card border border-border p-12 text-center">
+          <Package size={40} className="mx-auto text-muted-foreground mb-3" />
+          <p className="text-muted-foreground">No active orders assigned to you.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {orders.map(order => (
+            <div key={order.id} className="rounded-xl bg-card border border-border p-5">
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <p className="font-medium text-sm">{order.title}</p>
+                  <p className="text-xs text-muted-foreground">{order.order_number} · {order.due_date ? `Due: ${new Date(order.due_date).toLocaleDateString()}` : "No due date"}</p>
+                </div>
+                <div className="text-right">
+                  <p className="font-heading font-bold text-sm">{currency} {(order.total_amount || 0).toLocaleString()}</p>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${statusDotColors[order.status] ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                    {statusLabelsMap[order.status] || order.status}
+                  </span>
+                </div>
+              </div>
+              {order.description && <p className="text-xs text-muted-foreground mb-3">{order.description}</p>}
+              <div className="flex gap-2 flex-wrap">
+                {statusFlow.map((s, i) => {
+                  const currentIdx = statusFlow.indexOf(order.status);
+                  if (i !== currentIdx + 1) return null;
+                  return (
+                    <Button key={s} variant="hero" size="sm" className="text-xs" onClick={() => updateStatus(order.id, s)}>
+                      Move to {statusLabelsMap[s] || s}
+                    </Button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </motion.div>
   );
 };
