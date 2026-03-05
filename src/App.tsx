@@ -15,6 +15,7 @@ import OrgWebsite from "./pages/OrgWebsite";
 import Install from "./pages/Install";
 import BrowseOrganizations from "./pages/BrowseOrganizations";
 import CataloguePage from "./pages/CataloguePage";
+import TailorCataloguePage from "./pages/TailorCataloguePage";
 import ResetPassword from "./pages/ResetPassword";
 import ApiDocs from "./pages/ApiDocs";
 import LegalDocs from "./pages/LegalDocs";
@@ -41,6 +42,7 @@ const App = () => (
             <Route path="/site/:slug" element={<OrgWebsite />} />
             <Route path="/install" element={<Install />} />
             <Route path="/browse" element={<BrowseOrganizations />} />
+            <Route path="/catalogue/tailor/:tailorId" element={<TailorCataloguePage />} />
             <Route path="/catalogue/:orgId" element={<CataloguePage />} />
             <Route path="/docs/api" element={<ApiDocs />} />
             <Route path="/legal" element={<LegalDocs />} />

@@ -1992,8 +1992,10 @@ export type Database = {
       }
       org_app_configs: {
         Row: {
+          api_access_enabled: boolean
           app_description: string | null
           app_name: string
+          app_store_url: string | null
           created_at: string
           download_count: number | null
           gateway_reference: string | null
@@ -2002,18 +2004,23 @@ export type Database = {
           icon_url: string | null
           id: string
           is_generated: boolean | null
+          is_public_deployment: boolean
           is_published: boolean | null
           last_generated_at: string | null
           monthly_maintenance_fee: number
           org_id: string
           paid_at: string | null
           payment_status: string
+          public_deployment_approved_at: string | null
+          public_deployment_approved_by: string | null
           theme_color: string | null
           updated_at: string
         }
         Insert: {
+          api_access_enabled?: boolean
           app_description?: string | null
           app_name?: string
+          app_store_url?: string | null
           created_at?: string
           download_count?: number | null
           gateway_reference?: string | null
@@ -2022,18 +2029,23 @@ export type Database = {
           icon_url?: string | null
           id?: string
           is_generated?: boolean | null
+          is_public_deployment?: boolean
           is_published?: boolean | null
           last_generated_at?: string | null
           monthly_maintenance_fee?: number
           org_id: string
           paid_at?: string | null
           payment_status?: string
+          public_deployment_approved_at?: string | null
+          public_deployment_approved_by?: string | null
           theme_color?: string | null
           updated_at?: string
         }
         Update: {
+          api_access_enabled?: boolean
           app_description?: string | null
           app_name?: string
+          app_store_url?: string | null
           created_at?: string
           download_count?: number | null
           gateway_reference?: string | null
@@ -2042,12 +2054,15 @@ export type Database = {
           icon_url?: string | null
           id?: string
           is_generated?: boolean | null
+          is_public_deployment?: boolean
           is_published?: boolean | null
           last_generated_at?: string | null
           monthly_maintenance_fee?: number
           org_id?: string
           paid_at?: string | null
           payment_status?: string
+          public_deployment_approved_at?: string | null
+          public_deployment_approved_by?: string | null
           theme_color?: string | null
           updated_at?: string
         }
@@ -2970,30 +2985,57 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          bio: string | null
           business_name: string | null
           created_at: string
           current_org_id: string | null
           display_name: string | null
+          facebook_url: string | null
           id: string
+          instagram_url: string | null
+          linkedin_url: string | null
+          portfolio_url: string | null
+          specialty: string | null
+          tiktok_url: string | null
+          twitter_url: string | null
           updated_at: string
+          youtube_url: string | null
         }
         Insert: {
           avatar_url?: string | null
+          bio?: string | null
           business_name?: string | null
           created_at?: string
           current_org_id?: string | null
           display_name?: string | null
+          facebook_url?: string | null
           id: string
+          instagram_url?: string | null
+          linkedin_url?: string | null
+          portfolio_url?: string | null
+          specialty?: string | null
+          tiktok_url?: string | null
+          twitter_url?: string | null
           updated_at?: string
+          youtube_url?: string | null
         }
         Update: {
           avatar_url?: string | null
+          bio?: string | null
           business_name?: string | null
           created_at?: string
           current_org_id?: string | null
           display_name?: string | null
+          facebook_url?: string | null
           id?: string
+          instagram_url?: string | null
+          linkedin_url?: string | null
+          portfolio_url?: string | null
+          specialty?: string | null
+          tiktok_url?: string | null
+          twitter_url?: string | null
           updated_at?: string
+          youtube_url?: string | null
         }
         Relationships: [
           {
@@ -3287,6 +3329,74 @@ export type Database = {
           },
         ]
       }
+      social_sync_configs: {
+        Row: {
+          account_handle: string | null
+          account_url: string | null
+          auto_publish: boolean
+          content_filter: Json | null
+          created_at: string
+          id: string
+          is_enabled: boolean
+          last_synced_at: string | null
+          metadata: Json | null
+          org_id: string | null
+          owner_id: string
+          owner_type: string
+          platform: string
+          sync_direction: string
+          sync_frequency: string | null
+          sync_status: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_handle?: string | null
+          account_url?: string | null
+          auto_publish?: boolean
+          content_filter?: Json | null
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          last_synced_at?: string | null
+          metadata?: Json | null
+          org_id?: string | null
+          owner_id: string
+          owner_type?: string
+          platform: string
+          sync_direction?: string
+          sync_frequency?: string | null
+          sync_status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_handle?: string | null
+          account_url?: string | null
+          auto_publish?: boolean
+          content_filter?: Json | null
+          created_at?: string
+          id?: string
+          is_enabled?: boolean
+          last_synced_at?: string | null
+          metadata?: Json | null
+          org_id?: string | null
+          owner_id?: string
+          owner_type?: string
+          platform?: string
+          sync_direction?: string
+          sync_frequency?: string | null
+          sync_status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_sync_configs_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscription_plans: {
         Row: {
           ai_measurement_price: number | null
@@ -3361,6 +3471,80 @@ export type Database = {
           virtual_tryon_price?: number | null
         }
         Relationships: []
+      }
+      tailor_catalogue_items: {
+        Row: {
+          category: string | null
+          created_at: string
+          currency: string | null
+          description: string | null
+          id: string
+          image_url: string | null
+          is_published: boolean
+          metadata: Json | null
+          name: string
+          org_id: string | null
+          price: number | null
+          social_platform: string | null
+          social_post_id: string | null
+          source: string
+          source_url: string | null
+          tags: string[] | null
+          tailor_id: string
+          tryon_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_published?: boolean
+          metadata?: Json | null
+          name: string
+          org_id?: string | null
+          price?: number | null
+          social_platform?: string | null
+          social_post_id?: string | null
+          source?: string
+          source_url?: string | null
+          tags?: string[] | null
+          tailor_id: string
+          tryon_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          currency?: string | null
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_published?: boolean
+          metadata?: Json | null
+          name?: string
+          org_id?: string | null
+          price?: number | null
+          social_platform?: string | null
+          social_post_id?: string | null
+          source?: string
+          source_url?: string | null
+          tags?: string[] | null
+          tailor_id?: string
+          tryon_enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tailor_catalogue_items_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tailor_contracts: {
         Row: {

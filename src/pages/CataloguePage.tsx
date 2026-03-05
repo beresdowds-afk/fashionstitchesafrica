@@ -1,19 +1,25 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
-import { ArrowLeft, Search, ShoppingBag, Sparkles, Tag, Phone } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { ArrowLeft, Search, ShoppingBag, Sparkles, Tag, Phone, Instagram, Facebook, Twitter, Linkedin, Youtube, ExternalLink, Scissors } from "lucide-react";
+
+const TikTokIcon = ({ size = 16, className = "" }: { size?: number; className?: string }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" />
+  </svg>
+);
 
 const CataloguePage = () => {
   const { orgId } = useParams<{ orgId: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
   const [org, setOrg] = useState<any>(null);
+  const [website, setWebsite] = useState<any>(null);
   const [items, setItems] = useState<any[]>([]);
+  const [tailors, setTailors] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [loading, setLoading] = useState(true);
@@ -21,12 +27,20 @@ const CataloguePage = () => {
   useEffect(() => {
     if (!orgId) return;
     const load = async () => {
-      const [orgRes, itemsRes] = await Promise.all([
-        supabase.from("organizations").select("id, name, slug, currency, phone").eq("id", orgId).single(),
+      const [orgRes, itemsRes, websiteRes, membersRes] = await Promise.all([
+        supabase.from("organizations").select("id, name, slug, currency, phone, logo_url, description").eq("id", orgId).single(),
         supabase.from("garment_catalog").select("*").eq("org_id", orgId).eq("is_published", true).order("name"),
+        supabase.from("org_websites").select("instagram_url, facebook_url, whatsapp_number, twitter_url, linkedin_url, tiktok_url, youtube_url, brand_color").eq("org_id", orgId).single(),
+        supabase.from("org_members").select("user_id, role, profiles(id, display_name, specialty)").eq("org_id", orgId).eq("role", "tailor").eq("is_active", true),
       ]);
       setOrg(orgRes.data);
       setItems(itemsRes.data || []);
+      setWebsite(websiteRes.data);
+      setTailors((membersRes.data || []).map((m: any) => ({
+        id: m.user_id,
+        name: m.profiles?.display_name || "Tailor",
+        specialty: m.profiles?.specialty,
+      })));
       setLoading(false);
     };
     load();
@@ -38,6 +52,15 @@ const CataloguePage = () => {
     const matchCat = selectedCategory === "all" || (i.category || "general") === selectedCategory;
     return matchSearch && matchCat;
   });
+
+  const socialLinks = website ? [
+    { url: website.instagram_url, icon: Instagram, label: "Instagram" },
+    { url: website.facebook_url, icon: Facebook, label: "Facebook" },
+    { url: website.twitter_url, icon: Twitter, label: "X" },
+    { url: website.tiktok_url, icon: TikTokIcon, label: "TikTok" },
+    { url: website.youtube_url, icon: Youtube, label: "YouTube" },
+    { url: website.linkedin_url, icon: Linkedin, label: "LinkedIn" },
+  ].filter(s => s.url) : [];
 
   if (loading) {
     return (
@@ -57,20 +80,55 @@ const CataloguePage = () => {
             <Button variant="ghost" size="sm" onClick={() => navigate(-1)}>
               <ArrowLeft size={16} />
             </Button>
-            <div>
-              <span className="font-heading font-bold text-sm">{org?.name || "Catalogue"}</span>
-              <p className="text-[10px] text-muted-foreground">{filtered.length} products</p>
+            <div className="flex items-center gap-2">
+              {org?.logo_url && <img src={org.logo_url} alt="" className="w-7 h-7 rounded-full object-cover" />}
+              <div>
+                <span className="font-heading font-bold text-sm">{org?.name || "Catalogue"}</span>
+                <p className="text-[10px] text-muted-foreground">{filtered.length} products</p>
+              </div>
             </div>
           </div>
-          {org?.phone && (
-            <a href={`tel:${org.phone}`} className="text-muted-foreground hover:text-primary transition-colors">
-              <Phone size={16} />
-            </a>
-          )}
+          <div className="flex items-center gap-2">
+            {socialLinks.map(s => (
+              <a key={s.label} href={s.url!} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-primary transition-colors">
+                <s.icon size={14} />
+              </a>
+            ))}
+            {org?.phone && (
+              <a href={`tel:${org.phone}`} className="text-muted-foreground hover:text-primary transition-colors ml-1">
+                <Phone size={14} />
+              </a>
+            )}
+          </div>
         </div>
       </header>
 
       <div className="container mx-auto px-4 lg:px-8 py-6 max-w-5xl">
+        {/* Tailors section */}
+        {tailors.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider">Our Tailors</h3>
+            <div className="flex gap-3 overflow-x-auto pb-2">
+              {tailors.map(t => (
+                <Link
+                  key={t.id}
+                  to={`/catalogue/tailor/${t.id}`}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-card hover:border-primary/30 transition-colors shrink-0"
+                >
+                  <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Scissors size={12} className="text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium">{t.name}</p>
+                    {t.specialty && <p className="text-[10px] text-muted-foreground">{t.specialty}</p>}
+                  </div>
+                  <ExternalLink size={10} className="text-muted-foreground" />
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Search & filters */}
         <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <div className="relative flex-1">
@@ -140,6 +198,15 @@ const CataloguePage = () => {
                 </div>
               </motion.div>
             ))}
+          </div>
+        )}
+
+        {/* Website link */}
+        {org?.slug && (
+          <div className="mt-8 text-center">
+            <Link to={`/site/${org.slug}`} className="text-xs text-muted-foreground hover:text-primary transition-colors inline-flex items-center gap-1">
+              <ExternalLink size={10} /> Visit {org.name}'s website
+            </Link>
           </div>
         )}
       </div>

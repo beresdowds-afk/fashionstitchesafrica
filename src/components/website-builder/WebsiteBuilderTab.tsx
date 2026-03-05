@@ -9,6 +9,7 @@ import {
   ArrowRight, Sparkles, Star, Lock, Palette, Building2
 } from "lucide-react";
 import OrgBrandingPanel from "./OrgBrandingPanel";
+import SocialSyncPanel from "@/components/catalogue/SocialSyncPanel";
 import CompanyOfficersPanel from "./CompanyOfficersPanel";
 import type { AppRole } from "@/hooks/useOrganization";
 import { getTierFeatures, getTierLimits, checkFeatureAccess, calculateUpgradeCost, isActiveStatus } from "./tierConfig";
@@ -916,6 +917,11 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
                   />
                 </div>
               </div>
+
+              {/* Social Media Sync */}
+              {canEdit && org && (
+                <SocialSyncPanel ownerId={org.id} ownerType="organization" orgId={org.id} />
+              )}
             </div>
           )}
 
