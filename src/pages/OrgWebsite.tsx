@@ -21,6 +21,22 @@ interface OrgWebsiteData {
   facebook_url: string | null;
   whatsapp_number: string | null;
   webhook_url: string | null;
+  font_heading?: string | null;
+  font_body?: string | null;
+  color_palette?: Record<string, string> | null;
+  favicon_url?: string | null;
+}
+
+interface OfficerData {
+  id: string;
+  full_name: string;
+  title: string;
+  email: string | null;
+  phone: string | null;
+  bio: string | null;
+  photo_url: string | null;
+  display_order: number;
+  is_public: boolean;
 }
 
 interface OrgData {
@@ -54,6 +70,7 @@ const OrgWebsite = () => {
   const [org, setOrg] = useState<OrgData | null>(null);
   const [website, setWebsite] = useState<OrgWebsiteData | null>(null);
   const [catalogue, setCatalogue] = useState<CatalogueItem[]>([]);
+  const [officers, setOfficers] = useState<OfficerData[]>([]);
   const [loading, setLoading] = useState(true);
   const [activePage, setActivePage] = useState<"home" | "catalogue" | "booking">("home");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -85,16 +102,25 @@ const OrgWebsite = () => {
         .eq("org_id", orgData.id)
         .single();
 
-      if (websiteData) setWebsite(websiteData as OrgWebsiteData);
+      if (websiteData) setWebsite(websiteData as unknown as OrgWebsiteData);
 
-      const { data: catalogueData } = await supabase
-        .from("org_catalogue_items")
-        .select("*")
-        .eq("org_id", orgData.id)
-        .eq("is_available", true)
-        .order("sort_order");
+      const [catalogueResult, officersResult] = await Promise.all([
+        supabase
+          .from("org_catalogue_items")
+          .select("*")
+          .eq("org_id", orgData.id)
+          .eq("is_available", true)
+          .order("sort_order"),
+        supabase
+          .from("org_company_officers")
+          .select("*")
+          .eq("org_id", orgData.id)
+          .eq("is_public", true)
+          .order("display_order"),
+      ]);
 
-      setCatalogue((catalogueData || []) as CatalogueItem[]);
+      setCatalogue((catalogueResult.data || []) as CatalogueItem[]);
+      setOfficers((officersResult.data || []) as OfficerData[]);
       setLoading(false);
     };
     load();
@@ -139,6 +165,24 @@ const OrgWebsite = () => {
   const brandColor = website.brand_color || "#8B5CF6";
   const accentColor = website.accent_color || "#D4AF37";
   const currency = org.currency || "NGN";
+  const fontHeading = website.font_heading || "Inter";
+  const fontBody = website.font_body || "Inter";
+  const palette = website.color_palette || {};
+  const bgColor = palette.background || "#0d0d0d";
+  const surfaceColor = palette.surface || "#1a1a1a";
+
+  // Load Google Fonts
+  const fontsToLoad = [...new Set([fontHeading, fontBody])].filter(f => f !== "Inter");
+  if (fontsToLoad.length > 0) {
+    const link = document.querySelector("#org-fonts") || (() => {
+      const el = document.createElement("link");
+      el.id = "org-fonts";
+      el.rel = "stylesheet";
+      document.head.appendChild(el);
+      return el;
+    })();
+    (link as HTMLLinkElement).href = `https://fonts.googleapis.com/css2?${fontsToLoad.map(f => `family=${f.replace(/ /g, "+")}:wght@400;600;700`).join("&")}&display=swap`;
+  }
 
   const navItems = [
     { id: "home" as const, label: "Home", icon: Home },
@@ -147,7 +191,7 @@ const OrgWebsite = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#0d0d0d] text-white font-sans">
+    <div className="min-h-screen text-white" style={{ backgroundColor: bgColor, fontFamily: fontBody }}>
       {/* Nav */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0d0d0d]/90 backdrop-blur-md border-b border-white/10">
         <div className="container mx-auto flex items-center justify-between h-16 px-4 lg:px-8">
@@ -197,7 +241,7 @@ const OrgWebsite = () => {
 
       <div className="pt-16">
         {activePage === "home" && (
-          <HomePage org={org} website={website} brandColor={brandColor} accentColor={accentColor} onNavigate={setActivePage} user={user} requireAuth={requireAuth} />
+          <HomePage org={org} website={website} brandColor={brandColor} accentColor={accentColor} fontHeading={fontHeading} officers={officers} onNavigate={setActivePage} user={user} requireAuth={requireAuth} />
         )}
         {activePage === "catalogue" && (
           <CataloguePage items={catalogue} currency={currency} brandColor={brandColor} accentColor={accentColor} user={user} requireAuth={requireAuth} />
@@ -257,11 +301,13 @@ const OrgWebsite = () => {
 };
 
 // ─── Home Page ───────────────────────────────────────────────────────────────
-const HomePage = ({ org, website, brandColor, accentColor, onNavigate, user, requireAuth }: {
+const HomePage = ({ org, website, brandColor, accentColor, fontHeading, officers, onNavigate, user, requireAuth }: {
   org: OrgData;
   website: OrgWebsiteData;
   brandColor: string;
   accentColor: string;
+  fontHeading: string;
+  officers: OfficerData[];
   onNavigate: (p: "home" | "catalogue" | "booking") => void;
   user: any;
   requireAuth: (action: string) => boolean;
@@ -300,7 +346,7 @@ const HomePage = ({ org, website, brandColor, accentColor, onNavigate, user, req
               Est. {new Date().getFullYear()}
             </span>
           </div>
-          <h1 className="font-bold text-5xl md:text-7xl leading-tight mb-6">
+          <h1 className="font-bold text-5xl md:text-7xl leading-tight mb-6" style={{ fontFamily: fontHeading }}>
             {org.name}
           </h1>
           {website.tagline && (
@@ -414,6 +460,49 @@ const HomePage = ({ org, website, brandColor, accentColor, onNavigate, user, req
         )}
       </div>
     </section>
+
+    {/* Officers / Team Section */}
+    {officers.length > 0 && (
+      <section className="py-24 border-t border-white/10">
+        <div className="container mx-auto px-4 lg:px-8">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
+            <h2 className="font-bold text-3xl md:text-4xl mb-4" style={{ fontFamily: fontHeading }}>Meet Our Team</h2>
+            <p className="text-gray-400 max-w-xl mx-auto">The people behind the craft.</p>
+          </motion.div>
+          <div className={`grid gap-8 ${officers.length <= 3 ? `grid-cols-1 md:grid-cols-${officers.length}` : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"}`}>
+            {officers.map((officer, i) => (
+              <motion.div
+                key={officer.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="text-center group"
+              >
+                <div className="w-32 h-32 mx-auto rounded-full overflow-hidden border-2 border-white/10 mb-5 group-hover:border-white/30 transition-colors">
+                  {officer.photo_url ? (
+                    <img src={officer.photo_url} alt={officer.full_name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-white/5">
+                      <span className="text-3xl font-bold text-gray-500">
+                        {officer.full_name.split(" ").map(n => n[0]).join("").slice(0, 2)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <h3 className="font-bold text-lg mb-1" style={{ fontFamily: fontHeading }}>{officer.full_name}</h3>
+                <p className="text-sm mb-2" style={{ color: accentColor }}>{officer.title}</p>
+                {officer.bio && <p className="text-gray-400 text-sm leading-relaxed max-w-xs mx-auto">{officer.bio}</p>}
+                <div className="flex items-center justify-center gap-3 mt-3 text-xs text-gray-500">
+                  {officer.email && <a href={`mailto:${officer.email}`} className="hover:text-white transition-colors">{officer.email}</a>}
+                  {officer.phone && <span>{officer.phone}</span>}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+    )}
 
     {/* CTA */}
     <section className="py-24">

@@ -2175,6 +2175,59 @@ export type Database = {
           },
         ]
       }
+      org_company_officers: {
+        Row: {
+          bio: string | null
+          created_at: string
+          display_order: number
+          email: string | null
+          full_name: string
+          id: string
+          is_public: boolean
+          org_id: string
+          phone: string | null
+          photo_url: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          bio?: string | null
+          created_at?: string
+          display_order?: number
+          email?: string | null
+          full_name: string
+          id?: string
+          is_public?: boolean
+          org_id: string
+          phone?: string | null
+          photo_url?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          bio?: string | null
+          created_at?: string
+          display_order?: number
+          email?: string | null
+          full_name?: string
+          id?: string
+          is_public?: boolean
+          org_id?: string
+          phone?: string | null
+          photo_url?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_company_officers_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       org_consultations: {
         Row: {
           created_at: string
@@ -2432,8 +2485,12 @@ export type Database = {
           api_key: string | null
           api_secret: string | null
           brand_color: string | null
+          color_palette: Json
           created_at: string
           facebook_url: string | null
+          favicon_url: string | null
+          font_body: string
+          font_heading: string
           hero_description: string | null
           hero_image_url: string | null
           id: string
@@ -2452,8 +2509,12 @@ export type Database = {
           api_key?: string | null
           api_secret?: string | null
           brand_color?: string | null
+          color_palette?: Json
           created_at?: string
           facebook_url?: string | null
+          favicon_url?: string | null
+          font_body?: string
+          font_heading?: string
           hero_description?: string | null
           hero_image_url?: string | null
           id?: string
@@ -2472,8 +2533,12 @@ export type Database = {
           api_key?: string | null
           api_secret?: string | null
           brand_color?: string | null
+          color_palette?: Json
           created_at?: string
           facebook_url?: string | null
+          favicon_url?: string | null
+          font_body?: string
+          font_heading?: string
           hero_description?: string | null
           hero_image_url?: string | null
           id?: string
