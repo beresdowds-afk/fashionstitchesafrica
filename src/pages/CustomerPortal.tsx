@@ -633,27 +633,33 @@ const BrowseOrgsMini = ({ navigate, user }: { navigate: any; user: any }) => {
       ) : filtered.length === 0 ? (
         <p className="text-center text-muted-foreground py-8">No organizations found.</p>
       ) : (
-        <div className="space-y-3">
-          {filtered.slice(0, 10).map(org => (
-            <div key={org.id} className="rounded-lg bg-card border border-border p-4 flex items-center justify-between">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {filtered.slice(0, 12).map(org => (
+            <div key={org.id} className="rounded-xl bg-card border border-border p-4 flex flex-col gap-3">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-gradient-brand flex items-center justify-center">
+                <div className="w-10 h-10 rounded-lg bg-gradient-brand flex items-center justify-center shrink-0">
                   <span className="font-heading font-bold text-primary-foreground text-sm">{org.name.charAt(0)}</span>
                 </div>
-                <div>
-                  <p className="font-medium text-sm">{org.name}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm truncate">{org.name}</p>
                   <p className="text-xs text-muted-foreground flex items-center gap-1">
                     {org.country && <><MapPin size={10} /> {org.country}</>}
+                    {org.currency && <span className="ml-1">· {org.currency}</span>}
                   </p>
                 </div>
               </div>
-              {myOrgIds.has(org.id) ? (
-                <Badge>Joined</Badge>
-              ) : (
-                <Button variant="hero" size="sm" onClick={() => handleJoin(org)} disabled={joiningId === org.id}>
-                  {joiningId === org.id ? <Loader2 size={14} className="animate-spin" /> : "Join"}
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={() => navigate(`/catalogue/${org.id}`)}>
+                  View Catalogue
                 </Button>
-              )}
+                {myOrgIds.has(org.id) ? (
+                  <Badge className="self-center">Joined</Badge>
+                ) : (
+                  <Button variant="hero" size="sm" className="text-xs" onClick={() => handleJoin(org)} disabled={joiningId === org.id}>
+                    {joiningId === org.id ? <Loader2 size={14} className="animate-spin" /> : "Join"}
+                  </Button>
+                )}
+              </div>
             </div>
           ))}
         </div>

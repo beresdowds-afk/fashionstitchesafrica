@@ -15,6 +15,7 @@ import OrgWebsite from "./pages/OrgWebsite";
 import Install from "./pages/Install";
 import BrowseOrganizations from "./pages/BrowseOrganizations";
 import CataloguePage from "./pages/CataloguePage";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -29,6 +30,7 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/create-organization" element={<CreateOrganization />} />
             <Route path="/super-admin" element={<SuperAdminDashboard />} />
