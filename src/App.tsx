@@ -17,6 +17,7 @@ import BrowseOrganizations from "./pages/BrowseOrganizations";
 import CataloguePage from "./pages/CataloguePage";
 import TailorCataloguePage from "./pages/TailorCataloguePage";
 import ResetPassword from "./pages/ResetPassword";
+import OrgTailorPage from "./pages/OrgTailorPage";
 import ApiDocs from "./pages/ApiDocs";
 import LegalDocs from "./pages/LegalDocs";
 import NotFound from "./pages/NotFound";
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/portal" element={<CustomerPortal />} />
             <Route path="/video-call" element={<VideoCall />} />
             <Route path="/site/:slug" element={<OrgWebsite />} />
+            <Route path="/site/:slug/tailor/:tailorId" element={<OrgTailorPage />} />
             <Route path="/install" element={<Install />} />
             <Route path="/browse" element={<BrowseOrganizations />} />
             <Route path="/catalogue/tailor/:tailorId" element={<TailorCataloguePage />} />
