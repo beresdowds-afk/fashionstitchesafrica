@@ -6,8 +6,10 @@ import { motion } from "framer-motion";
 import {
   Globe, Zap, Link2, Eye, Plus, Trash2, Edit2, Save, X, Package,
   ExternalLink, Copy, Key, Crown, Clock, CheckCircle2, AlertCircle,
-  ArrowRight, Sparkles, Star, Lock
+  ArrowRight, Sparkles, Star, Lock, Palette, Building2
 } from "lucide-react";
+import OrgBrandingPanel from "./OrgBrandingPanel";
+import CompanyOfficersPanel from "./CompanyOfficersPanel";
 import type { AppRole } from "@/hooks/useOrganization";
 import { getTierFeatures, getTierLimits, checkFeatureAccess, calculateUpgradeCost, isActiveStatus } from "./tierConfig";
 
@@ -543,7 +545,8 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
   const [proRequest, setProRequest] = useState<WebsiteRequest | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeSection, setActiveSection] = useState<"plans" | "general" | "catalogue" | "integration">("plans");
+  const [activeSection, setActiveSection] = useState<"plans" | "general" | "branding" | "company" | "catalogue" | "integration">("plans");
+  const [orgDetails, setOrgDetails] = useState<{ description?: string | null; email?: string | null; phone?: string | null; address?: string | null; logo_url?: string | null }>({});
   const [editingItem, setEditingItem] = useState<CatalogueItem | null>(null);
   const [addingItem, setAddingItem] = useState(false);
 
@@ -567,7 +570,7 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
     ]);
 
     if (wsResult.data) {
-      const ws = wsResult.data;
+      const ws = wsResult.data as any;
       setSettings({
         ...defaultSettings(org.id),
         ...ws,
@@ -582,8 +585,16 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
         whatsapp_number: ws.whatsapp_number || "",
         mode: (ws.mode as "auto_builder" | "custom_integration") || "auto_builder",
         theme: (ws.theme as "dark" | "light") || "dark",
+        font_heading: ws.font_heading || "Inter",
+        font_body: ws.font_body || "Inter",
+        color_palette: ws.color_palette || {},
+        favicon_url: ws.favicon_url || null,
       });
     }
+
+    // Load org details for branding panel
+    const { data: orgData } = await supabase.from("organizations").select("description, email, phone, address, logo_url").eq("id", org.id).single();
+    if (orgData) setOrgDetails(orgData);
 
     setCatalogue((catResult.data || []) as CatalogueItem[]);
     if (subResult.data) setSubscription(subResult.data as WebsiteSubscription);
@@ -606,7 +617,7 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
       return;
     }
     setSaving(true);
-    const payload = {
+    const payload: Record<string, any> = {
       org_id: org.id,
       is_enabled: settings.is_enabled,
       mode: settings.mode,
@@ -622,11 +633,25 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
       instagram_url: settings.instagram_url || null,
       facebook_url: settings.facebook_url || null,
       whatsapp_number: settings.whatsapp_number || null,
+      font_heading: (settings as any).font_heading || "Inter",
+      font_body: (settings as any).font_body || "Inter",
+      color_palette: (settings as any).color_palette || {},
+      favicon_url: (settings as any).favicon_url || null,
     };
+
+    // Save org details if changed
+    if (orgDetails) {
+      await supabase.from("organizations").update({
+        description: orgDetails.description || null,
+        email: orgDetails.email || null,
+        phone: orgDetails.phone || null,
+        address: orgDetails.address || null,
+      }).eq("id", org.id);
+    }
 
     const { error } = await supabase
       .from("org_websites")
-      .upsert(payload, { onConflict: "org_id" });
+      .upsert(payload as any, { onConflict: "org_id" });
 
     setSaving(false);
     if (error) toast({ title: "Error saving", description: error.message, variant: "destructive" });
@@ -700,6 +725,8 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
         {[
           { id: "plans" as const, icon: Crown, label: "Plans" },
           { id: "general" as const, icon: Globe, label: "General" },
+          { id: "branding" as const, icon: Palette, label: "Branding" },
+          { id: "company" as const, icon: Building2, label: "Company Info" },
           { id: "catalogue" as const, icon: Package, label: "Catalogue" },
           { id: "integration" as const, icon: Link2, label: "Integration" },
         ].map((s) => (
@@ -925,6 +952,32 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
           )}
         </div>
       )}
+
+      {/* ── Branding ─────────────────────────────────────────── */}
+      {activeSection === "branding" && (
+        <OrgBrandingPanel
+          org={{ ...org, ...orgDetails }}
+          websiteSettings={{
+            brand_color: settings.brand_color,
+            accent_color: settings.accent_color,
+            font_heading: (settings as any).font_heading,
+            font_body: (settings as any).font_body,
+            color_palette: (settings as any).color_palette,
+            favicon_url: (settings as any).favicon_url,
+          }}
+          canEdit={canEdit}
+          onSettingsChange={(updates) => setSettings({ ...settings, ...updates } as any)}
+          onOrgChange={(updates) => setOrgDetails({ ...orgDetails, ...updates })}
+          onSave={handleSaveSettings}
+          saving={saving}
+        />
+      )}
+
+      {/* ── Company Info ─────────────────────────────────────── */}
+      {activeSection === "company" && (
+        <CompanyOfficersPanel orgId={org.id} canEdit={canEdit} />
+      )}
+
 
       {/* ── Catalogue ────────────────────────────────────────── */}
       {activeSection === "catalogue" && (
