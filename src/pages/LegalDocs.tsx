@@ -22,6 +22,7 @@ const REGIONS = [
   { code: "RW", name: "Rwanda", flag: "🇷🇼" },
   { code: "ET", name: "Ethiopia", flag: "🇪🇹" },
   { code: "US", name: "United States", flag: "🇺🇸" },
+  { code: "CA", name: "Canada", flag: "🇨🇦" },
   { code: "GB", name: "United Kingdom", flag: "🇬🇧" },
   { code: "EU", name: "European Union", flag: "🇪🇺" },
   { code: "AE", name: "UAE", flag: "🇦🇪" },
