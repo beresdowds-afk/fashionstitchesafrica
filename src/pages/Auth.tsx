@@ -5,9 +5,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { motion } from "framer-motion";
-import { ArrowLeft, Mail, Lock, User } from "lucide-react";
+import { ArrowLeft, Mail, Lock, User, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import DisclaimerDialog, { DisclaimerBanner } from "@/components/shared/DisclaimerDialog";
 
 type AuthMode = "signin" | "signup" | "forgot";
 
@@ -17,6 +19,8 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [loading, setLoading] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [showDisclaimer, setShowDisclaimer] = useState(false);
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -26,6 +30,11 @@ const Auth = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    if (mode === "signup" && !termsAccepted) {
+      toast({ title: "Please accept the platform terms", variant: "destructive" });
+      setLoading(false);
+      return;
+    }
 
     if (mode === "forgot") {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -163,7 +172,26 @@ const Auth = () => {
               </div>
             )}
 
-            <Button variant="hero" className="w-full" type="submit" disabled={loading}>
+            {mode === "signup" && (
+              <div className="space-y-3">
+                <DisclaimerBanner compact />
+                <div className="flex items-start gap-2">
+                  <Checkbox
+                    id="terms"
+                    checked={termsAccepted}
+                    onCheckedChange={(c) => setTermsAccepted(!!c)}
+                  />
+                  <label htmlFor="terms" className="text-xs text-muted-foreground cursor-pointer leading-relaxed">
+                    I acknowledge that Fashion Stitches Africa is a neutral platform and does not guarantee the quality of services provided by Organizations or Tailors.{" "}
+                    <button type="button" onClick={() => setShowDisclaimer(true)} className="text-primary hover:underline">
+                      Read full terms
+                    </button>
+                  </label>
+                </div>
+              </div>
+            )}
+
+            <Button variant="hero" className="w-full" type="submit" disabled={loading || (mode === "signup" && !termsAccepted)}>
               {loading ? (
                 <span className="flex items-center gap-2">
                   <span className="w-4 h-4 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin" />
@@ -172,6 +200,14 @@ const Auth = () => {
               ) : mode === "forgot" ? "Send Reset Link" : mode === "signup" ? "Create Account" : "Sign In"}
             </Button>
           </form>
+
+          <DisclaimerDialog
+            open={showDisclaimer}
+            onOpenChange={setShowDisclaimer}
+            disclaimerType="intermediary_caveat"
+            context="registration"
+            onAcknowledged={() => setTermsAccepted(true)}
+          />
 
           <div className="mt-6 text-center space-y-2">
             {mode === "forgot" ? (
