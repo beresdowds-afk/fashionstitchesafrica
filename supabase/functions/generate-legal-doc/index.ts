@@ -15,6 +15,7 @@ const REGION_REGULATIONS: Record<string, string> = {
   "RW": "Rwanda Law Relating to the Protection of Personal Data and Privacy (2021)",
   "ET": "Ethiopia - no comprehensive data protection yet, general Civil Code applies",
   "US": "United States - FTC Act, CAN-SPAM Act, CCPA (California), state consumer protection statutes",
+  "CA": "Canada - Personal Information Protection and Electronic Documents Act (PIPEDA), Canada's Anti-Spam Legislation (CASL), Consumer Protection Acts (provincial), Competition Act",
   "GB": "United Kingdom GDPR (UK-GDPR), Data Protection Act 2018, Consumer Rights Act 2015",
   "EU": "EU General Data Protection Regulation (GDPR), Consumer Rights Directive 2011/83/EU, Digital Services Act",
   "AE": "UAE Federal Law No. 45 of 2021 on Personal Data Protection, Consumer Protection Federal Law No. 15 of 2020",
