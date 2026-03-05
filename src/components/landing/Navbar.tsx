@@ -8,6 +8,7 @@ const navLinks = [
   { label: "Features", href: "#features" },
   { label: "How It Works", href: "#how-it-works" },
   { label: "Pricing", href: "#pricing" },
+  { label: "Browse", href: "/browse", isRoute: true },
   { label: "Contact", href: "#contact" },
 ];
 
@@ -27,15 +28,25 @@ const Navbar = () => {
         </a>
 
         <div className="hidden md:flex items-center gap-8">
-          {navLinks.map((link) => (
-            <a
-              key={link.label}
-              href={link.href}
-              className="text-ivory/70 hover:text-primary transition-colors text-sm font-medium"
-            >
-              {link.label}
-            </a>
-          ))}
+          {navLinks.map((link) =>
+            (link as any).isRoute ? (
+              <Link
+                key={link.label}
+                to={link.href}
+                className="text-ivory/70 hover:text-primary transition-colors text-sm font-medium"
+              >
+                {link.label}
+              </Link>
+            ) : (
+              <a
+                key={link.label}
+                href={link.href}
+                className="text-ivory/70 hover:text-primary transition-colors text-sm font-medium"
+              >
+                {link.label}
+              </a>
+            )
+          )}
         </div>
 
         <div className="hidden md:flex items-center gap-3">
@@ -44,9 +55,9 @@ const Navbar = () => {
               Sign In
             </Button>
           </Link>
-          <Link to="/auth">
+          <Link to="/install">
             <Button variant="hero" size="sm">
-              Get Started
+              Get the App
             </Button>
           </Link>
         </div>
@@ -68,19 +79,30 @@ const Navbar = () => {
             className="md:hidden bg-ebony border-t border-primary/10 overflow-hidden"
           >
             <div className="flex flex-col gap-4 p-4">
-              {navLinks.map((link) => (
-                <a
-                  key={link.label}
-                  href={link.href}
-                  className="text-ivory/70 hover:text-primary transition-colors text-sm font-medium"
-                  onClick={() => setIsOpen(false)}
-                >
-                  {link.label}
-                </a>
-              ))}
-              <Link to="/auth">
+              {navLinks.map((link) =>
+                (link as any).isRoute ? (
+                  <Link
+                    key={link.label}
+                    to={link.href}
+                    className="text-ivory/70 hover:text-primary transition-colors text-sm font-medium"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    {link.label}
+                  </Link>
+                ) : (
+                  <a
+                    key={link.label}
+                    href={link.href}
+                    className="text-ivory/70 hover:text-primary transition-colors text-sm font-medium"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    {link.label}
+                  </a>
+                )
+              )}
+              <Link to="/install">
                 <Button variant="hero" className="w-full mt-2">
-                  Get Started
+                  Get the App
                 </Button>
               </Link>
             </div>

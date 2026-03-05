@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { ArrowRight, Play } from "lucide-react";
+import { ArrowRight, Play, Download } from "lucide-react";
+import { Link } from "react-router-dom";
 import heroBg from "@/assets/hero-bg.jpg";
 
 const Hero = () => {
@@ -58,18 +59,22 @@ const Hero = () => {
             transition={{ duration: 0.7, delay: 0.6 }}
             className="flex flex-col sm:flex-row gap-4"
           >
-            <Button variant="hero" size="lg" className="text-base">
-              Start Free Trial
-              <ArrowRight className="ml-2" size={18} />
-            </Button>
-            <Button
-              variant="heroOutline"
-              size="lg"
-              className="text-base border-ivory/30 text-ivory hover:bg-ivory/10 hover:text-ivory"
-            >
-              <Play size={18} className="mr-2" />
-              Watch Demo
-            </Button>
+            <Link to="/auth">
+              <Button variant="hero" size="lg" className="text-base">
+                Start Free Trial
+                <ArrowRight className="ml-2" size={18} />
+              </Button>
+            </Link>
+            <Link to="/install">
+              <Button
+                variant="heroOutline"
+                size="lg"
+                className="text-base border-ivory/30 text-ivory hover:bg-ivory/10 hover:text-ivory"
+              >
+                <Download size={18} className="mr-2" />
+                Get the App
+              </Button>
+            </Link>
           </motion.div>
 
           <motion.div

@@ -12,6 +12,9 @@ import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import CustomerPortal from "./pages/CustomerPortal";
 import VideoCall from "./pages/VideoCall";
 import OrgWebsite from "./pages/OrgWebsite";
+import Install from "./pages/Install";
+import BrowseOrganizations from "./pages/BrowseOrganizations";
+import CataloguePage from "./pages/CataloguePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +35,9 @@ const App = () => (
             <Route path="/portal" element={<CustomerPortal />} />
             <Route path="/video-call" element={<VideoCall />} />
             <Route path="/site/:slug" element={<OrgWebsite />} />
+            <Route path="/install" element={<Install />} />
+            <Route path="/browse" element={<BrowseOrganizations />} />
+            <Route path="/catalogue/:orgId" element={<CataloguePage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </AuthProvider>
