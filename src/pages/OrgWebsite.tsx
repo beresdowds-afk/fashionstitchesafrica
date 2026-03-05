@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { motion } from "framer-motion";
-import { Instagram, MessageCircle, Phone, Mail, MapPin, ExternalLink, Scissors, Calendar, BookOpen, Home, Menu, X, Sparkles, Lock, Facebook, Twitter, Linkedin, Youtube } from "lucide-react";
+import { Instagram, MessageCircle, Phone, Mail, MapPin, ExternalLink, Scissors, Calendar, BookOpen, Home, Menu, X, Sparkles, Lock, Facebook, Twitter, Linkedin, Youtube, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface OrgWebsiteData {
@@ -69,6 +69,13 @@ interface CatalogueItem {
   tags: string[] | null;
 }
 
+interface TailorData {
+  id: string;
+  display_name: string | null;
+  specialty: string | null;
+  bio: string | null;
+}
+
 const OrgWebsite = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
@@ -77,8 +84,9 @@ const OrgWebsite = () => {
   const [website, setWebsite] = useState<OrgWebsiteData | null>(null);
   const [catalogue, setCatalogue] = useState<CatalogueItem[]>([]);
   const [officers, setOfficers] = useState<OfficerData[]>([]);
+  const [tailors, setTailors] = useState<TailorData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activePage, setActivePage] = useState<"home" | "catalogue" | "booking">("home");
+  const [activePage, setActivePage] = useState<"home" | "catalogue" | "booking" | "tailors">("home");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const requireAuth = (action: string) => {
@@ -110,7 +118,7 @@ const OrgWebsite = () => {
 
       if (websiteData) setWebsite(websiteData as unknown as OrgWebsiteData);
 
-      const [catalogueResult, officersResult] = await Promise.all([
+      const [catalogueResult, officersResult, tailorsResult] = await Promise.all([
         supabase
           .from("org_catalogue_items")
           .select("*")
@@ -123,10 +131,26 @@ const OrgWebsite = () => {
           .eq("org_id", orgData.id)
           .eq("is_public", true)
           .order("display_order"),
+        supabase
+          .from("tailor_contracts")
+          .select("tailor_id")
+          .eq("org_id", orgData.id)
+          .eq("status", "active"),
       ]);
 
       setCatalogue((catalogueResult.data || []) as CatalogueItem[]);
       setOfficers((officersResult.data || []) as OfficerData[]);
+
+      // Fetch tailor profiles
+      const tailorIds = (tailorsResult.data || []).map((t: any) => t.tailor_id);
+      if (tailorIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, display_name, specialty, bio")
+          .in("id", tailorIds);
+        setTailors((profiles || []) as TailorData[]);
+      }
+
       setLoading(false);
     };
     load();
@@ -193,6 +217,7 @@ const OrgWebsite = () => {
   const navItems = [
     { id: "home" as const, label: "Home", icon: Home },
     { id: "catalogue" as const, label: "Catalogue", icon: BookOpen },
+    { id: "tailors" as const, label: "Our Tailors", icon: Users },
     { id: "booking" as const, label: "Book Appointment", icon: Calendar },
   ];
 
@@ -247,10 +272,13 @@ const OrgWebsite = () => {
 
       <div className="pt-16">
         {activePage === "home" && (
-          <HomePage org={org} website={website} brandColor={brandColor} accentColor={accentColor} fontHeading={fontHeading} officers={officers} onNavigate={setActivePage} user={user} requireAuth={requireAuth} />
+          <HomePage org={org} website={website} brandColor={brandColor} accentColor={accentColor} fontHeading={fontHeading} officers={officers} tailors={tailors} slug={slug!} onNavigate={setActivePage} user={user} requireAuth={requireAuth} />
         )}
         {activePage === "catalogue" && (
           <CataloguePage items={catalogue} currency={currency} brandColor={brandColor} accentColor={accentColor} user={user} requireAuth={requireAuth} />
+        )}
+        {activePage === "tailors" && (
+          <TailorsPage tailors={tailors} brandColor={brandColor} accentColor={accentColor} fontHeading={fontHeading} slug={slug!} />
         )}
         {activePage === "booking" && (
           <BookingPage org={org} brandColor={brandColor} accentColor={accentColor} />
@@ -332,14 +360,16 @@ const OrgWebsite = () => {
 };
 
 // ─── Home Page ───────────────────────────────────────────────────────────────
-const HomePage = ({ org, website, brandColor, accentColor, fontHeading, officers, onNavigate, user, requireAuth }: {
+const HomePage = ({ org, website, brandColor, accentColor, fontHeading, officers, tailors, slug, onNavigate, user, requireAuth }: {
   org: OrgData;
   website: OrgWebsiteData;
   brandColor: string;
   accentColor: string;
   fontHeading: string;
   officers: OfficerData[];
-  onNavigate: (p: "home" | "catalogue" | "booking") => void;
+  tailors: TailorData[];
+  slug: string;
+  onNavigate: (p: "home" | "catalogue" | "booking" | "tailors") => void;
   user: any;
   requireAuth: (action: string) => boolean;
 }) => (
@@ -563,6 +593,55 @@ const HomePage = ({ org, website, brandColor, accentColor, fontHeading, officers
       </section>
     )}
 
+    {/* Our Tailors Showcase */}
+    {tailors.length > 0 && (
+      <section className="py-24 border-t border-white/10">
+        <div className="container mx-auto px-4 lg:px-8">
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
+            <h2 className="font-bold text-3xl md:text-4xl mb-4" style={{ fontFamily: fontHeading }}>Our Tailors</h2>
+            <p className="text-gray-400 max-w-xl mx-auto">Meet the skilled artisans who bring your visions to life.</p>
+          </motion.div>
+          <div className={`grid gap-8 ${tailors.length <= 3 ? "grid-cols-1 md:grid-cols-" + tailors.length : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"}`}>
+            {tailors.slice(0, 6).map((t, i) => (
+              <motion.div
+                key={t.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+              >
+                <Link
+                  to={`/site/${slug}/tailor/${t.id}`}
+                  className="block p-6 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 hover:border-white/25 transition-all group"
+                >
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-14 h-14 rounded-xl flex items-center justify-center" style={{ background: `${brandColor}20` }}>
+                      <Scissors size={24} style={{ color: brandColor }} />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-lg group-hover:text-white transition-colors">{t.display_name || "Tailor"}</h3>
+                      {t.specialty && <span className="text-xs" style={{ color: accentColor }}>{t.specialty}</span>}
+                    </div>
+                  </div>
+                  {t.bio && <p className="text-gray-400 text-sm line-clamp-2 leading-relaxed">{t.bio}</p>}
+                  <span className="inline-block mt-4 text-sm font-medium group-hover:translate-x-1 transition-transform" style={{ color: accentColor }}>
+                    View Portfolio →
+                  </span>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+          {tailors.length > 6 && (
+            <div className="text-center mt-8">
+              <button onClick={() => onNavigate("tailors")} className="text-sm font-medium hover:underline" style={{ color: accentColor }}>
+                View All Tailors ({tailors.length}) →
+              </button>
+            </div>
+          )}
+        </div>
+      </section>
+    )}
+
     {/* CTA */}
     <section className="py-24">
       <div className="container mx-auto px-4 lg:px-8">
@@ -691,6 +770,77 @@ const CataloguePage = ({ items, currency, brandColor, accentColor, user, require
     </div>
   );
 };
+
+// ─── Tailors Page ────────────────────────────────────────────────────────────
+const TailorsPage = ({ tailors, brandColor, accentColor, fontHeading, slug }: {
+  tailors: TailorData[];
+  brandColor: string;
+  accentColor: string;
+  fontHeading: string;
+  slug: string;
+}) => (
+  <div className="container mx-auto px-4 lg:px-8 py-16">
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+      <div className="mb-12 text-center">
+        <h1 className="font-bold text-4xl md:text-5xl mb-4" style={{ fontFamily: fontHeading }}>Our Tailors</h1>
+        <p className="text-gray-400 max-w-lg mx-auto">Discover the talented artisans behind our bespoke creations. Each tailor brings unique expertise and style.</p>
+      </div>
+
+      {tailors.length === 0 ? (
+        <div className="text-center py-20 text-gray-500">
+          <Scissors size={48} className="mx-auto mb-4 opacity-30" />
+          <p>No tailors listed yet. Check back soon.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          {tailors.map((t, i) => (
+            <motion.div
+              key={t.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.08 }}
+            >
+              <Link
+                to={`/site/${slug}/tailor/${t.id}`}
+                className="block rounded-2xl border border-white/10 bg-white/5 overflow-hidden hover:border-white/25 hover:bg-white/10 transition-all group"
+              >
+                {/* Header area */}
+                <div className="h-32 relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${brandColor}20, ${accentColor}10)` }}>
+                  <svg className="absolute inset-0 w-full h-full opacity-[0.05]" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                      <pattern id={`tp-${t.id}`} x="0" y="0" width="30" height="30" patternUnits="userSpaceOnUse">
+                        <circle cx="15" cy="15" r="1" fill={accentColor} />
+                      </pattern>
+                    </defs>
+                    <rect width="100%" height="100%" fill={`url(#tp-${t.id})`} />
+                  </svg>
+                  <div className="absolute bottom-0 left-6 translate-y-1/2">
+                    <div className="w-20 h-20 rounded-xl border-4 flex items-center justify-center" style={{ borderColor: `${brandColor}40`, background: `${brandColor}20` }}>
+                      <Scissors size={32} style={{ color: brandColor }} className="opacity-60" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-6 pt-14">
+                  <h3 className="font-bold text-xl mb-1" style={{ fontFamily: fontHeading }}>{t.display_name || "Tailor"}</h3>
+                  {t.specialty && (
+                    <span className="text-xs font-medium" style={{ color: accentColor }}>{t.specialty}</span>
+                  )}
+                  {t.bio && (
+                    <p className="text-gray-400 text-sm mt-3 line-clamp-3 leading-relaxed">{t.bio}</p>
+                  )}
+                  <span className="inline-block mt-4 text-sm font-medium group-hover:translate-x-1 transition-transform" style={{ color: accentColor }}>
+                    View Portfolio →
+                  </span>
+                </div>
+              </Link>
+            </motion.div>
+          ))}
+        </div>
+      )}
+    </motion.div>
+  </div>
+);
 
 // ─── Booking Page ─────────────────────────────────────────────────────────────
 const BookingPage = ({ org, brandColor, accentColor }: {
