@@ -13,6 +13,7 @@ import {
   CheckCircle2, AlertCircle, Lock, KeyRound, Loader2, Video, Search,
   MapPin, Heart, HelpCircle, Sparkles
 } from "lucide-react";
+import FeatureGate from "@/components/shared/FeatureGate";
 import UserNotificationPreferences from "@/components/communications/UserNotificationPreferences";
 import BookMeasurementDialog from "@/components/measurements/BookMeasurementDialog";
 import MeasurementBookingsTab from "@/components/measurements/MeasurementBookingsTab";
