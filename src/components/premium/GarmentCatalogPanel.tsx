@@ -25,7 +25,7 @@ const GarmentCatalogPanel = ({ orgId, role }: GarmentCatalogPanelProps) => {
   const { toast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
   const modelFileRef = useRef<HTMLInputElement>(null);
-  const isAdmin = role === "org_admin" || role === "super_admin";
+  const isAdmin = role === "org_admin" || role === "manager" || role === "super_admin";
 
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ name: "", description: "", category: "General", price: "", tags: "" });

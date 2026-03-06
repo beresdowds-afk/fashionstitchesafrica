@@ -67,10 +67,10 @@ const OrdersTab = ({ orgId, currency, role, orgName, orgSettings }: OrdersTabPro
   const [detailOpen, setDetailOpen] = useState(false);
   const { toast } = useToast();
 
-  const canManage = role === "org_admin" || role === "super_admin";
+  const canManage = role === "org_admin" || role === "manager" || role === "super_admin";
 
   const tailors = members
-    .filter((m) => m.role === "tailor" || m.role === "org_admin")
+    .filter((m) => m.role === "tailor" || m.role === "org_admin" || m.role === "manager")
     .map((m) => ({ id: m.user_id, display_name: (m as any).profile?.display_name || null }));
 
   const filteredOrders = useMemo(() => {

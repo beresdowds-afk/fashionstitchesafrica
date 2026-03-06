@@ -87,7 +87,7 @@ const BillingQueryDashboard = ({ orgId, role, currency = "NGN" }: BillingQueryDa
     .filter(q => filter === "all" || q.status === filter)
     .filter(q => !searchTerm || q.subject.toLowerCase().includes(searchTerm.toLowerCase()));
 
-  const isAdmin = role === "org_admin" || role === "super_admin";
+  const isAdmin = role === "org_admin" || role === "manager" || role === "super_admin";
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">

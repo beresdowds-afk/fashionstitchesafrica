@@ -15,7 +15,7 @@ interface PremiumFeaturesTabProps {
 }
 
 const PremiumFeaturesTab = ({ orgId, role }: PremiumFeaturesTabProps) => {
-  const isAdmin = role === "org_admin" || role === "super_admin";
+  const isAdmin = role === "org_admin" || role === "manager" || role === "super_admin";
 
   return (
     <div>

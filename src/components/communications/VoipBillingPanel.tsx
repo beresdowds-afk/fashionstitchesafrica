@@ -32,7 +32,7 @@ const VoipBillingPanel = ({ orgId, role }: VoipBillingPanelProps) => {
     totalCreditsCharged, totalCallMinutes,
   } = useCallBilling(orgId);
   const { toast } = useToast();
-  const isAdmin = role === "org_admin" || role === "super_admin";
+  const isAdmin = role === "org_admin" || role === "manager" || role === "super_admin";
 
   const [docOpen, setDocOpen] = useState(false);
   const [docForm, setDocForm] = useState({ title: "", doc_type: "summary", content: "", tags: "" });

@@ -4663,7 +4663,7 @@ export type Database = {
       is_own_profile: { Args: { profile_id: string }; Returns: boolean }
     }
     Enums: {
-      app_role: "super_admin" | "org_admin" | "tailor" | "customer"
+      app_role: "super_admin" | "org_admin" | "manager" | "tailor" | "customer"
       order_status:
         | "pending"
         | "confirmed"
@@ -4801,7 +4801,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["super_admin", "org_admin", "tailor", "customer"],
+      app_role: ["super_admin", "org_admin", "manager", "tailor", "customer"],
       order_status: [
         "pending",
         "confirmed",

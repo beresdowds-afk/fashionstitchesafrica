@@ -22,7 +22,7 @@ const MEASUREMENT_LABELS: Record<string, string> = {
 
 const EnhancedMeasurementsPanel = ({ orgId, role }: EnhancedMeasurementsPanelProps) => {
   const { profiles, loading, deleteProfile } = useMeasurementProfiles(orgId);
-  const isAdmin = role === "org_admin" || role === "super_admin";
+  const isAdmin = role === "org_admin" || role === "manager" || role === "super_admin";
   const [selectedProfile, setSelectedProfile] = useState<any>(null);
 
   if (loading) {

@@ -559,7 +559,7 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
   const [editingItem, setEditingItem] = useState<CatalogueItem | null>(null);
   const [addingItem, setAddingItem] = useState(false);
 
-  const canEdit = role === "org_admin" || role === "super_admin";
+  const canEdit = role === "org_admin" || role === "manager" || role === "super_admin";
   const websiteUrl = `${window.location.origin}/site/${org.slug}`;
 
   const hasActivePlan = (subscription && isActiveStatus(subscription.status))

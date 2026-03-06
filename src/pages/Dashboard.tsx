@@ -36,6 +36,7 @@ import { HelpCircle } from "lucide-react";
 const roleLabels: Record<AppRole, string> = {
   super_admin: "Super Admin",
   org_admin: "Org Admin",
+  manager: "Manager",
   tailor: "Tailor",
   customer: "Customer",
 };
@@ -43,6 +44,7 @@ const roleLabels: Record<AppRole, string> = {
 const roleColors: Record<AppRole, string> = {
   super_admin: "bg-accent text-accent-foreground",
   org_admin: "bg-primary text-primary-foreground",
+  manager: "bg-primary/80 text-primary-foreground",
   tailor: "bg-secondary text-secondary-foreground",
   customer: "bg-muted text-muted-foreground",
 };
@@ -245,7 +247,7 @@ const Dashboard = () => {
           {activeTab === "orders" && <OrdersTab orgId={currentOrg.id} currency={currentOrg.currency || "NGN"} role={role} orgName={currentOrg.name} orgSettings={currentOrg} />}
           {activeTab === "customers" && <CustomersTab orgId={currentOrg.id} currency={currentOrg.currency || "NGN"} />}
           {activeTab === "registrations" && <CustomerRegistrationsTab orgId={currentOrg.id} />}
-          {activeTab === "bookings" && <MeasurementBookingsTab orgId={currentOrg.id} isAdmin={role === "org_admin" || role === "super_admin"} />}
+          {activeTab === "bookings" && <MeasurementBookingsTab orgId={currentOrg.id} isAdmin={role === "org_admin" || role === "manager" || role === "super_admin"} />}
           {activeTab === "premium" && <FeatureGate featureKey="basic_measurement" showLocked><PremiumFeaturesTab orgId={currentOrg.id} role={role} /></FeatureGate>}
           {activeTab === "logistics" && <FeatureGate featureKey="local_logistics" showLocked><LogisticsTab orgId={currentOrg.id} role={role} currency={currentOrg.currency || "NGN"} /></FeatureGate>}
           {activeTab === "disputes" && <FeatureGate featureKey="ai_disputes" showLocked><DisputesTab orgId={currentOrg.id} role={role} /></FeatureGate>}
@@ -390,14 +392,14 @@ const OverviewTab = ({ org, role }: { org: any; role: AppRole | null }) => {
       )}
 
       {/* Revenue Analysis */}
-      {(role === "org_admin" || role === "super_admin") && (
+      {(role === "org_admin" || role === "manager" || role === "super_admin") && (
         <div className="mb-6">
           <RevenueAnalysisCard orgId={org.id} currency={currency} />
         </div>
       )}
 
       {/* Exchange Rates */}
-      {(role === "org_admin" || role === "super_admin") && (
+      {(role === "org_admin" || role === "manager" || role === "super_admin") && (
         <div className="rounded-xl bg-card border border-border p-6 mb-6">
           <OrgExchangeRates />
         </div>
@@ -445,7 +447,7 @@ const OverviewTab = ({ org, role }: { org: any; role: AppRole | null }) => {
       <div className="rounded-xl bg-card border border-border p-6">
         <h3 className="font-heading font-semibold text-lg mb-2">Welcome to {org.name}</h3>
         <p className="text-muted-foreground text-sm">
-          {role === "org_admin"
+          {role === "org_admin" || role === "manager"
             ? "As an Organization Admin, you can manage team members, settings, and orders."
             : role === "tailor"
             ? "View and manage your assigned orders and production workflow."
@@ -582,7 +584,7 @@ const TailorWorkQueue = ({ orgId, userId, currency }: { orgId: string; userId: s
 const MembersTab = ({ orgId, role }: { orgId: string; role: AppRole | null }) => {
   const { members, loading, updateMemberRole, removeMember, refetch } = useOrgMembers(orgId);
   const { toast } = useToast();
-  const canManage = role === "org_admin" || role === "super_admin";
+  const canManage = role === "org_admin" || role === "manager" || role === "super_admin";
 
   const handleRoleChange = async (memberId: string, newRole: AppRole) => {
     const { error } = await updateMemberRole(memberId, newRole);
@@ -647,7 +649,8 @@ const MembersTab = ({ orgId, role }: { orgId: string; role: AppRole | null }) =>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="org_admin">Org Admin</SelectItem>
+                        <SelectItem value="org_admin">Org Admin</SelectItem>
+                          <SelectItem value="manager">Manager</SelectItem>
                           <SelectItem value="tailor">Tailor</SelectItem>
                           <SelectItem value="customer">Customer</SelectItem>
                         </SelectContent>
@@ -695,7 +698,7 @@ const SettingsTab = ({ org, role }: { org: any; role: AppRole | null }) => {
   const [invoiceLogoUrl, setInvoiceLogoUrl] = useState(org.invoice_logo_url || "");
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
-  const canEdit = role === "org_admin" || role === "super_admin";
+  const canEdit = role === "org_admin" || role === "manager" || role === "super_admin";
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
