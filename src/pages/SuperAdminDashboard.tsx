@@ -95,6 +95,7 @@ const SuperAdminDashboard = () => {
     { id: "accounts" as const, icon: UserX, label: "Account Mgmt" },
     { id: "revenue" as const, icon: TrendingUp, label: "Platform Revenue" },
     { id: "invoicing" as const, icon: ScrollText, label: "Invoicing & Payments" },
+    { id: "sub_rates" as const, icon: Crown, label: "Subscription Rates" },
     { id: "websites" as const, icon: Crown, label: "Website Requests" },
     { id: "unified_pricing" as const, icon: DollarSign, label: "Pricing Center" },
     { id: "pricing" as const, icon: Globe, label: "Website Pricing" },
@@ -207,6 +208,7 @@ const SuperAdminDashboard = () => {
           {activeTab === "accounts" && <AccountManagementPanel />}
           {activeTab === "revenue" && <PlatformRevenuePanel />}
           {activeTab === "invoicing" && <AdminInvoicingPaymentsPanel />}
+          {activeTab === "sub_rates" && <SubscriptionRatesPanel />}
           {activeTab === "websites" && <WebsiteRequestsDashboard />}
           {activeTab === "unified_pricing" && <UnifiedPricingPanel />}
           {activeTab === "pricing" && <WebsitePricingPanel />}
