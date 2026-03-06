@@ -14,9 +14,12 @@ import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { DollarSign, Smartphone, ScrollText, HelpCircle, UserX } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DollarSign, Smartphone, ScrollText, HelpCircle, UserX, Search, Trash2 } from "lucide-react";
 import TourGuide from "@/components/shared/TourGuide";
 import { useTourGuide } from "@/hooks/useTourGuide";
+import { useToast } from "@/hooks/use-toast";
 import { superAdminTourSteps } from "@/config/tourSteps";
 import {
   LogOut,
