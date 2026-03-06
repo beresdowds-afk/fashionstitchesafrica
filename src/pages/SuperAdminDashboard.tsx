@@ -33,7 +33,6 @@ import {
   TrendingUp,
   LayoutDashboard,
   Crown,
-  CheckCircle2,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
