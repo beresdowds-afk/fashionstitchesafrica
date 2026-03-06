@@ -784,10 +784,11 @@ const HomePage = ({ org, website, brandColor, accentColor, fontHeading, officers
           <h2 className="font-bold text-3xl md:text-4xl mb-4">Smart Fashion Tools</h2>
           <p className="text-gray-400 max-w-xl mx-auto">Access AI-powered measurements, virtual try-on, and seamless ordering — all from this page.</p>
         </motion.div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[
             { icon: Sparkles, title: "AI Body Measurements", desc: "Get precise measurements using your phone camera — powered by AI.", action: "ai_measurements" },
             { icon: Scissors, title: "Virtual Try-On", desc: "See how garments look on you before ordering — try styles virtually.", action: "virtual_tryon" },
+            { icon: Calendar, title: "Video Consultation", desc: "Book a live video session with a tailor for real-time style advice and fittings.", action: "video_consultation" },
             { icon: BookOpen, title: "Place an Order", desc: "Commission bespoke garments directly with tracked delivery and payments.", action: "place_order" },
           ].map((feat, i) => (
             <motion.div
