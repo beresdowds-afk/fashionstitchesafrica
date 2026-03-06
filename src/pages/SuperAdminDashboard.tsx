@@ -11,6 +11,7 @@ import MobileAppManagementPanel from "@/components/super-admin/MobileAppManageme
 import AuditLogsPanel from "@/components/super-admin/AuditLogsPanel";
 import AccountManagementPanel from "@/components/super-admin/AccountManagementPanel";
 import AdminInvoicingPaymentsPanel from "@/components/super-admin/AdminInvoicingPaymentsPanel";
+import SubscriptionRatesPanel from "@/components/super-admin/SubscriptionRatesPanel";
 import { useUserGlobalRole } from "@/hooks/useOrganization";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -54,7 +55,7 @@ const SuperAdminDashboard = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState({ orgs: 0, users: 0 });
   const [orgs, setOrgs] = useState<OrgRow[]>([]);
-  const [activeTab, setActiveTab] = useState<"overview" | "organizations" | "users" | "accounts" | "revenue" | "invoicing" | "keys" | "rates" | "websites" | "pricing" | "unified_pricing" | "backups" | "features" | "mobile" | "audit">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "organizations" | "users" | "accounts" | "revenue" | "invoicing" | "sub_rates" | "keys" | "rates" | "websites" | "pricing" | "unified_pricing" | "backups" | "features" | "mobile" | "audit">("overview");
   const tour = useTourGuide("super-admin-dashboard", superAdminTourSteps);
 
   useEffect(() => {
@@ -94,6 +95,7 @@ const SuperAdminDashboard = () => {
     { id: "accounts" as const, icon: UserX, label: "Account Mgmt" },
     { id: "revenue" as const, icon: TrendingUp, label: "Platform Revenue" },
     { id: "invoicing" as const, icon: ScrollText, label: "Invoicing & Payments" },
+    { id: "sub_rates" as const, icon: Crown, label: "Subscription Rates" },
     { id: "websites" as const, icon: Crown, label: "Website Requests" },
     { id: "unified_pricing" as const, icon: DollarSign, label: "Pricing Center" },
     { id: "pricing" as const, icon: Globe, label: "Website Pricing" },
@@ -206,6 +208,7 @@ const SuperAdminDashboard = () => {
           {activeTab === "accounts" && <AccountManagementPanel />}
           {activeTab === "revenue" && <PlatformRevenuePanel />}
           {activeTab === "invoicing" && <AdminInvoicingPaymentsPanel />}
+          {activeTab === "sub_rates" && <SubscriptionRatesPanel />}
           {activeTab === "websites" && <WebsiteRequestsDashboard />}
           {activeTab === "unified_pricing" && <UnifiedPricingPanel />}
           {activeTab === "pricing" && <WebsitePricingPanel />}
