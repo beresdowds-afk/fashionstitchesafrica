@@ -14,7 +14,7 @@ import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { DollarSign, Smartphone, ScrollText, HelpCircle } from "lucide-react";
+import { DollarSign, Smartphone, ScrollText, HelpCircle, UserX } from "lucide-react";
 import TourGuide from "@/components/shared/TourGuide";
 import { useTourGuide } from "@/hooks/useTourGuide";
 import { superAdminTourSteps } from "@/config/tourSteps";
@@ -50,7 +50,7 @@ const SuperAdminDashboard = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState({ orgs: 0, users: 0 });
   const [orgs, setOrgs] = useState<OrgRow[]>([]);
-  const [activeTab, setActiveTab] = useState<"overview" | "organizations" | "users" | "revenue" | "keys" | "rates" | "websites" | "pricing" | "backups" | "features" | "mobile" | "audit">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "organizations" | "users" | "accounts" | "revenue" | "keys" | "rates" | "websites" | "pricing" | "backups" | "features" | "mobile" | "audit">("overview");
   const tour = useTourGuide("super-admin-dashboard", superAdminTourSteps);
 
   useEffect(() => {
@@ -87,6 +87,7 @@ const SuperAdminDashboard = () => {
     { id: "overview" as const, icon: BarChart3, label: "Overview" },
     { id: "organizations" as const, icon: Building2, label: "Organizations" },
     { id: "users" as const, icon: Users, label: "Users & Roles" },
+    { id: "accounts" as const, icon: UserX, label: "Account Mgmt" },
     { id: "revenue" as const, icon: TrendingUp, label: "Platform Revenue" },
     { id: "websites" as const, icon: Crown, label: "Website Requests" },
     { id: "pricing" as const, icon: DollarSign, label: "Pricing" },
@@ -196,6 +197,7 @@ const SuperAdminDashboard = () => {
           {activeTab === "overview" && <OverviewPanel stats={stats} orgs={orgs} />}
           {activeTab === "organizations" && <OrganizationsPanel orgs={orgs} />}
           {activeTab === "users" && <UsersPanel />}
+          {activeTab === "accounts" && <AccountManagementPanel />}
           {activeTab === "revenue" && <PlatformRevenuePanel />}
           {activeTab === "websites" && <WebsiteRequestsDashboard />}
           {activeTab === "pricing" && <WebsitePricingPanel />}
