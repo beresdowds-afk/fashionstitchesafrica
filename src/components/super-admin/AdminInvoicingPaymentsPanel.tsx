@@ -19,6 +19,10 @@ import {
   ArrowUpRight,
   ArrowDownLeft,
   Filter,
+  Sparkles,
+  Shield,
+  XCircle,
+  Ruler,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
@@ -272,6 +276,8 @@ const AdminInvoicingPaymentsPanel = () => {
           { id: "invoices" as const, label: "All Invoices", icon: FileText },
           { id: "payments" as const, label: "All Payments", icon: CreditCard },
           { id: "fees" as const, label: "Fee Ledger", icon: DollarSign },
+          { id: "premium" as const, label: "Premium Revenue", icon: Sparkles },
+          { id: "verifications" as const, label: "Verifications", icon: Shield },
         ].map((tab) => (
           <button
             key={tab.id}
