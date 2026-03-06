@@ -49,23 +49,17 @@ export const useGarmentAI = (orgId: string | undefined) => {
           toast({ title: "Try-on complete!" });
 
           // Increment tryon_count
-          await supabase.rpc("increment_tryon_count" as any, { garment_id: garmentId }).catch(() => {
-            // If RPC doesn't exist, update directly
-            supabase
+          const { data: g } = await supabase
+            .from("garment_catalog")
+            .select("tryon_count")
+            .eq("id", garmentId)
+            .single();
+          if (g) {
+            await supabase
               .from("garment_catalog")
-              .select("tryon_count")
-              .eq("id", garmentId)
-              .single()
-              .then(({ data: g }) => {
-                if (g) {
-                  supabase
-                    .from("garment_catalog")
-                    .update({ tryon_count: (g.tryon_count || 0) + 1 })
-                    .eq("id", garmentId)
-                    .then(() => {});
-                }
-              });
-          });
+              .update({ tryon_count: (g.tryon_count || 0) + 1 })
+              .eq("id", garmentId);
+          }
           return;
         }
 
