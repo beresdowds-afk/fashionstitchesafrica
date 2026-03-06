@@ -66,22 +66,10 @@ const CustomerPortal = () => {
     if (!authLoading && !user) navigate("/auth?portal=1");
   }, [user, authLoading, navigate]);
 
-  // Verify registration payment callback
+  // Verify measurement payment callback
   useEffect(() => {
-    const regStatus = searchParams.get("reg_status");
     const measStatus = searchParams.get("meas_status");
     const trxref = searchParams.get("trxref") || searchParams.get("reference");
-    
-    if (regStatus === "success" && trxref) {
-      supabase.functions.invoke("verify-registration-payment", {
-        body: { reference: trxref },
-      }).then(({ data }) => {
-        if (data?.status === "success" || data?.status === "already_paid") {
-          toast({ title: "Registration payment confirmed!" });
-          setRegistration((prev: any) => prev ? { ...prev, status: "paid" } : prev);
-        }
-      });
-    }
 
     if (measStatus === "success" && trxref) {
       supabase.functions.invoke("verify-measurement-payment", {
