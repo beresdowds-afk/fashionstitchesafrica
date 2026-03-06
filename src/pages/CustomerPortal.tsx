@@ -155,48 +155,8 @@ const CustomerPortal = () => {
     navigate("/");
   };
 
-  const isPaid = registration?.status === "paid" || registration?.status === "waived";
   const selectedOrg = orgs.find((o) => o.id === selectedOrgId);
   const orgCurrency = selectedOrg?.currency || "NGN";
-
-  const localFeeAmount = exchangeRate && exchangeRate > 0 ? Math.round(5 / exchangeRate) : null;
-
-  const handlePayRegistration = async () => {
-    if (!user || !selectedOrgId) return;
-    setPayingReg(true);
-
-    try {
-      const { data, error } = await supabase.functions.invoke("initialize-registration-payment", {
-        body: {
-          org_id: selectedOrgId,
-          callback_url: `${window.location.origin}/portal?reg_status=success`,
-        },
-      });
-
-      if (error || !data?.checkout_url) {
-        // Fallback to manual if Paystack not configured
-        if (!registration) {
-          await supabase.from("customer_registrations").insert({
-            user_id: user.id,
-            org_id: selectedOrgId,
-            fee_amount: 5,
-            fee_currency: "USD",
-            local_amount: localFeeAmount,
-            local_currency: orgCurrency,
-          });
-        }
-        toast({ title: "Payment gateway not configured", description: "Contact your tailor to complete registration.", variant: "destructive" });
-        setPayingReg(false);
-        return;
-      }
-
-      // Redirect to Paystack checkout
-      window.location.href = data.checkout_url;
-    } catch {
-      toast({ title: "Error", description: "Failed to initialize payment", variant: "destructive" });
-      setPayingReg(false);
-    }
-  };
 
   // Join org via invite code
   const handleJoinOrg = async () => {
@@ -333,34 +293,8 @@ const CustomerPortal = () => {
           </motion.div>
         )}
 
-        {/* Registration Fee Gate */}
-        {!isPaid && selectedOrgId && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="rounded-xl bg-card border border-border p-8 text-center mb-8"
-          >
-            <Lock size={40} className="mx-auto text-primary mb-4" />
-            <h2 className="font-heading font-bold text-xl mb-2">Registration Fee Required</h2>
-            <p className="text-muted-foreground text-sm mb-4">
-              A one-time registration fee of <strong>$5.00 USD</strong>
-              {localFeeAmount && ` (≈ ${orgCurrency} ${localFeeAmount.toLocaleString()})`} is required to access your orders and portal features.
-            </p>
-            <Button variant="hero" onClick={handlePayRegistration} className="min-w-[200px]" disabled={payingReg}>
-              {payingReg ? (
-                <><Loader2 size={16} className="mr-2 animate-spin" /> Redirecting to Paystack...</>
-              ) : (
-                <><CreditCard size={16} className="mr-2" /> Pay with Paystack</>
-              )}
-            </Button>
-            <p className="text-[10px] text-muted-foreground mt-3">
-              Secure payment powered by Paystack
-            </p>
-          </motion.div>
-        )}
-
-        {/* Portal Content (locked behind payment) */}
-        {isPaid && selectedOrgId && (
+        {/* Portal Content (free access to dashboard) */}
+        {selectedOrgId && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
             <Tabs defaultValue="orders">
               <TabsList className="mb-6 flex-wrap">
