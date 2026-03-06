@@ -11,13 +11,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   LogOut, Package, CreditCard, Bell, Ruler, Clock, ChevronRight,
   CheckCircle2, AlertCircle, KeyRound, Loader2, Video, Search,
-  MapPin, Heart, HelpCircle, Sparkles
+  MapPin, Heart, HelpCircle, Sparkles, Crown
 } from "lucide-react";
 import FeatureGate from "@/components/shared/FeatureGate";
 import UserNotificationPreferences from "@/components/communications/UserNotificationPreferences";
 import BookMeasurementDialog from "@/components/measurements/BookMeasurementDialog";
 import MeasurementBookingsTab from "@/components/measurements/MeasurementBookingsTab";
 import WishlistReviewsPanel from "@/components/customer/WishlistReviewsPanel";
+import CustomerSubscriptionPanel from "@/components/customer/CustomerSubscriptionPanel";
 import TourGuide from "@/components/shared/TourGuide";
 import { useTourGuide } from "@/hooks/useTourGuide";
 import { customerTourSteps } from "@/config/tourSteps";
@@ -282,7 +283,7 @@ const CustomerPortal = () => {
               <TabsList className="mb-6 flex-wrap">
                 <TabsTrigger value="orders" data-tour="customer-orders-tab" className="gap-2"><Package size={14} /> My Orders</TabsTrigger>
                 <TabsTrigger value="browse" className="gap-2"><Search size={14} /> Browse</TabsTrigger>
-                <TabsTrigger value="features" className="gap-2"><Sparkles size={14} /> Features</TabsTrigger>
+                <TabsTrigger value="subscription" className="gap-2"><Crown size={14} /> Subscription</TabsTrigger>
                 <TabsTrigger value="measurements" data-tour="customer-measurements-tab" className="gap-2"><Ruler size={14} /> AI Measurements</TabsTrigger>
                 <TabsTrigger value="payments" data-tour="customer-payments-tab" className="gap-2"><CreditCard size={14} /> Payments</TabsTrigger>
                 <TabsTrigger value="wishlist" data-tour="customer-wishlist-tab" className="gap-2"><Heart size={14} /> Wishlist & Reviews</TabsTrigger>
@@ -356,9 +357,9 @@ const CustomerPortal = () => {
                 <BrowseOrgsMini navigate={navigate} user={user} />
               </TabsContent>
 
-              {/* Feature Access Requests Tab */}
-              <TabsContent value="features">
-                <FeatureRequestsTab userId={user.id} />
+              {/* Subscription Tab */}
+              <TabsContent value="subscription">
+                <CustomerSubscriptionPanel orgId={selectedOrgId} />
               </TabsContent>
 
               {/* AI Measurements Tab (Paid Feature) */}
