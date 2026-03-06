@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   LogOut, Package, CreditCard, Bell, Ruler, Clock, ChevronRight,
-  CheckCircle2, AlertCircle, Lock, KeyRound, Loader2, Video, Search,
+  CheckCircle2, AlertCircle, KeyRound, Loader2, Video, Search,
   MapPin, Heart, HelpCircle, Sparkles
 } from "lucide-react";
 import FeatureGate from "@/components/shared/FeatureGate";
@@ -108,22 +108,18 @@ const CustomerPortal = () => {
     load();
   }, [user]);
 
-  // Fetch orders, payments, registration for selected org
+  // Fetch orders and payments for selected org
   useEffect(() => {
     if (!user || !selectedOrgId) return;
     const load = async () => {
-      const [ordersRes, paymentsRes, regRes, rateRes] = await Promise.all([
+      const [ordersRes, paymentsRes] = await Promise.all([
         supabase.from("orders").select("*").eq("org_id", selectedOrgId).eq("customer_id", user.id).order("created_at", { ascending: false }),
         supabase.from("payments").select("*").eq("org_id", selectedOrgId).order("created_at", { ascending: false }),
-        supabase.from("customer_registrations").select("*").eq("org_id", selectedOrgId).eq("user_id", user.id).maybeSingle(),
-        supabase.from("exchange_rates").select("rate").eq("target_currency", "USD").single(),
       ]);
 
       setOrders(ordersRes.data || []);
       const customerOrderIds = new Set((ordersRes.data || []).map((o: any) => o.id));
       setPayments((paymentsRes.data || []).filter((p: any) => customerOrderIds.has(p.order_id)));
-      setRegistration(regRes.data);
-      if (rateRes.data) setExchangeRate(rateRes.data.rate);
     };
     load();
   }, [user, selectedOrgId]);
