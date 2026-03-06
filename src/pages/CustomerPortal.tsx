@@ -380,19 +380,21 @@ const CustomerPortal = () => {
                 <FeatureRequestsTab userId={user.id} />
               </TabsContent>
 
-              {/* AI Measurements Tab */}
+              {/* AI Measurements Tab (Paid Feature) */}
               <TabsContent value="measurements">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h2 className="font-heading font-bold text-xl">AI Measurement Sessions</h2>
-                    <BookMeasurementDialog orgId={selectedOrgId}>
-                      <Button variant="hero" size="sm">
-                        <Video size={14} className="mr-1" /> Book Session
-                      </Button>
-                    </BookMeasurementDialog>
+                <FeatureGate featureKey="basic_measurement" showLocked>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h2 className="font-heading font-bold text-xl">AI Measurement Sessions</h2>
+                      <BookMeasurementDialog orgId={selectedOrgId}>
+                        <Button variant="hero" size="sm">
+                          <Video size={14} className="mr-1" /> Book Session
+                        </Button>
+                      </BookMeasurementDialog>
+                    </div>
+                    <MeasurementBookingsTab orgId={selectedOrgId} />
                   </div>
-                  <MeasurementBookingsTab orgId={selectedOrgId} />
-                </div>
+                </FeatureGate>
               </TabsContent>
 
               {/* Payments Tab */}
@@ -430,9 +432,11 @@ const CustomerPortal = () => {
                 )}
               </TabsContent>
 
-              {/* Notifications Tab */}
+              {/* Notifications Tab (Paid Feature) */}
               <TabsContent value="notifications">
-                <UserNotificationPreferences orgId={selectedOrgId} />
+                <FeatureGate featureKey="email_notifications" showLocked>
+                  <UserNotificationPreferences orgId={selectedOrgId} />
+                </FeatureGate>
               </TabsContent>
             </Tabs>
           </motion.div>
