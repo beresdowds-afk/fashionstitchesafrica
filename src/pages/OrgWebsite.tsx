@@ -2,8 +2,12 @@ import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-import { motion } from "framer-motion";
-import { Instagram, MessageCircle, Phone, Mail, MapPin, ExternalLink, Scissors, Calendar, BookOpen, Home, Menu, X, Sparkles, Lock, Facebook, Twitter, Linkedin, Youtube, Users } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Instagram, MessageCircle, Phone, Mail, MapPin, ExternalLink, Scissors, Calendar, BookOpen,
+  Home, Menu, X, Sparkles, Lock, Facebook, Twitter, Linkedin, Youtube, Users, Download,
+  PhoneCall, MessageSquare, Send, Map, ChevronUp, Info, Globe
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface OrgWebsiteData {
@@ -76,6 +80,109 @@ interface TailorData {
   bio: string | null;
 }
 
+// ─── Floating Communication CTA ──────────────────────────────────────────────
+const FloatingCTA = ({ org, website, brandColor }: { org: OrgData; website: OrgWebsiteData; brandColor: string }) => {
+  const [expanded, setExpanded] = useState(false);
+
+  const actions = [
+    org.phone && { icon: PhoneCall, label: "VoIP Call", href: `tel:${org.phone}`, color: "#22c55e" },
+    org.email && { icon: Mail, label: "Email", href: `mailto:${org.email}`, color: "#3b82f6" },
+    org.phone && { icon: MessageSquare, label: "SMS", href: `sms:${org.phone}`, color: "#f59e0b" },
+    website.whatsapp_number && { icon: MessageCircle, label: "WhatsApp", href: `https://wa.me/${website.whatsapp_number.replace(/\D/g, "")}`, color: "#25d366" },
+  ].filter(Boolean) as { icon: any; label: string; href: string; color: string }[];
+
+  if (actions.length === 0) return null;
+
+  return (
+    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
+      <AnimatePresence>
+        {expanded && actions.map((action, i) => (
+          <motion.a
+            key={action.label}
+            href={action.href}
+            target={action.label === "WhatsApp" ? "_blank" : undefined}
+            rel="noopener noreferrer"
+            initial={{ opacity: 0, y: 20, scale: 0.8 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.8 }}
+            transition={{ delay: i * 0.05 }}
+            className="flex items-center gap-3 group"
+          >
+            <span className="hidden sm:block px-3 py-1.5 rounded-lg text-xs font-semibold text-white bg-black/80 backdrop-blur-sm shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+              {action.label}
+            </span>
+            <div
+              className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
+              style={{ background: action.color }}
+            >
+              <action.icon size={20} className="text-white" />
+            </div>
+          </motion.a>
+        ))}
+      </AnimatePresence>
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-14 h-14 rounded-full flex items-center justify-center shadow-xl hover:scale-105 transition-all"
+        style={{ background: brandColor }}
+      >
+        {expanded ? <X size={22} className="text-white" /> : <Send size={20} className="text-white" />}
+      </button>
+    </div>
+  );
+};
+
+// ─── Google Maps Link ────────────────────────────────────────────────────────
+const GoogleMapsLink = ({ address }: { address: string }) => (
+  <a
+    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-white/15 text-sm text-gray-300 hover:text-white hover:border-white/30 transition-all bg-white/5"
+  >
+    <Map size={16} className="text-red-400" />
+    View on Google Maps
+  </a>
+);
+
+// ─── Newsletter Signup ───────────────────────────────────────────────────────
+const NewsletterSignup = ({ brandColor }: { brandColor: string }) => {
+  const [email, setEmail] = useState("");
+  const [subscribed, setSubscribed] = useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (email) setSubscribed(true);
+  };
+
+  if (subscribed) {
+    return (
+      <p className="text-sm text-green-400 flex items-center gap-2">
+        <Sparkles size={14} /> Thanks for subscribing!
+      </p>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex gap-2">
+      <input
+        type="email"
+        required
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="Enter your email"
+        className="flex-1 px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 text-sm text-white placeholder:text-gray-600 focus:outline-none focus:border-white/30 transition-colors"
+      />
+      <button
+        type="submit"
+        className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
+        style={{ background: brandColor }}
+      >
+        Subscribe
+      </button>
+    </form>
+  );
+};
+
 const OrgWebsite = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
@@ -86,7 +193,7 @@ const OrgWebsite = () => {
   const [officers, setOfficers] = useState<OfficerData[]>([]);
   const [tailors, setTailors] = useState<TailorData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activePage, setActivePage] = useState<"home" | "catalogue" | "booking" | "tailors">("home");
+  const [activePage, setActivePage] = useState<"home" | "about" | "catalogue" | "booking" | "tailors">("home");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const requireAuth = (action: string) => {
@@ -141,7 +248,6 @@ const OrgWebsite = () => {
       setCatalogue((catalogueResult.data || []) as CatalogueItem[]);
       setOfficers((officersResult.data || []) as OfficerData[]);
 
-      // Fetch tailor profiles
       const tailorIds = (tailorsResult.data || []).map((t: any) => t.tailor_id);
       if (tailorIds.length > 0) {
         const { data: profiles } = await supabase
@@ -175,7 +281,6 @@ const OrgWebsite = () => {
     );
   }
 
-  // Custom integration mode — show redirect notice
   if (website.mode === "custom_integration" && website.webhook_url) {
     return (
       <div className="min-h-screen bg-[#0d0d0d] flex flex-col items-center justify-center gap-4 text-white">
@@ -216,33 +321,51 @@ const OrgWebsite = () => {
 
   const navItems = [
     { id: "home" as const, label: "Home", icon: Home },
+    { id: "about" as const, label: "About Us", icon: Info },
     { id: "catalogue" as const, label: "Catalogue", icon: BookOpen },
     { id: "tailors" as const, label: "Our Tailors", icon: Users },
     { id: "booking" as const, label: "Book Appointment", icon: Calendar },
   ];
 
+  const socialLinks = [
+    website.instagram_url && { icon: Instagram, href: website.instagram_url, label: "Instagram" },
+    website.facebook_url && { icon: Facebook, href: website.facebook_url, label: "Facebook" },
+    website.whatsapp_number && { icon: MessageCircle, href: `https://wa.me/${website.whatsapp_number.replace(/\D/g, "")}`, label: "WhatsApp" },
+    website.twitter_url && { icon: Twitter, href: website.twitter_url, label: "X (Twitter)" },
+    website.linkedin_url && { icon: Linkedin, href: website.linkedin_url, label: "LinkedIn" },
+    website.youtube_url && { icon: Youtube, href: website.youtube_url, label: "YouTube" },
+    website.tiktok_url && { icon: Globe, href: website.tiktok_url, label: "TikTok" },
+  ].filter(Boolean) as { icon: any; href: string; label: string }[];
+
   return (
     <div className="min-h-screen text-white" style={{ backgroundColor: bgColor, fontFamily: fontBody }}>
-      {/* Nav */}
+      {/* ─── Header with Logo, Banner & Menu ─── */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0d0d0d]/90 backdrop-blur-md border-b border-white/10">
+        {/* Banner strip */}
+        <div className="text-center py-1.5 text-[11px] font-medium tracking-wide" style={{ background: `${brandColor}15`, color: accentColor }}>
+          ✨ Powered by Fashion Stitches Africa — <Link to="/install" className="underline hover:no-underline">Get the App</Link>
+        </div>
         <div className="container mx-auto flex items-center justify-between h-16 px-4 lg:px-8">
           <div className="flex items-center gap-3">
             {org.logo_url ? (
-              <img src={org.logo_url} alt={org.name} className="w-8 h-8 rounded-full object-contain" />
+              <img src={org.logo_url} alt={org.name} className="w-10 h-10 rounded-full object-contain border border-white/10" />
             ) : (
-              <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: brandColor }}>
-                <Scissors size={14} className="text-white" />
+              <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ background: brandColor }}>
+                <Scissors size={16} className="text-white" />
               </div>
             )}
-            <span className="font-bold text-sm tracking-wide" style={{ color: accentColor }}>{org.name}</span>
+            <div className="flex flex-col">
+              <span className="font-bold text-sm tracking-wide" style={{ color: accentColor }}>{org.name}</span>
+              {website.tagline && <span className="text-[10px] text-gray-500 hidden sm:block">{website.tagline}</span>}
+            </div>
           </div>
 
           {/* Desktop nav */}
-          <div className="hidden md:flex items-center gap-6">
+          <div className="hidden lg:flex items-center gap-6">
             {navItems.map((item) => (
               <button
                 key={item.id}
-                onClick={() => setActivePage(item.id)}
+                onClick={() => { setActivePage(item.id); window.scrollTo(0, 0); }}
                 className={`text-sm font-medium transition-colors ${activePage === item.id ? "text-white" : "text-gray-400 hover:text-white"}`}
                 style={activePage === item.id ? { color: accentColor } : {}}
               >
@@ -251,28 +374,79 @@ const OrgWebsite = () => {
             ))}
           </div>
 
-          <button className="md:hidden text-white" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+          {/* Desktop CTA buttons */}
+          <div className="hidden lg:flex items-center gap-2">
+            {org.phone && (
+              <a href={`tel:${org.phone}`} className="w-9 h-9 rounded-full flex items-center justify-center border border-white/10 hover:border-green-500/50 transition-colors" title="Call">
+                <PhoneCall size={14} className="text-green-400" />
+              </a>
+            )}
+            {org.email && (
+              <a href={`mailto:${org.email}`} className="w-9 h-9 rounded-full flex items-center justify-center border border-white/10 hover:border-blue-500/50 transition-colors" title="Email">
+                <Mail size={14} className="text-blue-400" />
+              </a>
+            )}
+            {website.whatsapp_number && (
+              <a href={`https://wa.me/${website.whatsapp_number.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full flex items-center justify-center border border-white/10 hover:border-green-500/50 transition-colors" title="WhatsApp">
+                <MessageCircle size={14} className="text-green-400" />
+              </a>
+            )}
+          </div>
+
+          <button className="lg:hidden text-white" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
             {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
-        {mobileMenuOpen && (
-          <div className="md:hidden bg-[#111] border-t border-white/10 px-4 py-4 flex flex-col gap-4">
-            {navItems.map((item) => (
-              <button
-                key={item.id}
-                onClick={() => { setActivePage(item.id); setMobileMenuOpen(false); }}
-                className="text-left text-sm font-medium text-gray-300 hover:text-white"
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-        )}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="lg:hidden bg-[#111] border-t border-white/10 overflow-hidden"
+            >
+              <div className="px-4 py-4 flex flex-col gap-4">
+                {navItems.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => { setActivePage(item.id); setMobileMenuOpen(false); window.scrollTo(0, 0); }}
+                    className="text-left text-sm font-medium text-gray-300 hover:text-white flex items-center gap-3"
+                  >
+                    <item.icon size={16} style={{ color: accentColor }} />
+                    {item.label}
+                  </button>
+                ))}
+                {/* Mobile CTA row */}
+                <div className="flex gap-3 pt-3 border-t border-white/10">
+                  {org.phone && (
+                    <a href={`tel:${org.phone}`} className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/10 text-xs font-medium text-green-400">
+                      <PhoneCall size={14} /> Call
+                    </a>
+                  )}
+                  {org.email && (
+                    <a href={`mailto:${org.email}`} className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/10 text-xs font-medium text-blue-400">
+                      <Mail size={14} /> Email
+                    </a>
+                  )}
+                  {website.whatsapp_number && (
+                    <a href={`https://wa.me/${website.whatsapp_number.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/10 text-xs font-medium text-green-400">
+                      <MessageCircle size={14} /> WhatsApp
+                    </a>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </nav>
 
-      <div className="pt-16">
+      {/* Extra top offset for banner + nav */}
+      <div className="pt-[calc(4rem+1.75rem)]">
         {activePage === "home" && (
           <HomePage org={org} website={website} brandColor={brandColor} accentColor={accentColor} fontHeading={fontHeading} officers={officers} tailors={tailors} slug={slug!} onNavigate={setActivePage} user={user} requireAuth={requireAuth} />
+        )}
+        {activePage === "about" && (
+          <AboutPage org={org} website={website} brandColor={brandColor} accentColor={accentColor} fontHeading={fontHeading} officers={officers} />
         )}
         {activePage === "catalogue" && (
           <CataloguePage items={catalogue} currency={currency} brandColor={brandColor} accentColor={accentColor} user={user} requireAuth={requireAuth} />
@@ -285,79 +459,206 @@ const OrgWebsite = () => {
         )}
       </div>
 
-      {/* Footer */}
-      <footer className="border-t border-white/10 py-12 mt-16">
+      {/* ─── Floating Communication CTA ─── */}
+      <FloatingCTA org={org} website={website} brandColor={brandColor} />
+
+      {/* ─── Enhanced Footer ─── */}
+      <footer className="border-t border-white/10 pt-16 pb-8 mt-16">
         <div className="container mx-auto px-4 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-            <div>
-              <h4 className="font-bold text-lg mb-3" style={{ color: accentColor }}>{org.name}</h4>
-              <p className="text-gray-400 text-sm leading-relaxed">{website.tagline || org.description || "Quality tailoring services."}</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
+            {/* Brand column */}
+            <div className="lg:col-span-1">
+              <div className="flex items-center gap-3 mb-4">
+                {org.logo_url ? (
+                  <img src={org.logo_url} alt={org.name} className="w-8 h-8 rounded-full object-contain" />
+                ) : (
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: brandColor }}>
+                    <Scissors size={12} className="text-white" />
+                  </div>
+                )}
+                <span className="font-bold text-lg" style={{ color: accentColor }}>{org.name}</span>
+              </div>
+              <p className="text-gray-400 text-sm leading-relaxed mb-4">{website.tagline || org.description || "Quality tailoring services."}</p>
+
+              {/* Google Maps */}
+              {org.address && <GoogleMapsLink address={org.address} />}
             </div>
+
+            {/* Sitemap */}
             <div>
-              <h4 className="font-semibold mb-3 text-sm uppercase tracking-wider text-gray-400">Navigation</h4>
-              <div className="flex flex-col gap-2">
+              <h4 className="font-semibold mb-4 text-sm uppercase tracking-wider text-gray-400">Sitemap</h4>
+              <div className="flex flex-col gap-2.5">
                 {navItems.map((item) => (
-                  <button key={item.id} onClick={() => { setActivePage(item.id); window.scrollTo(0, 0); }} className="text-left text-gray-300 hover:text-white text-sm transition-colors">
+                  <button
+                    key={item.id}
+                    onClick={() => { setActivePage(item.id); window.scrollTo(0, 0); }}
+                    className="text-left text-gray-300 hover:text-white text-sm transition-colors flex items-center gap-2"
+                  >
+                    <item.icon size={13} style={{ color: accentColor }} />
                     {item.label}
                   </button>
                 ))}
               </div>
             </div>
+
+            {/* Contact & Social */}
             <div>
-              <h4 className="font-semibold mb-3 text-sm uppercase tracking-wider text-gray-400">Contact</h4>
-              <div className="flex flex-col gap-2 text-sm text-gray-400">
-                {org.phone && <span className="flex items-center gap-2"><Phone size={14} /> {org.phone}</span>}
-                {org.email && <span className="flex items-center gap-2"><Mail size={14} /> {org.email}</span>}
+              <h4 className="font-semibold mb-4 text-sm uppercase tracking-wider text-gray-400">Contact</h4>
+              <div className="flex flex-col gap-2.5 text-sm text-gray-400 mb-4">
+                {org.phone && <a href={`tel:${org.phone}`} className="flex items-center gap-2 hover:text-white transition-colors"><Phone size={14} /> {org.phone}</a>}
+                {org.email && <a href={`mailto:${org.email}`} className="flex items-center gap-2 hover:text-white transition-colors"><Mail size={14} /> {org.email}</a>}
                 {org.address && <span className="flex items-center gap-2"><MapPin size={14} /> {org.address}</span>}
-                <div className="flex gap-3 mt-2">
-                  {website.instagram_url && (
-                    <a href={website.instagram_url} target="_blank" rel="noopener noreferrer" className="hover:text-white">
-                      <Instagram size={18} />
+              </div>
+              {/* Social links */}
+              {socialLinks.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {socialLinks.map((s) => (
+                    <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full border border-white/10 flex items-center justify-center text-gray-400 hover:text-white hover:border-white/30 transition-colors" title={s.label}>
+                      <s.icon size={16} />
                     </a>
-                  )}
-                  {website.facebook_url && (
-                    <a href={website.facebook_url} target="_blank" rel="noopener noreferrer" className="hover:text-white">
-                      <Facebook size={18} />
-                    </a>
-                  )}
-                  {website.whatsapp_number && (
-                    <a href={`https://wa.me/${website.whatsapp_number.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" className="hover:text-white">
-                      <MessageCircle size={18} />
-                    </a>
-                  )}
-                  {website.twitter_url && (
-                    <a href={website.twitter_url} target="_blank" rel="noopener noreferrer" className="hover:text-white">
-                      <Twitter size={18} />
-                    </a>
-                  )}
-                  {website.linkedin_url && (
-                    <a href={website.linkedin_url} target="_blank" rel="noopener noreferrer" className="hover:text-white">
-                      <Linkedin size={18} />
-                    </a>
-                  )}
-                  {website.tiktok_url && (
-                    <a href={website.tiktok_url} target="_blank" rel="noopener noreferrer" className="hover:text-white">
-                      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.88-2.88 2.89 2.89 0 0 1 2.88-2.88c.28 0 .54.04.8.1V9.01a6.37 6.37 0 0 0-.8-.05 6.34 6.34 0 0 0-6.34 6.34A6.34 6.34 0 0 0 9.49 21.64a6.34 6.34 0 0 0 6.34-6.34V9.06a8.16 8.16 0 0 0 4.77 1.52V7.15a4.82 4.82 0 0 1-1.01-.46z"/></svg>
-                    </a>
-                  )}
-                  {website.youtube_url && (
-                    <a href={website.youtube_url} target="_blank" rel="noopener noreferrer" className="hover:text-white">
-                      <Youtube size={18} />
-                    </a>
-                  )}
+                  ))}
                 </div>
+              )}
+            </div>
+
+            {/* Newsletter & App Download */}
+            <div>
+              <h4 className="font-semibold mb-4 text-sm uppercase tracking-wider text-gray-400">Stay Updated</h4>
+              <p className="text-sm text-gray-500 mb-3">Subscribe for latest styles, offers, and updates.</p>
+              <NewsletterSignup brandColor={brandColor} />
+
+              {/* App Download */}
+              <div className="mt-6 p-4 rounded-xl border border-white/10 bg-white/5">
+                <p className="text-xs text-gray-400 mb-2">Get the Fashion Stitches Africa app</p>
+                <Link
+                  to="/install"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90"
+                  style={{ background: brandColor }}
+                >
+                  <Download size={14} />
+                  Download App
+                </Link>
+                <p className="text-[10px] text-gray-600 mt-2">Register a free FSA account to access all features</p>
               </div>
             </div>
           </div>
-          <div className="border-t border-white/10 pt-6 flex flex-col md:flex-row items-center justify-between gap-2 text-xs text-gray-500">
+
+          {/* Bottom bar */}
+          <div className="border-t border-white/10 pt-6 flex flex-col md:flex-row items-center justify-between gap-3 text-xs text-gray-500">
             <span>© {new Date().getFullYear()} {org.name}. All rights reserved.</span>
-            <span>Powered by <a href="/" className="hover:text-white transition-colors">Fashion Stitches Africa</a></span>
+            <div className="flex items-center gap-4">
+              <Link to="/auth" className="hover:text-white transition-colors">Create FSA Account</Link>
+              <span>·</span>
+              <Link to="/" className="hover:text-white transition-colors">Fashion Stitches Africa</Link>
+            </div>
           </div>
         </div>
       </footer>
+
+      {/* Scroll to top */}
+      <ScrollToTop brandColor={brandColor} />
     </div>
   );
 };
+
+// ─── Scroll To Top ───────────────────────────────────────────────────────────
+const ScrollToTop = ({ brandColor }: { brandColor: string }) => {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setVisible(window.scrollY > 600);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  if (!visible) return null;
+  return (
+    <button
+      onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+      className="fixed bottom-6 left-6 z-50 w-10 h-10 rounded-full flex items-center justify-center border border-white/10 bg-black/60 backdrop-blur-sm hover:scale-110 transition-transform"
+    >
+      <ChevronUp size={18} className="text-white" />
+    </button>
+  );
+};
+
+// ─── About Us Page ───────────────────────────────────────────────────────────
+const AboutPage = ({ org, website, brandColor, accentColor, fontHeading, officers }: {
+  org: OrgData;
+  website: OrgWebsiteData;
+  brandColor: string;
+  accentColor: string;
+  fontHeading: string;
+  officers: OfficerData[];
+}) => (
+  <div className="container mx-auto px-4 lg:px-8 py-16">
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+      <div className="mb-16 text-center">
+        <h1 className="font-bold text-4xl md:text-5xl mb-4" style={{ fontFamily: fontHeading }}>About {org.name}</h1>
+        <p className="text-gray-400 max-w-xl mx-auto">{org.description || website.tagline || "Crafting excellence in African fashion."}</p>
+      </div>
+
+      {/* Vision & Mission */}
+      {(website.vision_statement || website.mission_statement) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-20">
+          {website.vision_statement && (
+            <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="p-8 rounded-2xl border border-white/10 bg-white/5">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="h-px w-8" style={{ background: accentColor }} />
+                <span className="text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: accentColor }}>Our Vision</span>
+              </div>
+              <p className="text-lg text-gray-300 leading-relaxed">{website.vision_statement}</p>
+            </motion.div>
+          )}
+          {website.mission_statement && (
+            <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="p-8 rounded-2xl border border-white/10 bg-white/5">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="h-px w-8" style={{ background: brandColor }} />
+                <span className="text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: brandColor }}>Our Mission</span>
+              </div>
+              <p className="text-lg text-gray-300 leading-relaxed">{website.mission_statement}</p>
+            </motion.div>
+          )}
+        </div>
+      )}
+
+      {/* Officers / Team */}
+      {officers.length > 0 && (
+        <div>
+          <div className="text-center mb-12">
+            <h2 className="font-bold text-3xl mb-4" style={{ fontFamily: fontHeading }}>Meet Our Team</h2>
+            <p className="text-gray-400 max-w-xl mx-auto">The people behind the craft.</p>
+          </div>
+          <div className={`grid gap-8 ${officers.length <= 3 ? `grid-cols-1 md:grid-cols-${officers.length}` : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"}`}>
+            {officers.map((officer, i) => (
+              <motion.div
+                key={officer.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="text-center group"
+              >
+                <div className="w-32 h-32 mx-auto rounded-full overflow-hidden border-2 border-white/10 mb-5 group-hover:border-white/30 transition-colors">
+                  {officer.photo_url ? (
+                    <img src={officer.photo_url} alt={officer.full_name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-white/5">
+                      <span className="text-3xl font-bold text-gray-500">
+                        {officer.full_name.split(" ").map(n => n[0]).join("").slice(0, 2)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <h3 className="font-bold text-lg mb-1" style={{ fontFamily: fontHeading }}>{officer.full_name}</h3>
+                <p className="text-sm mb-2" style={{ color: accentColor }}>{officer.title}</p>
+                {officer.bio && <p className="text-gray-400 text-sm leading-relaxed max-w-xs mx-auto">{officer.bio}</p>}
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      )}
+    </motion.div>
+  </div>
+);
 
 // ─── Home Page ───────────────────────────────────────────────────────────────
 const HomePage = ({ org, website, brandColor, accentColor, fontHeading, officers, tailors, slug, onNavigate, user, requireAuth }: {
@@ -369,14 +670,13 @@ const HomePage = ({ org, website, brandColor, accentColor, fontHeading, officers
   officers: OfficerData[];
   tailors: TailorData[];
   slug: string;
-  onNavigate: (p: "home" | "catalogue" | "booking" | "tailors") => void;
+  onNavigate: (p: "home" | "about" | "catalogue" | "booking" | "tailors") => void;
   user: any;
   requireAuth: (action: string) => boolean;
 }) => (
   <div>
     {/* Hero */}
     <section className="relative min-h-screen flex items-center overflow-hidden">
-      {/* Background */}
       {website.hero_image_url ? (
         <div className="absolute inset-0">
           <img src={website.hero_image_url} alt="Hero" className="w-full h-full object-cover opacity-30" />
@@ -386,7 +686,6 @@ const HomePage = ({ org, website, brandColor, accentColor, fontHeading, officers
         <div className="absolute inset-0">
           <div className="absolute inset-0" style={{ background: `radial-gradient(ellipse at 30% 50%, ${brandColor}22 0%, transparent 60%)` }} />
           <div className="absolute inset-0" style={{ background: `radial-gradient(ellipse at 80% 20%, ${accentColor}11 0%, transparent 50%)` }} />
-          {/* Decorative pattern */}
           <svg className="absolute inset-0 w-full h-full opacity-5" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <pattern id="ankara" x="0" y="0" width="60" height="60" patternUnits="userSpaceOnUse">
@@ -420,7 +719,7 @@ const HomePage = ({ org, website, brandColor, accentColor, fontHeading, officers
               {website.hero_description}
             </p>
           )}
-          <div className="flex flex-wrap gap-4">
+          <div className="flex flex-wrap gap-4 mb-6">
             <button
               onClick={() => onNavigate("booking")}
               className="px-8 py-4 rounded-full font-semibold text-sm uppercase tracking-widest transition-all hover:scale-105"
@@ -436,11 +735,13 @@ const HomePage = ({ org, website, brandColor, accentColor, fontHeading, officers
               View Catalogue
             </button>
           </div>
+          {/* Google Maps quick link on hero */}
+          {org.address && <GoogleMapsLink address={org.address} />}
         </motion.div>
       </div>
     </section>
 
-    {/* Services section */}
+    {/* Services */}
     <section className="py-24 border-t border-white/10">
       <div className="container mx-auto px-4 lg:px-8">
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
@@ -472,7 +773,7 @@ const HomePage = ({ org, website, brandColor, accentColor, fontHeading, officers
       </div>
     </section>
 
-    {/* FSA Platform Features — visible but auth-gated */}
+    {/* FSA Platform Features */}
     <section className="py-24 border-t border-white/10">
       <div className="container mx-auto px-4 lg:px-8">
         <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
@@ -521,77 +822,6 @@ const HomePage = ({ org, website, brandColor, accentColor, fontHeading, officers
         )}
       </div>
     </section>
-
-    {/* Officers / Team Section */}
-    {officers.length > 0 && (
-      <section className="py-24 border-t border-white/10">
-        <div className="container mx-auto px-4 lg:px-8">
-          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="text-center mb-16">
-            <h2 className="font-bold text-3xl md:text-4xl mb-4" style={{ fontFamily: fontHeading }}>Meet Our Team</h2>
-            <p className="text-gray-400 max-w-xl mx-auto">The people behind the craft.</p>
-          </motion.div>
-          <div className={`grid gap-8 ${officers.length <= 3 ? `grid-cols-1 md:grid-cols-${officers.length}` : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"}`}>
-            {officers.map((officer, i) => (
-              <motion.div
-                key={officer.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="text-center group"
-              >
-                <div className="w-32 h-32 mx-auto rounded-full overflow-hidden border-2 border-white/10 mb-5 group-hover:border-white/30 transition-colors">
-                  {officer.photo_url ? (
-                    <img src={officer.photo_url} alt={officer.full_name} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-white/5">
-                      <span className="text-3xl font-bold text-gray-500">
-                        {officer.full_name.split(" ").map(n => n[0]).join("").slice(0, 2)}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <h3 className="font-bold text-lg mb-1" style={{ fontFamily: fontHeading }}>{officer.full_name}</h3>
-                <p className="text-sm mb-2" style={{ color: accentColor }}>{officer.title}</p>
-                {officer.bio && <p className="text-gray-400 text-sm leading-relaxed max-w-xs mx-auto">{officer.bio}</p>}
-                <div className="flex items-center justify-center gap-3 mt-3 text-xs text-gray-500">
-                  {officer.email && <a href={`mailto:${officer.email}`} className="hover:text-white transition-colors">{officer.email}</a>}
-                  {officer.phone && <span>{officer.phone}</span>}
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-    )}
-
-    {/* Vision & Mission */}
-    {(website.vision_statement || website.mission_statement) && (
-      <section className="py-24 border-t border-white/10">
-        <div className="container mx-auto px-4 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-            {website.vision_statement && (
-              <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}>
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="h-px w-8" style={{ background: accentColor }} />
-                  <span className="text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: accentColor }}>Our Vision</span>
-                </div>
-                <p className="text-lg text-gray-300 leading-relaxed">{website.vision_statement}</p>
-              </motion.div>
-            )}
-            {website.mission_statement && (
-              <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }}>
-                <div className="flex items-center gap-2 mb-4">
-                  <div className="h-px w-8" style={{ background: brandColor }} />
-                  <span className="text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: brandColor }}>Our Mission</span>
-                </div>
-                <p className="text-lg text-gray-300 leading-relaxed">{website.mission_statement}</p>
-              </motion.div>
-            )}
-          </div>
-        </div>
-      </section>
-    )}
 
     {/* Our Tailors Showcase */}
     {tailors.length > 0 && (
@@ -688,7 +918,6 @@ const CataloguePage = ({ items, currency, brandColor, accentColor, user, require
           <p className="text-gray-400 max-w-lg mx-auto">Explore our collections — every piece is available as a bespoke commission tailored to your measurements.</p>
         </div>
 
-        {/* Categories */}
         <div className="flex flex-wrap gap-2 justify-center mb-10">
           {categories.map((cat) => (
             <button
@@ -717,7 +946,6 @@ const CataloguePage = ({ items, currency, brandColor, accentColor, user, require
                 transition={{ delay: i * 0.06 }}
                 className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden hover:border-white/25 transition-all group"
               >
-                {/* Image placeholder */}
                 <div className="h-56 bg-white/5 flex items-center justify-center relative overflow-hidden">
                   {item.image_url ? (
                     <img src={item.image_url} alt={item.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
@@ -783,7 +1011,7 @@ const TailorsPage = ({ tailors, brandColor, accentColor, fontHeading, slug }: {
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
       <div className="mb-12 text-center">
         <h1 className="font-bold text-4xl md:text-5xl mb-4" style={{ fontFamily: fontHeading }}>Our Tailors</h1>
-        <p className="text-gray-400 max-w-lg mx-auto">Discover the talented artisans behind our bespoke creations. Each tailor brings unique expertise and style.</p>
+        <p className="text-gray-400 max-w-lg mx-auto">Discover the talented artisans behind our bespoke creations.</p>
       </div>
 
       {tailors.length === 0 ? (
@@ -804,7 +1032,6 @@ const TailorsPage = ({ tailors, brandColor, accentColor, fontHeading, slug }: {
                 to={`/site/${slug}/tailor/${t.id}`}
                 className="block rounded-2xl border border-white/10 bg-white/5 overflow-hidden hover:border-white/25 hover:bg-white/10 transition-all group"
               >
-                {/* Header area */}
                 <div className="h-32 relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${brandColor}20, ${accentColor}10)` }}>
                   <svg className="absolute inset-0 w-full h-full opacity-[0.05]" xmlns="http://www.w3.org/2000/svg">
                     <defs>
