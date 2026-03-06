@@ -357,9 +357,9 @@ const CustomerPortal = () => {
                 <BrowseOrgsMini navigate={navigate} user={user} />
               </TabsContent>
 
-              {/* Feature Access Requests Tab */}
-              <TabsContent value="features">
-                <FeatureRequestsTab userId={user.id} />
+              {/* Subscription Tab */}
+              <TabsContent value="subscription">
+                <CustomerSubscriptionPanel orgId={selectedOrgId} />
               </TabsContent>
 
               {/* AI Measurements Tab (Paid Feature) */}
