@@ -51,19 +51,20 @@ interface OrgRow {
 
 const SuperAdminDashboard = () => {
   const { user, loading: authLoading, signOut } = useAuth();
-  const { isSuperAdmin, loading: roleLoading } = useUserGlobalRole();
+  const { isSuperAdmin, isSuperAssistant, loading: roleLoading } = useUserGlobalRole();
   const navigate = useNavigate();
   const [stats, setStats] = useState({ orgs: 0, users: 0 });
   const [orgs, setOrgs] = useState<OrgRow[]>([]);
+  const hasAccess = isSuperAdmin || isSuperAssistant;
   const [activeTab, setActiveTab] = useState<"overview" | "organizations" | "users" | "accounts" | "revenue" | "invoicing" | "sub_rates" | "keys" | "rates" | "websites" | "pricing" | "unified_pricing" | "backups" | "features" | "mobile" | "audit">("overview");
   const tour = useTourGuide("super-admin-dashboard", superAdminTourSteps);
 
   useEffect(() => {
     if (!authLoading && !roleLoading) {
       if (!user) navigate("/auth");
-      else if (!isSuperAdmin) navigate("/dashboard");
+      else if (!hasAccess) navigate("/dashboard");
     }
-  }, [user, authLoading, isSuperAdmin, roleLoading, navigate]);
+  }, [user, authLoading, hasAccess, roleLoading, navigate]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -75,8 +76,8 @@ const SuperAdminDashboard = () => {
       setStats({ orgs: orgCount || 0, users: memberCount || 0 });
       setOrgs((orgData as OrgRow[]) || []);
     };
-    if (isSuperAdmin) fetchData();
-  }, [isSuperAdmin]);
+    if (hasAccess) fetchData();
+  }, [hasAccess]);
 
   if (authLoading || roleLoading) {
     return (
@@ -86,7 +87,10 @@ const SuperAdminDashboard = () => {
     );
   }
 
-  if (!isSuperAdmin) return null;
+  if (!hasAccess) return null;
+
+  // Tabs restricted from super_assistant: pricing, features, subscription rates
+  const restrictedTabs = new Set(["sub_rates", "unified_pricing", "pricing", "features"]);
 
   const sidebarItems = [
     { id: "overview" as const, icon: BarChart3, label: "Overview" },
@@ -105,7 +109,7 @@ const SuperAdminDashboard = () => {
     { id: "features" as const, icon: Shield, label: "Feature Flags" },
     { id: "mobile" as const, icon: Smartphone, label: "Mobile App" },
     { id: "audit" as const, icon: ScrollText, label: "Audit Logs" },
-  ];
+  ].filter(item => isSuperAdmin || !restrictedTabs.has(item.id));
 
   return (
     <div className="min-h-screen bg-background">
