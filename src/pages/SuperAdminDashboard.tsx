@@ -395,6 +395,7 @@ const OrganizationsPanel = ({ orgs }: { orgs: OrgRow[] }) => {
 /* ───────────── Users & Roles Panel ───────────── */
 const UsersPanel = () => {
   const { user } = useAuth();
+  const { isSuperAdmin } = useUserGlobalRole();
   const [members, setMembers] = useState<
     { user_id: string; member_id: string; role: string; org_id: string; org_name: string; display_name: string | null }[]
   >([]);
@@ -403,6 +404,7 @@ const UsersPanel = () => {
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<"org_roles" | "fsa_roles">("fsa_roles");
   const [addEmail, setAddEmail] = useState("");
+  const [addRole, setAddRole] = useState<"super_admin" | "super_assistant">("super_assistant");
   const [adding, setAdding] = useState(false);
   const { toast } = useToast();
 
@@ -491,12 +493,11 @@ const UsersPanel = () => {
     }
   };
 
-  const handleGrantSuperAdmin = async () => {
+  const handleGrantGlobalRole = async () => {
     const trimmed = addEmail.trim().toLowerCase();
     if (!trimmed) return;
     setAdding(true);
 
-    // Find user by display_name (email fallback from signup)
     const { data: profiles } = await supabase
       .from("profiles")
       .select("id, display_name");
@@ -508,19 +509,18 @@ const UsersPanel = () => {
       return;
     }
 
-    // Check if already super_admin
-    const existing = globalRoles.find((r) => r.user_id === matched.id && r.role === "super_admin");
+    const existing = globalRoles.find((r) => r.user_id === matched.id && r.role === addRole);
     if (existing) {
-      toast({ title: "Already a Super Admin", variant: "destructive" });
+      toast({ title: `Already a ${addRole.replace("_", " ")}`, variant: "destructive" });
       setAdding(false);
       return;
     }
 
-    const { error } = await supabase.from("user_roles").insert({ user_id: matched.id, role: "super_admin" });
+    const { error } = await supabase.from("user_roles").insert({ user_id: matched.id, role: addRole });
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Super Admin role granted", description: `${matched.display_name} is now a Super Admin.` });
+      toast({ title: "Role granted", description: `${matched.display_name} is now a ${addRole.replace("_", " ")}.` });
       setAddEmail("");
       await fetchGlobalRoles();
     }
