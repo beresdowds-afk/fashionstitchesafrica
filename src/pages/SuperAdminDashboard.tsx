@@ -533,6 +533,7 @@ const UsersPanel = () => {
 
   const roleColors: Record<string, string> = {
     super_admin: "bg-accent/10 text-accent",
+    super_assistant: "bg-accent/10 text-accent",
     org_admin: "bg-primary/10 text-primary",
     manager: "bg-primary/10 text-primary",
     tailor: "bg-secondary/10 text-secondary",
