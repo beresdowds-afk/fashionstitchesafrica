@@ -365,10 +365,11 @@ const DemoHomePage = ({ brandColor, accentColor, fontHeading, onNavigate }: { br
           <h2 className="font-bold text-3xl md:text-4xl mb-4">Smart Fashion Tools</h2>
           <p className="text-gray-400 max-w-xl mx-auto">AI-powered measurements, virtual try-on, and seamless ordering.</p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {[
             { icon: Sparkles, title: "AI Body Measurements", desc: "Get precise measurements using your phone camera — powered by AI." },
             { icon: Scissors, title: "Virtual Try-On", desc: "See how garments look on you before ordering — try styles virtually." },
+            { icon: Calendar, title: "Video Consultation", desc: "Book a live video session with a tailor for real-time style advice and fittings." },
             { icon: BookOpen, title: "Place an Order", desc: "Commission bespoke garments directly with tracked delivery and payments." },
           ].map((feat, i) => (
             <motion.div key={feat.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }} className="relative p-8 rounded-2xl border border-purple-500/20 bg-purple-500/5 hover:bg-purple-500/10 transition-colors cursor-pointer group">
