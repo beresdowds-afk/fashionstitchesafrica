@@ -7,8 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Upload, ShirtIcon, Globe, Camera, Trash2, RefreshCw, Download } from "lucide-react";
+import { Plus, Upload, ShirtIcon, Globe, Camera, Trash2, RefreshCw, Download, Sparkles, Wand2, Image as ImageIcon, Loader2 } from "lucide-react";
 import { useGarmentCatalog, GarmentItem } from "@/hooks/useGarmentCatalog";
+import { useGarmentAI } from "@/hooks/useGarmentAI";
 import { useToast } from "@/hooks/use-toast";
 
 interface GarmentCatalogPanelProps {
@@ -19,14 +20,18 @@ interface GarmentCatalogPanelProps {
 const CATEGORIES = ["Suits", "Shirts", "Trousers", "Dresses", "Traditional", "Accessories", "Outerwear", "General"];
 
 const GarmentCatalogPanel = ({ orgId, role }: GarmentCatalogPanelProps) => {
-  const { garments, loading, addGarment, updateGarment, deleteGarment, uploadGarmentImage, syncToCatalog } = useGarmentCatalog(orgId);
+  const { garments, loading, addGarment, updateGarment, deleteGarment, uploadGarmentImage, syncToCatalog, refetch } = useGarmentCatalog(orgId);
+  const { tryonLoading, enhanceLoading, tryonResult, startTryon, enhancePhoto, clearTryonResult } = useGarmentAI(orgId);
   const { toast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
+  const modelFileRef = useRef<HTMLInputElement>(null);
   const isAdmin = role === "org_admin" || role === "super_admin";
 
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ name: "", description: "", category: "General", price: "", tags: "" });
   const [uploading, setUploading] = useState(false);
+  const [tryonTarget, setTryonTarget] = useState<GarmentItem | null>(null);
+  const [showEnhanceMenu, setShowEnhanceMenu] = useState<string | null>(null);
 
   const handleAdd = async () => {
     if (!form.name.trim()) return;
@@ -68,12 +73,59 @@ const GarmentCatalogPanel = ({ orgId, role }: GarmentCatalogPanelProps) => {
     await updateGarment(id, { tryon_enabled: enabled });
   };
 
+  const handleModelUploadForTryon = async (file: File) => {
+    if (!tryonTarget?.image_url) return;
+    // Upload model image temporarily
+    const path = `${orgId}/tryon-models/${Date.now()}_${file.name}`;
+    const { error: uploadError } = await (await import("@/integrations/supabase/client")).supabase.storage
+      .from("garment-images")
+      .upload(path, file, { upsert: true });
+    if (uploadError) {
+      toast({ title: "Failed to upload model photo", variant: "destructive" });
+      return;
+    }
+    const { data } = (await import("@/integrations/supabase/client")).supabase.storage
+      .from("garment-images")
+      .getPublicUrl(path);
+
+    startTryon(tryonTarget.id, tryonTarget.image_url, data.publicUrl);
+    setTryonTarget(null);
+  };
+
+  const handleEnhance = async (garment: GarmentItem, action: "remove_background" | "enhance" | "stage") => {
+    if (!garment.image_url) {
+      toast({ title: "Upload an image first", variant: "destructive" });
+      return;
+    }
+    setShowEnhanceMenu(null);
+    const url = await enhancePhoto(garment.id, garment.image_url, action);
+    if (url) refetch();
+  };
+
   if (loading) {
     return <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
   }
 
   return (
     <div className="space-y-6">
+      {/* Try-on result dialog */}
+      {tryonResult && (
+        <Dialog open={!!tryonResult} onOpenChange={() => clearTryonResult()}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader><DialogTitle>Virtual Try-On Result</DialogTitle></DialogHeader>
+            <div className="space-y-3">
+              <img src={tryonResult.url} alt="Try-on result" className="w-full rounded-lg" />
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={() => window.open(tryonResult.url, "_blank")}>
+                  <Download size={14} className="mr-1" /> Download
+                </Button>
+                <Button variant="outline" size="sm" onClick={clearTryonResult}>Close</Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
       <Card className="p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
@@ -115,7 +167,58 @@ const GarmentCatalogPanel = ({ orgId, role }: GarmentCatalogPanelProps) => {
             {garments.map(g => (
               <div key={g.id} className="rounded-lg border border-border overflow-hidden">
                 {g.image_url ? (
-                  <img src={g.image_url} alt={g.name} className="w-full h-40 object-cover" />
+                  <div className="relative group">
+                    <img src={g.image_url} alt={g.name} className="w-full h-40 object-cover" />
+                    {/* AI overlay buttons */}
+                    {isAdmin && (
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                        {g.tryon_enabled && (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            className="text-xs"
+                            disabled={tryonLoading === g.id}
+                            onClick={() => setTryonTarget(g)}
+                          >
+                            {tryonLoading === g.id ? (
+                              <Loader2 size={12} className="mr-1 animate-spin" />
+                            ) : (
+                              <Sparkles size={12} className="mr-1" />
+                            )}
+                            Try-On
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="text-xs"
+                          disabled={enhanceLoading === g.id}
+                          onClick={() => setShowEnhanceMenu(showEnhanceMenu === g.id ? null : g.id)}
+                        >
+                          {enhanceLoading === g.id ? (
+                            <Loader2 size={12} className="mr-1 animate-spin" />
+                          ) : (
+                            <Wand2 size={12} className="mr-1" />
+                          )}
+                          Enhance
+                        </Button>
+                      </div>
+                    )}
+                    {/* Enhance submenu */}
+                    {showEnhanceMenu === g.id && (
+                      <div className="absolute bottom-0 left-0 right-0 bg-background/95 backdrop-blur-sm border-t border-border p-2 space-y-1">
+                        <Button size="sm" variant="ghost" className="w-full justify-start text-xs h-7" onClick={() => handleEnhance(g, "remove_background")}>
+                          <ImageIcon size={10} className="mr-1.5" /> Remove Background
+                        </Button>
+                        <Button size="sm" variant="ghost" className="w-full justify-start text-xs h-7" onClick={() => handleEnhance(g, "enhance")}>
+                          <Wand2 size={10} className="mr-1.5" /> Studio Lighting
+                        </Button>
+                        <Button size="sm" variant="ghost" className="w-full justify-start text-xs h-7" onClick={() => handleEnhance(g, "stage")}>
+                          <Sparkles size={10} className="mr-1.5" /> AI Product Staging
+                        </Button>
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <div className="w-full h-40 bg-muted/30 flex flex-col items-center justify-center cursor-pointer"
                     onClick={() => { fileRef.current?.setAttribute("data-garment-id", g.id); fileRef.current?.click(); }}>
@@ -172,7 +275,50 @@ const GarmentCatalogPanel = ({ orgId, role }: GarmentCatalogPanelProps) => {
           const gId = fileRef.current?.getAttribute("data-garment-id");
           if (file && gId) handleImageUpload(gId, file);
         }} />
+
+        {/* Model photo upload for try-on */}
+        <input ref={modelFileRef} type="file" accept="image/*" className="hidden" onChange={e => {
+          const file = e.target.files?.[0];
+          if (file) handleModelUploadForTryon(file);
+        }} />
       </Card>
+
+      {/* Try-on model upload dialog */}
+      {tryonTarget && (
+        <Dialog open={!!tryonTarget} onOpenChange={() => setTryonTarget(null)}>
+          <DialogContent>
+            <DialogHeader><DialogTitle>Virtual Try-On</DialogTitle></DialogHeader>
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Upload a model photo to see how <strong>{tryonTarget.name}</strong> looks when worn. 
+                The AI will transfer the garment onto the model photo.
+              </p>
+              <div className="flex items-center gap-4">
+                <div className="flex-1 text-center">
+                  <img src={tryonTarget.image_url!} alt={tryonTarget.name} className="w-24 h-24 object-cover rounded-lg mx-auto mb-1" />
+                  <span className="text-xs text-muted-foreground">Garment</span>
+                </div>
+                <Sparkles size={20} className="text-primary" />
+                <div className="flex-1 text-center">
+                  <div
+                    className="w-24 h-24 rounded-lg bg-muted/30 border-2 border-dashed border-border flex items-center justify-center mx-auto mb-1 cursor-pointer hover:border-primary transition-colors"
+                    onClick={() => modelFileRef.current?.click()}
+                  >
+                    <Upload size={20} className="text-muted-foreground" />
+                  </div>
+                  <span className="text-xs text-muted-foreground">Model photo</span>
+                </div>
+              </div>
+              <p className="text-[10px] text-muted-foreground text-center">
+                Cost: 5 credits per try-on • Best results with full-body front-facing photos
+              </p>
+              <Button variant="outline" className="w-full" onClick={() => modelFileRef.current?.click()}>
+                <Upload size={14} className="mr-1" /> Select Model Photo
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };
