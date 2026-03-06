@@ -54,7 +54,7 @@ const SuperAdminDashboard = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState({ orgs: 0, users: 0 });
   const [orgs, setOrgs] = useState<OrgRow[]>([]);
-  const [activeTab, setActiveTab] = useState<"overview" | "organizations" | "users" | "accounts" | "revenue" | "keys" | "rates" | "websites" | "pricing" | "unified_pricing" | "backups" | "features" | "mobile" | "audit">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "organizations" | "users" | "accounts" | "revenue" | "invoicing" | "keys" | "rates" | "websites" | "pricing" | "unified_pricing" | "backups" | "features" | "mobile" | "audit">("overview");
   const tour = useTourGuide("super-admin-dashboard", superAdminTourSteps);
 
   useEffect(() => {
