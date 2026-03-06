@@ -154,6 +154,12 @@ const AdminInvoicingPaymentsPanel = () => {
     .filter(f => f.fee_type === "org_admin_fee")
     .reduce((s, f) => s + Number(f.amount), 0);
   const pendingCount = invoices.filter(i => i.payment_status !== "paid").length;
+  const premiumRevenue = measurementBookings
+    .filter(b => b.payment_status === "paid")
+    .reduce((s: number, b: any) => s + (b.platform_share_amount || 0), 0);
+  const totalMeasurementBookings = measurementBookings.length;
+  const verifiedOrgs = verifications.orgs.filter((o: any) => o.business_reg_verified).length;
+  const verifiedTailors = verifications.profiles.filter((p: any) => p.identity_verified).length;
 
   /* ─── PDF ─── */
   const generatePlatformInvoicePDF = (inv: PlatformInvoice) => {
