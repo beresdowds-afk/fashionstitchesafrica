@@ -93,6 +93,7 @@ const SuperAdminDashboard = () => {
     { id: "users" as const, icon: Users, label: "Users & Roles" },
     { id: "accounts" as const, icon: UserX, label: "Account Mgmt" },
     { id: "revenue" as const, icon: TrendingUp, label: "Platform Revenue" },
+    { id: "invoicing" as const, icon: ScrollText, label: "Invoicing & Payments" },
     { id: "websites" as const, icon: Crown, label: "Website Requests" },
     { id: "unified_pricing" as const, icon: DollarSign, label: "Pricing Center" },
     { id: "pricing" as const, icon: Globe, label: "Website Pricing" },
