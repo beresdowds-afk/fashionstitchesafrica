@@ -1,8 +1,9 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sparkles, Camera, Ruler, BarChart3, ShirtIcon, Wallet, Zap } from "lucide-react";
+import { Sparkles, Camera, Ruler, BarChart3, ShirtIcon, Wallet, Zap, Layers } from "lucide-react";
 import VirtualTryOnPanel from "./VirtualTryOnPanel";
 import PremiumUsagePanel from "./PremiumUsagePanel";
 import EnhancedMeasurementsPanel from "./EnhancedMeasurementsPanel";
+import TieredMeasurementPanel from "./TieredMeasurementPanel";
 import GarmentCatalogPanel from "./GarmentCatalogPanel";
 import CreditWalletPanel from "./CreditWalletPanel";
 import JobQueuePanel from "./JobQueuePanel";
@@ -28,8 +29,11 @@ const PremiumFeaturesTab = ({ orgId, role }: PremiumFeaturesTabProps) => {
           <TabsTrigger value="tryon" className="gap-2">
             <Camera size={14} /> FASHN Try-On
           </TabsTrigger>
+          <TabsTrigger value="tiered" className="gap-2">
+            <Layers size={14} /> AI Measurements
+          </TabsTrigger>
           <TabsTrigger value="measurements" className="gap-2">
-            <Ruler size={14} /> 360° Measurements
+            <Ruler size={14} /> Profiles
           </TabsTrigger>
           {isAdmin && (
             <TabsTrigger value="catalog" className="gap-2">
@@ -56,6 +60,11 @@ const PremiumFeaturesTab = ({ orgId, role }: PremiumFeaturesTabProps) => {
         <TabsContent value="tryon">
           <FeatureGate featureKey="virtual_tryon" showLocked>
             <VirtualTryOnPanel orgId={orgId} />
+          </FeatureGate>
+        </TabsContent>
+        <TabsContent value="tiered">
+          <FeatureGate featureKey="basic_measurement" showLocked>
+            <TieredMeasurementPanel orgId={orgId} />
           </FeatureGate>
         </TabsContent>
         <TabsContent value="measurements">
