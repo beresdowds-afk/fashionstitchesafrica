@@ -53,7 +53,7 @@ const DisputesTab = ({ orgId, role }: DisputesTabProps) => {
     priority: "medium",
   });
 
-  const canManage = role === "org_admin" || role === "super_admin";
+  const canManage = role === "org_admin" || role === "manager" || role === "super_admin";
 
   const handleCreate = async () => {
     if (!user) return;

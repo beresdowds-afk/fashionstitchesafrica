@@ -119,7 +119,7 @@ const OrgBillingInvoicingTab = ({ orgId, orgName, currency, role }: OrgBillingIn
   // Product edit
   const [editProduct, setEditProduct] = useState<{ item: CatalogueItem; price: string } | null>(null);
 
-  const canManage = role === "org_admin" || role === "super_admin";
+  const canManage = role === "org_admin" || role === "manager" || role === "super_admin";
 
   const loadAll = useCallback(async () => {
     setLoading(true);

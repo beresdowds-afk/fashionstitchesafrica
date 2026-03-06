@@ -45,7 +45,7 @@ const ContractManagementPanel = ({ orgId, role }: { orgId: string; role: AppRole
   });
 
   const tailors = members?.filter(m => m.role === "tailor") || [];
-  const isAdmin = role === "org_admin" || role === "super_admin";
+  const isAdmin = role === "org_admin" || role === "manager" || role === "super_admin";
 
   const handleCreate = async () => {
     if (!form.tailor_id) { toast({ title: "Select a tailor", variant: "destructive" }); return; }

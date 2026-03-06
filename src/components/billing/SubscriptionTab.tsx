@@ -31,7 +31,7 @@ const SubscriptionTab = ({ orgId, role }: SubscriptionTabProps) => {
   const [confirmPlan, setConfirmPlan] = useState<{ id: string; name: string; isDowngrade: boolean } | null>(null);
   const [activeView, setActiveView] = useState<"plans" | "history" | "queries">("plans");
   const { toast } = useToast();
-  const canManage = role === "org_admin" || role === "super_admin";
+  const canManage = role === "org_admin" || role === "manager" || role === "super_admin";
 
   const handleSelect = async (planId: string) => {
     if (!canManage) return;
