@@ -485,6 +485,165 @@ const AdminInvoicingPaymentsPanel = () => {
           )}
         </div>
       )}
+
+      {/* ═══ PREMIUM REVENUE ═══ */}
+      {activeView === "premium" && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="rounded-xl border border-border bg-card p-4">
+              <Ruler size={18} className="text-primary mb-2" />
+              <p className="font-heading font-bold text-lg">{totalMeasurementBookings}</p>
+              <p className="text-xs text-muted-foreground">AI Measurement Bookings</p>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-4">
+              <Sparkles size={18} className="text-primary mb-2" />
+              <p className="font-heading font-bold text-lg">${premiumRevenue.toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground">Platform Share (AI)</p>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-4">
+              <CheckCircle2 size={18} className="text-green-600 mb-2" />
+              <p className="font-heading font-bold text-lg">{measurementBookings.filter((b: any) => b.payment_status === "paid").length}</p>
+              <p className="text-xs text-muted-foreground">Paid Sessions</p>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-4">
+              <Clock size={18} className="text-muted-foreground mb-2" />
+              <p className="font-heading font-bold text-lg">{measurementBookings.filter((b: any) => b.payment_status === "pending").length}</p>
+              <p className="text-xs text-muted-foreground">Pending</p>
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-border bg-card overflow-hidden">
+            <div className="px-5 py-3 bg-muted/30 border-b border-border flex items-center gap-2">
+              <Sparkles size={16} className="text-primary" />
+              <span className="font-heading font-semibold text-sm">AI Measurement Booking History</span>
+            </div>
+            <div className="divide-y divide-border max-h-[500px] overflow-y-auto">
+              {measurementBookings.length === 0 ? (
+                <div className="p-8 text-center text-muted-foreground text-sm">No AI measurement bookings yet.</div>
+              ) : (
+                measurementBookings.map((b: any) => (
+                  <div key={b.id} className="px-5 py-3 flex items-center justify-between hover:bg-muted/30 transition-colors">
+                    <div>
+                      <p className="text-sm font-medium">{b.org_name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {b.session_type} • {b.hours_booked}h • {format(new Date(b.created_at), "MMM d, yyyy")}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <p className="font-heading font-semibold text-sm">${b.total_amount}</p>
+                        <p className="text-[10px] text-muted-foreground">Platform: ${b.platform_share_amount}</p>
+                      </div>
+                      <Badge
+                        variant={b.payment_status === "paid" ? "default" : "secondary"}
+                        className="text-[10px] capitalize"
+                      >
+                        {b.payment_status}
+                      </Badge>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ VERIFICATIONS ═══ */}
+      {activeView === "verifications" && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="rounded-xl border border-border bg-card p-4">
+              <Building2 size={18} className="text-primary mb-2" />
+              <p className="font-heading font-bold text-lg">{verifications.orgs.length}</p>
+              <p className="text-xs text-muted-foreground">Orgs with Biz Reg</p>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-4">
+              <CheckCircle2 size={18} className="text-green-600 mb-2" />
+              <p className="font-heading font-bold text-lg">{verifiedOrgs}</p>
+              <p className="text-xs text-muted-foreground">Verified Orgs</p>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-4">
+              <Shield size={18} className="text-primary mb-2" />
+              <p className="font-heading font-bold text-lg">{verifications.profiles.length}</p>
+              <p className="text-xs text-muted-foreground">Tailors with ID</p>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-4">
+              <CheckCircle2 size={18} className="text-green-600 mb-2" />
+              <p className="font-heading font-bold text-lg">{verifiedTailors}</p>
+              <p className="text-xs text-muted-foreground">Verified Tailors</p>
+            </div>
+          </div>
+
+          {/* Org Business Registrations */}
+          <div className="rounded-xl border border-border bg-card overflow-hidden">
+            <div className="px-5 py-3 bg-muted/30 border-b border-border flex items-center gap-2">
+              <Building2 size={16} className="text-primary" />
+              <span className="font-heading font-semibold text-sm">Organization Business Registrations</span>
+            </div>
+            <div className="divide-y divide-border max-h-[400px] overflow-y-auto">
+              {verifications.orgs.length === 0 ? (
+                <div className="p-8 text-center text-muted-foreground text-sm">No registrations submitted yet.</div>
+              ) : (
+                verifications.orgs.map((org: any) => (
+                  <div key={org.id} className="px-5 py-3 flex items-center justify-between hover:bg-muted/30 transition-colors">
+                    <div>
+                      <p className="text-sm font-medium">{org.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {(org.business_reg_type || "").toUpperCase()}: {org.business_reg_number}
+                      </p>
+                    </div>
+                    <Badge
+                      variant={org.business_reg_verified ? "default" : "destructive"}
+                      className="text-[10px]"
+                    >
+                      {org.business_reg_verified ? (
+                        <span className="flex items-center gap-1"><CheckCircle2 size={10} /> Verified</span>
+                      ) : (
+                        <span className="flex items-center gap-1"><XCircle size={10} /> {org.business_reg_verification_status}</span>
+                      )}
+                    </Badge>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Tailor Identity Verifications */}
+          <div className="rounded-xl border border-border bg-card overflow-hidden">
+            <div className="px-5 py-3 bg-muted/30 border-b border-border flex items-center gap-2">
+              <Shield size={16} className="text-primary" />
+              <span className="font-heading font-semibold text-sm">Tailor Identity Verifications</span>
+            </div>
+            <div className="divide-y divide-border max-h-[400px] overflow-y-auto">
+              {verifications.profiles.length === 0 ? (
+                <div className="p-8 text-center text-muted-foreground text-sm">No identity numbers submitted yet.</div>
+              ) : (
+                verifications.profiles.map((profile: any) => (
+                  <div key={profile.id} className="px-5 py-3 flex items-center justify-between hover:bg-muted/30 transition-colors">
+                    <div>
+                      <p className="text-sm font-medium">{profile.display_name || "Unknown"}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {(profile.identity_type || "").toUpperCase()}: {profile.identity_number ? `${profile.identity_number.substring(0, 3)}***${profile.identity_number.slice(-2)}` : "—"}
+                      </p>
+                    </div>
+                    <Badge
+                      variant={profile.identity_verified ? "default" : "destructive"}
+                      className="text-[10px]"
+                    >
+                      {profile.identity_verified ? (
+                        <span className="flex items-center gap-1"><CheckCircle2 size={10} /> Verified</span>
+                      ) : (
+                        <span className="flex items-center gap-1"><XCircle size={10} /> {profile.identity_verification_status}</span>
+                      )}
+                    </Badge>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 };
