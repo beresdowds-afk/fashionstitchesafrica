@@ -8,6 +8,7 @@ import FeatureFlagsPanel from "@/components/super-admin/FeatureFlagsPanel";
 import WebsiteRequestsDashboard from "@/components/super-admin/WebsiteRequestsDashboard";
 import MobileAppManagementPanel from "@/components/super-admin/MobileAppManagementPanel";
 import AuditLogsPanel from "@/components/super-admin/AuditLogsPanel";
+import AccountManagementPanel from "@/components/super-admin/AccountManagementPanel";
 import { useUserGlobalRole } from "@/hooks/useOrganization";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
