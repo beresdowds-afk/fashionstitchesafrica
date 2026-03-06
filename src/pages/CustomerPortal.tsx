@@ -55,10 +55,8 @@ const CustomerPortal = () => {
   const [payments, setPayments] = useState<any[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
   const [orderItems, setOrderItems] = useState<any[]>([]);
-  const [registration, setRegistration] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
-  const [exchangeRate, setExchangeRate] = useState<number | null>(null);
-  const [payingReg, setPayingReg] = useState(false);
+  const tour = useTourGuide("customer-portal", customerTourSteps);
   const tour = useTourGuide("customer-portal", customerTourSteps);
 
   // Self-registration state
