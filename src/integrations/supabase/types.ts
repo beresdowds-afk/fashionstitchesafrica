@@ -2631,6 +2631,50 @@ export type Database = {
           },
         ]
       }
+      org_fee_exemptions: {
+        Row: {
+          created_at: string | null
+          exemption_type: string
+          expires_at: string | null
+          granted_at: string | null
+          granted_by: string | null
+          id: string
+          is_active: boolean | null
+          org_id: string
+          reason: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          exemption_type: string
+          expires_at?: string | null
+          granted_at?: string | null
+          granted_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          org_id: string
+          reason?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          exemption_type?: string
+          expires_at?: string | null
+          granted_at?: string | null
+          granted_by?: string | null
+          id?: string
+          is_active?: boolean | null
+          org_id?: string
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_fee_exemptions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       org_members: {
         Row: {
           id: string

@@ -14,6 +14,7 @@ import CompanyOfficersPanel from "./CompanyOfficersPanel";
 import type { AppRole } from "@/hooks/useOrganization";
 import { getTierFeatures, getTierLimits, checkFeatureAccess, calculateUpgradeCost, isActiveStatus } from "./tierConfig";
 
+
 interface WebsiteSettings {
   id?: string;
   org_id: string;
@@ -347,6 +348,49 @@ const PricingSection = ({
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { toast({ title: "Please log in", variant: "destructive" }); return; }
+
+      // Check if org has a website exemption — activate for free
+      const { data: exemptionData } = await supabase
+        .from("org_fee_exemptions")
+        .select("id")
+        .eq("org_id", org.id)
+        .eq("exemption_type", "website_builder")
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (exemptionData) {
+        // Free activation — create subscription/request directly without payment
+        if (plan === "lite") {
+          const trialEnd = new Date();
+          trialEnd.setFullYear(trialEnd.getFullYear() + 10); // effectively permanent
+          await supabase.from("website_builder_subscriptions").upsert({
+            org_id: org.id,
+            plan: "lite",
+            status: "active",
+            trial_start: new Date().toISOString(),
+            trial_end: trialEnd.toISOString(),
+            monthly_fee: 0,
+            platform_fee: 0,
+            payment_gateway: "exemption",
+            gateway_reference: `EXEMPT-${org.id.substring(0, 8)}`,
+          }, { onConflict: "org_id" });
+        } else {
+          await supabase.from("website_builder_requests").insert({
+            org_id: org.id,
+            plan: "pro",
+            status: "pending",
+            one_time_fee: 0,
+            platform_fee: 0,
+            monthly_maintenance: 0,
+            payment_gateway: "exemption",
+            gateway_reference: `EXEMPT-${org.id.substring(0, 8)}`,
+            payment_status: "paid",
+          });
+        }
+        toast({ title: "Website Builder activated!", description: "Your organization has complimentary access." });
+        onPaymentStarted();
+        return;
+      }
 
       const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
       const response = await fetch(
