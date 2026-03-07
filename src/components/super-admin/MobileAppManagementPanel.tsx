@@ -436,6 +436,27 @@ const OrgAppsSection = () => {
     toast({ title: !current ? "App published" : "App unpublished" });
   };
 
+  const markAsPaid = async (id: string) => {
+    // Check for exemption
+    const { data: exemption } = await supabase
+      .from("org_fee_exemptions")
+      .select("id")
+      .eq("org_id", orgApps.find(a => a.id === id)?.org_id || "")
+      .eq("exemption_type", "mobile_app")
+      .eq("is_active", true)
+      .maybeSingle();
+
+    if (exemption) {
+      await supabase.from("org_app_configs").update({ 
+        payment_status: "paid", 
+        generation_fee: 0, 
+        monthly_maintenance_fee: 0 
+      }).eq("id", id);
+      setOrgApps(prev => prev.map(a => a.id === id ? { ...a, payment_status: "paid", generation_fee: 0, monthly_maintenance_fee: 0 } : a));
+      toast({ title: "App marked as paid (exempt)" });
+    }
+  };
+
   const generateApp = async (id: string, orgId: string) => {
     // Auto-pull assets from org website and organization data
     const { data: orgData } = await supabase
