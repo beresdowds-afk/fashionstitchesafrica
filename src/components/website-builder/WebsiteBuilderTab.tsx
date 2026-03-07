@@ -13,7 +13,7 @@ import SocialSyncPanel from "@/components/catalogue/SocialSyncPanel";
 import CompanyOfficersPanel from "./CompanyOfficersPanel";
 import type { AppRole } from "@/hooks/useOrganization";
 import { getTierFeatures, getTierLimits, checkFeatureAccess, calculateUpgradeCost, isActiveStatus } from "./tierConfig";
-import { useOrgExemptions } from "@/hooks/useOrgExemptions";
+
 
 interface WebsiteSettings {
   id?: string;
