@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -73,6 +74,11 @@ const Auth = () => {
   const [identityNumber, setIdentityNumber] = useState("");
   const [verifying, setVerifying] = useState(false);
   const [verificationStatus, setVerificationStatus] = useState<"idle" | "valid" | "invalid">("idle");
+
+  // Manager org selection
+  const [showOrgPicker, setShowOrgPicker] = useState(false);
+  const [managerOrgs, setManagerOrgs] = useState<{ org_id: string; org_name: string; role: string }[]>([]);
+  const [selectingOrg, setSelectingOrg] = useState(false);
 
   useEffect(() => {
     if (roleParam && ROLE_CONFIG[roleParam as UserRole]) {
@@ -168,21 +174,57 @@ const Auth = () => {
         toast({ description: "After verifying your email, sign in and create your organization." });
       }
     } else {
-      // Sign in redirect
-      const { data: memberData } = await supabase
-        .from("org_members")
-        .select("role")
-        .eq("user_id", (await supabase.auth.getUser()).data.user?.id || "")
-        .eq("is_active", true)
-        .limit(1)
-        .single();
+      // Sign in — check memberships for managers/admins with multiple orgs
+      const userId = (await supabase.auth.getUser()).data.user?.id || "";
 
-      if (memberData?.role === "tailor") {
+      const { data: memberships } = await supabase
+        .from("org_members")
+        .select("org_id, role, organizations(name)")
+        .eq("user_id", userId)
+        .eq("is_active", true);
+
+      const activeMemberships = (memberships || []).map((m: any) => ({
+        org_id: m.org_id,
+        org_name: m.organizations?.name || "Unknown",
+        role: m.role,
+      }));
+
+      // If user is a tailor with only tailor roles, go to tailor dashboard
+      const onlyTailor = activeMemberships.length > 0 && activeMemberships.every((m: any) => m.role === "tailor");
+      if (onlyTailor) {
         navigate("/tailor-dashboard");
-      } else {
-        navigate(isPortal ? "/portal" : "/dashboard");
+        return;
       }
+
+      // If manager/admin belongs to multiple orgs, show picker
+      const adminOrManagerOrgs = activeMemberships.filter(
+        (m: any) => m.role === "org_admin" || m.role === "manager"
+      );
+
+      if (adminOrManagerOrgs.length > 1) {
+        setManagerOrgs(adminOrManagerOrgs);
+        setShowOrgPicker(true);
+        return;
+      }
+
+      // Single org or no org — set current and navigate
+      if (activeMemberships.length > 0) {
+        await supabase.from("profiles").update({ current_org_id: activeMemberships[0].org_id }).eq("id", userId);
+      }
+
+      navigate(isPortal ? "/portal" : "/dashboard");
     }
+  };
+
+  const handleOrgSelect = async (orgId: string) => {
+    setSelectingOrg(true);
+    const { data: userData } = await supabase.auth.getUser();
+    if (userData?.user) {
+      await supabase.from("profiles").update({ current_org_id: orgId }).eq("id", userData.user.id);
+    }
+    setShowOrgPicker(false);
+    setSelectingOrg(false);
+    navigate(isPortal ? "/portal" : "/dashboard");
   };
 
   const roleConfig = ROLE_CONFIG[selectedRole];
@@ -442,6 +484,42 @@ const Auth = () => {
           </div>
         </div>
       </motion.div>
+
+      {/* Organization Picker for managers/admins with multiple orgs */}
+      <Dialog open={showOrgPicker} onOpenChange={() => {}}>
+        <DialogContent className="sm:max-w-md" onPointerDownOutside={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Building2 size={20} className="text-primary" />
+              Select Your Organization
+            </DialogTitle>
+            <DialogDescription>
+              You manage multiple organizations. Choose which one to sign into.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 mt-2">
+            {managerOrgs.map((org) => (
+              <button
+                key={org.org_id}
+                onClick={() => handleOrgSelect(org.org_id)}
+                disabled={selectingOrg}
+                className="w-full flex items-center gap-3 p-4 rounded-xl border border-border bg-card hover:border-primary/40 hover:bg-primary/5 transition-all text-left group"
+              >
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+                  <Building2 size={18} className="text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-heading font-semibold text-sm truncate">{org.org_name}</p>
+                  <p className="text-xs text-muted-foreground capitalize">{org.role === "org_admin" ? "Admin" : org.role}</p>
+                </div>
+                <Badge variant="outline" className="text-[10px] shrink-0">
+                  {org.role === "org_admin" ? "Admin" : "Manager"}
+                </Badge>
+              </button>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
