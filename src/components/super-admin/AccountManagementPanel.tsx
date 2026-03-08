@@ -211,8 +211,10 @@ const AccountManagementPanel = () => {
 
   const filteredOrgs = orgs.filter((o) => o.name.toLowerCase().includes(search.toLowerCase()));
   const tailors = users.filter((u) => u.role === "tailor");
+  const designers = users.filter((u) => u.role === "designer");
   const customers = users.filter((u) => u.role === "customer" || u.role === "org_admin");
   const filteredTailors = tailors.filter((u) => u.name.toLowerCase().includes(search.toLowerCase()));
+  const filteredDesigners = designers.filter((u) => u.name.toLowerCase().includes(search.toLowerCase()));
   const filteredCustomers = customers.filter((u) => u.name.toLowerCase().includes(search.toLowerCase()));
 
   if (loading) {
