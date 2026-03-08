@@ -729,6 +729,9 @@ const ProfileTab = ({ userId, profile, setProfile }: {
       display_name: displayName,
       specialty,
       bio,
+      latitude,
+      longitude,
+      physical_address: physicalAddress || null,
     } as any).eq("id", userId);
     setSaving(false);
     if (error) toast({ title: "Error saving profile", variant: "destructive" });
