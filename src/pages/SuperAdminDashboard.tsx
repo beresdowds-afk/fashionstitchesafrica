@@ -20,7 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DollarSign, Smartphone, ScrollText, HelpCircle, UserX, Search, Trash2, Star, ShoppingBag } from "lucide-react";
+import { DollarSign, Smartphone, ScrollText, HelpCircle, UserX, Search, Trash2, Star, ShoppingBag, Download } from "lucide-react";
 import TourGuide from "@/components/shared/TourGuide";
 import { useTourGuide } from "@/hooks/useTourGuide";
 import { useToast } from "@/hooks/use-toast";
@@ -161,6 +161,15 @@ const SuperAdminDashboard = () => {
             >
               <Plus size={14} className="mr-1" />
               New Org
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-ivory/70 hover:text-ivory text-xs"
+              onClick={() => navigate("/admin-install")}
+            >
+              <Download size={14} className="mr-1" />
+              Admin App
             </Button>
             <Button variant="ghost" size="icon" onClick={tour.restart} title="Restart tour guide" className="text-ivory/70 hover:text-ivory">
               <HelpCircle size={16} />
