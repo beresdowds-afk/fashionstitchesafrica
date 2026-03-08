@@ -5,6 +5,22 @@ import { Link } from "react-router-dom";
 
 const plans = [
   {
+    name: "Designer",
+    price: "$15",
+    period: "/month",
+    description: "For independent fashion designers building their brand.",
+    features: [
+      "Personal Portfolio Website",
+      "Catalogue Showcase",
+      "AI Measurements",
+      "Customer Management",
+      "Order Tracking",
+      "Direct Messaging",
+    ],
+    popular: false,
+    role: "designer",
+  },
+  {
     name: "Starter",
     price: "$29",
     period: "/month",
@@ -18,6 +34,7 @@ const plans = [
       "Free Subdomain",
     ],
     popular: false,
+    role: "tailor",
   },
   {
     name: "Professional",
@@ -35,6 +52,7 @@ const plans = [
       "WhatsApp Integration",
     ],
     popular: true,
+    role: "organization",
   },
   {
     name: "Enterprise",
@@ -54,6 +72,7 @@ const plans = [
       "SLA Guarantee",
     ],
     popular: false,
+    role: "organization",
   },
 ];
 
@@ -80,7 +99,7 @@ const Pricing = () => {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
           {plans.map((plan, index) => (
             <motion.div
               key={plan.name}
@@ -135,7 +154,7 @@ const Pricing = () => {
                 </span>
               </div>
 
-              <Link to={`/auth?role=${plan.popular ? "organization" : plan.name === "Starter" ? "tailor" : "organization"}`}>
+              <Link to={`/auth?role=${(plan as any).role || "organization"}`}>
                 <Button
                   variant={plan.popular ? "hero" : "heroOutline"}
                   className="w-full mb-8"
