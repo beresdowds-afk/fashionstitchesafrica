@@ -352,6 +352,7 @@ const PlatformRevenuePanel = () => {
                       <th className="text-right text-xs font-medium text-muted-foreground px-4 py-3">AI Meas</th>
                       <th className="text-right text-xs font-medium text-muted-foreground px-4 py-3">Website</th>
                       <th className="text-right text-xs font-medium text-muted-foreground px-4 py-3">AI Services</th>
+                      <th className="text-right text-xs font-medium text-muted-foreground px-4 py-3">Messaging</th>
                       <th className="text-right text-xs font-medium text-muted-foreground px-4 py-3 font-bold">Total</th>
                     </tr>
                   </thead>
