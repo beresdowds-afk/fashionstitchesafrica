@@ -3,8 +3,11 @@ import { motion } from "framer-motion";
 import { ArrowRight, Download, Users, Scissors, Building2, Palette, Play } from "lucide-react";
 import { Link } from "react-router-dom";
 import heroBg from "@/assets/hero-bg.jpg";
+import { useHeroPricing } from "@/hooks/useHeroPricing";
 
 const Hero = () => {
+  const { pricing } = useHeroPricing();
+
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden">
       <div
@@ -68,7 +71,7 @@ const Hero = () => {
                   Customer
                   <ArrowRight className="ml-2" size={16} />
                   <span className="absolute -top-1 -right-1 bg-accent text-accent-foreground text-[9px] font-bold px-1.5 py-0.5 rounded-bl-md rounded-tr-md">
-                    Free
+                    {pricing.customer?.label || "Free"}
                   </span>
                 </Button>
               </Link>
@@ -82,7 +85,7 @@ const Hero = () => {
                   Designer
                   <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" size={16} />
                   <span className="absolute -top-1 -right-1 bg-accent text-accent-foreground text-[9px] font-bold px-1.5 py-0.5 rounded-bl-md rounded-tr-md">
-                    $15/mo
+                    {pricing.designer?.label || "$15/mo"}
                   </span>
                 </Button>
               </Link>
@@ -95,7 +98,7 @@ const Hero = () => {
                   Tailor
                   <ArrowRight className="ml-2" size={16} />
                   <span className="absolute -top-1 -right-1 bg-accent text-accent-foreground text-[9px] font-bold px-1.5 py-0.5 rounded-bl-md rounded-tr-md">
-                    $10/mo
+                    {pricing.tailor?.label || "$10/mo"}
                   </span>
                 </Button>
               </Link>
