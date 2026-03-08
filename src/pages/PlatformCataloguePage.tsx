@@ -3,11 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import IdentityVerificationGate from "@/components/shared/IdentityVerificationGate";
+import FreeTourConsentDialog from "@/components/shared/FreeTourConsentDialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
-import { ArrowLeft, Search, ShoppingBag, Tag, Building2, LogIn } from "lucide-react";
+import { ArrowLeft, Search, ShoppingBag, Tag, Building2, LogIn, Eye } from "lucide-react";
+
+const MAX_FREE_TOURS = 2;
 
 interface CatalogueItem {
   id: string;
@@ -33,19 +36,30 @@ const PlatformCataloguePage = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [loading, setLoading] = useState(true);
 
-  // Determine user role
+  // Free tour state
+  const [toursUsed, setToursUsed] = useState(0);
+  const [hasSubscription, setHasSubscription] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [tourActive, setTourActive] = useState(false); // true when user accepted consent for this session
+
+  // Determine user role + profile info
   useEffect(() => {
-    if (!user) { setRoleLoading(false); return; }
-    const fetchRole = async () => {
-      const { data } = await supabase
-        .from("user_roles" as any)
-        .select("role")
-        .eq("user_id", user.id)
-        .maybeSingle();
-      setUserRole((data as any)?.role || "customer");
+    if (!user) { setRoleLoading(false); setProfileLoading(false); return; }
+    const fetchAll = async () => {
+      const [roleRes, profileRes, subRes] = await Promise.all([
+        supabase.from("user_roles" as any).select("role").eq("user_id", user.id).maybeSingle(),
+        supabase.from("profiles").select("free_tours_used, identity_verified").eq("id", user.id).single(),
+        supabase.from("customer_subscriptions" as any).select("id").eq("user_id", user.id).eq("status", "active").maybeSingle(),
+      ]);
+      setUserRole((roleRes.data as any)?.role || "customer");
+      setToursUsed((profileRes.data as any)?.free_tours_used || 0);
+      setIsVerified(!!(profileRes.data as any)?.identity_verified);
+      setHasSubscription(!!subRes.data);
       setRoleLoading(false);
+      setProfileLoading(false);
     };
-    fetchRole();
+    fetchAll();
   }, [user]);
 
   useEffect(() => {
@@ -75,7 +89,7 @@ const PlatformCataloguePage = () => {
     return matchSearch && matchCat;
   });
 
-  if (authLoading || roleLoading || loading) {
+  if (authLoading || roleLoading || loading || profileLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -102,8 +116,13 @@ const PlatformCataloguePage = () => {
   }
 
   const isPrivilegedRole = ["super_admin", "super_assistant", "org_admin", "manager", "tailor", "designer"].includes(userRole || "");
+  const isCustomer = !isPrivilegedRole;
+  const hasFullAccess = isPrivilegedRole || (hasSubscription && isVerified);
 
-  const catalogueContent = (
+  // For customers: determine if they're on a free tour or need gating
+  const isOnFreeTour = isCustomer && !hasFullAccess && tourActive;
+
+  const catalogueContent = (readOnly: boolean) => (
     <div className="min-h-screen bg-background">
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-brand" />
 
@@ -118,9 +137,16 @@ const PlatformCataloguePage = () => {
               <p className="text-[10px] text-muted-foreground">{filtered.length} products</p>
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={() => navigate("/browse")}>
-            <Building2 size={14} className="mr-1" /> Browse Fashion Houses
-          </Button>
+          <div className="flex items-center gap-2">
+            {readOnly && (
+              <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">
+                <Eye size={10} className="mr-1" /> Read-Only Tour
+              </Badge>
+            )}
+            <Button variant="outline" size="sm" onClick={() => navigate("/browse")}>
+              <Building2 size={14} className="mr-1" /> Browse Fashion Houses
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -151,14 +177,16 @@ const PlatformCataloguePage = () => {
             <p className="text-muted-foreground">No products available yet.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className={`grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 ${readOnly ? "pointer-events-none select-none" : ""}`}>
             {filtered.map((item, i) => (
               <motion.div
                 key={item.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.02 }}
-                className="rounded-xl bg-card border border-border overflow-hidden group hover:border-primary/30 hover:shadow-gold transition-all duration-300"
+                className={`rounded-xl bg-card border border-border overflow-hidden group transition-all duration-300 ${
+                  readOnly ? "opacity-90" : "hover:border-primary/30 hover:shadow-gold"
+                }`}
               >
                 <div className="aspect-[3/4] bg-muted relative overflow-hidden">
                   {item.image_url ? (
@@ -166,6 +194,13 @@ const PlatformCataloguePage = () => {
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
                       <ShoppingBag size={32} className="text-muted-foreground" />
+                    </div>
+                  )}
+                  {readOnly && (
+                    <div className="absolute inset-0 bg-background/10 flex items-end justify-center pb-2">
+                      <Badge variant="secondary" className="text-[9px] opacity-80">
+                        <Eye size={8} className="mr-1" /> Preview Only
+                      </Badge>
                     </div>
                   )}
                 </div>
@@ -191,17 +226,41 @@ const PlatformCataloguePage = () => {
             ))}
           </div>
         )}
+
+        {readOnly && (
+          <div className="mt-8 rounded-lg border border-primary/20 bg-primary/5 p-4 text-center">
+            <p className="text-sm text-muted-foreground mb-2">
+              Enjoying the catalogue? Subscribe for <span className="font-semibold text-primary">$10/year</span> to unlock full access.
+            </p>
+            <Button size="sm" onClick={() => navigate("/portal")}>
+              Subscribe & Verify Identity
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
 
-  // Privileged roles get unrestricted access; customers must pass subscription + identity verification
-  if (isPrivilegedRole) return catalogueContent;
+  // Privileged roles: full unrestricted access
+  if (isPrivilegedRole) return catalogueContent(false);
 
+  // Customers with subscription + verification: full access
+  if (hasFullAccess) return catalogueContent(false);
+
+  // Customers on an active free tour session: read-only view
+  if (isOnFreeTour) return catalogueContent(true);
+
+  // Customers who haven't started a tour or need consent: show consent/exhausted dialog
   return (
-    <IdentityVerificationGate featureLabel="the Platform Catalogue">
-      {catalogueContent}
-    </IdentityVerificationGate>
+    <FreeTourConsentDialog
+      toursUsed={toursUsed}
+      maxTours={MAX_FREE_TOURS}
+      onConsentGiven={() => {
+        setToursUsed(prev => prev + 1);
+        setTourActive(true);
+      }}
+      onSubscribe={() => navigate("/portal")}
+    />
   );
 };
 
