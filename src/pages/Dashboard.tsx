@@ -709,6 +709,9 @@ const SettingsTab = ({ org, role }: { org: any; role: AppRole | null }) => {
   const [email, setEmail] = useState(org.email || "");
   const [phone, setPhone] = useState(org.phone || "");
   const [address, setAddress] = useState(org.address || "");
+  const [latitude, setLatitude] = useState<number | null>(org.latitude || null);
+  const [longitude, setLongitude] = useState<number | null>(org.longitude || null);
+  const [physicalAddress, setPhysicalAddress] = useState(org.physical_address || "");
   const [invoiceAddress, setInvoiceAddress] = useState(org.invoice_address || "");
   const [invoicePaymentTerms, setInvoicePaymentTerms] = useState(org.invoice_payment_terms || "");
   const [invoiceNotes, setInvoiceNotes] = useState(org.invoice_notes || "");
