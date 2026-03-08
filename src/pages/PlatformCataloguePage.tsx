@@ -33,6 +33,21 @@ const PlatformCataloguePage = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [loading, setLoading] = useState(true);
 
+  // Determine user role
+  useEffect(() => {
+    if (!user) { setRoleLoading(false); return; }
+    const fetchRole = async () => {
+      const { data } = await supabase
+        .from("user_roles" as any)
+        .select("role")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      setUserRole((data as any)?.role || "customer");
+      setRoleLoading(false);
+    };
+    fetchRole();
+  }, [user]);
+
   useEffect(() => {
     const load = async () => {
       const { data } = await supabase
