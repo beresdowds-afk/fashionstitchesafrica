@@ -58,6 +58,7 @@ const App = () => (
             <Route path="/catalogue/:orgId" element={<CataloguePage />} />
             <Route path="/platform-catalogue" element={<PlatformCataloguePage />} />
             <Route path="/platform-tour" element={<PlatformTour />} />
+            <Route path="/payments" element={<PaymentsPortal />} />
             <Route path="/docs/api" element={<ApiDocs />} />
             <Route path="/legal" element={<LegalDocs />} />
             <Route path="/demo-org" element={<DemoOrgWebsite />} />
