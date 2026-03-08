@@ -12,10 +12,11 @@ import { motion } from "framer-motion";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import TailorCatalogueManager from "@/components/catalogue/TailorCatalogueManager";
 import FeaturedProductsPanel from "@/components/catalogue/FeaturedProductsPanel";
+import PaymentGatewayPanel from "@/components/settings/PaymentGatewayPanel";
 import {
   LogOut, Package, Clock, BarChart3, Palette, FileText,
   Wallet, User, ShoppingBag, CheckCircle2, ArrowRight,
-  Shield, DollarSign, TrendingUp, Save, Globe, Download, Star
+  Shield, DollarSign, TrendingUp, Save, Globe, Download, Star, CreditCard
 } from "lucide-react";
 import {
   SidebarProvider, SidebarTrigger, Sidebar, SidebarContent,
@@ -24,7 +25,7 @@ import {
 } from "@/components/ui/sidebar";
 import fsaLogo from "@/assets/fsa-logo.png";
 
-type TabId = "overview" | "work-queue" | "contracts" | "earnings" | "catalogue" | "featured" | "website" | "profile";
+type TabId = "overview" | "work-queue" | "contracts" | "earnings" | "catalogue" | "featured" | "website" | "payments" | "profile";
 
 const statusLabels: Record<string, string> = {
   pending: "Pending", confirmed: "Confirmed", measuring: "Measuring",
@@ -48,6 +49,7 @@ const navItems: { id: TabId; icon: any; label: string }[] = [
   { id: "catalogue", icon: ShoppingBag, label: "Catalogue" },
   { id: "featured", icon: Star, label: "Featured Products" },
   { id: "website", icon: Globe, label: "My Website" },
+  { id: "payments", icon: CreditCard, label: "Payment Setup" },
   { id: "profile", icon: User, label: "Profile" },
 ];
 
@@ -210,6 +212,11 @@ const DesignerPortal = () => {
             )}
             {activeTab === "website" && user && (
               <WebsiteTab userId={user.id} profile={profile} contracts={contracts} />
+            )}
+            {activeTab === "payments" && user && contracts.length > 0 && (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                <PaymentGatewayPanel orgId={contracts[0]?.org_id} />
+              </motion.div>
             )}
             {activeTab === "profile" && user && (
               <ProfileTab userId={user.id} profile={profile} setProfile={setProfile} />

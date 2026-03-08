@@ -11,6 +11,7 @@ import MobileAppManagementPanel from "@/components/super-admin/MobileAppManageme
 import AuditLogsPanel from "@/components/super-admin/AuditLogsPanel";
 import AccountManagementPanel from "@/components/super-admin/AccountManagementPanel";
 import AdminInvoicingPaymentsPanel from "@/components/super-admin/AdminInvoicingPaymentsPanel";
+import AdminSupportRequestsPanel from "@/components/super-admin/AdminSupportRequestsPanel";
 import SubscriptionRatesPanel from "@/components/super-admin/SubscriptionRatesPanel";
 import FeaturedProductsAdminPanel from "@/components/super-admin/FeaturedProductsAdminPanel";
 import PlatformSettingsPanel from "@/components/super-admin/PlatformSettingsPanel";
@@ -21,7 +22,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DollarSign, Smartphone, ScrollText, HelpCircle, UserX, Search, Trash2, Star, ShoppingBag, Download, Settings } from "lucide-react";
+import { DollarSign, Smartphone, ScrollText, HelpCircle, UserX, Search, Trash2, Star, ShoppingBag, Download, Settings, LifeBuoy } from "lucide-react";
 import TourGuide from "@/components/shared/TourGuide";
 import { useTourGuide } from "@/hooks/useTourGuide";
 import { useToast } from "@/hooks/use-toast";
@@ -58,7 +59,7 @@ const SuperAdminDashboard = () => {
   const [stats, setStats] = useState({ orgs: 0, users: 0 });
   const [orgs, setOrgs] = useState<OrgRow[]>([]);
   const hasAccess = isSuperAdmin || isSuperAssistant;
-  const [activeTab, setActiveTab] = useState<"overview" | "platform_settings" | "organizations" | "users" | "accounts" | "revenue" | "invoicing" | "sub_rates" | "featured" | "keys" | "rates" | "websites" | "pricing" | "unified_pricing" | "backups" | "features" | "mobile" | "audit">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "platform_settings" | "organizations" | "users" | "accounts" | "revenue" | "invoicing" | "sub_rates" | "featured" | "keys" | "rates" | "websites" | "pricing" | "unified_pricing" | "backups" | "features" | "mobile" | "audit" | "support_requests">("overview");
   const tour = useTourGuide("super-admin-dashboard", superAdminTourSteps);
 
   useEffect(() => {
@@ -113,6 +114,7 @@ const SuperAdminDashboard = () => {
     { id: "features" as const, icon: Shield, label: "Feature Flags" },
     { id: "mobile" as const, icon: Smartphone, label: "Mobile App" },
     { id: "audit" as const, icon: ScrollText, label: "Audit Logs" },
+    { id: "support_requests" as const, icon: LifeBuoy, label: "Support Requests" },
   ].filter(item => isSuperAdmin || !restrictedTabs.has(item.id));
 
   return (
@@ -246,6 +248,7 @@ const SuperAdminDashboard = () => {
           {activeTab === "features" && isSuperAdmin && <FeatureFlagsPanel />}
           {activeTab === "mobile" && <MobileAppManagementPanel />}
           {activeTab === "audit" && <AuditLogsPanel />}
+          {activeTab === "support_requests" && <AdminSupportRequestsPanel />}
         </main>
       </div>
     </div>
