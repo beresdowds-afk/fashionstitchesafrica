@@ -132,8 +132,8 @@ const DashboardBillingPanel = ({ roleLabel }: DashboardBillingPanelProps) => {
           <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center mb-2">
             <Banknote size={16} className="text-accent-foreground" />
           </div>
-          <p className="font-heading font-bold text-lg">{transfers.filter(t => t.status === "pending").length}</p>
-          <p className="text-xs text-muted-foreground">Pending Transfers</p>
+          <p className="font-heading font-bold text-lg">{dvaTransactions.filter(t => t.status === "success").length}</p>
+          <p className="text-xs text-muted-foreground">DVA Payments</p>
         </Card>
       </div>
 
