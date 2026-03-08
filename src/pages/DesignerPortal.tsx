@@ -17,8 +17,10 @@ import DashboardBillingPanel from "@/components/payments/DashboardBillingPanel";
 import {
   LogOut, Package, Clock, BarChart3, Palette, FileText,
   Wallet, User, ShoppingBag, CheckCircle2, ArrowRight,
-  Shield, DollarSign, TrendingUp, Save, Globe, Download, Star, CreditCard
+  Shield, DollarSign, TrendingUp, Save, Globe, Download, Star, CreditCard, MapPin
 } from "lucide-react";
+import LocationPicker from "@/components/shared/LocationPicker";
+import LocationMapFooter from "@/components/shared/LocationMapFooter";
 import {
   SidebarProvider, SidebarTrigger, Sidebar, SidebarContent,
   SidebarGroup, SidebarGroupLabel, SidebarGroupContent,
@@ -716,6 +718,9 @@ const ProfileTab = ({ userId, profile, setProfile }: {
   const [displayName, setDisplayName] = useState(profile?.display_name || "");
   const [specialty, setSpecialty] = useState(profile?.specialty || "");
   const [bio, setBio] = useState(profile?.bio || "");
+  const [latitude, setLatitude] = useState<number | null>(profile?.latitude || null);
+  const [longitude, setLongitude] = useState<number | null>(profile?.longitude || null);
+  const [physicalAddress, setPhysicalAddress] = useState(profile?.physical_address || "");
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
@@ -724,6 +729,9 @@ const ProfileTab = ({ userId, profile, setProfile }: {
       display_name: displayName,
       specialty,
       bio,
+      latitude,
+      longitude,
+      physical_address: physicalAddress || null,
     } as any).eq("id", userId);
     setSaving(false);
     if (error) toast({ title: "Error saving profile", variant: "destructive" });
@@ -755,6 +763,31 @@ const ProfileTab = ({ userId, profile, setProfile }: {
           </Button>
         </div>
       </Card>
+
+      {/* Physical Location */}
+      <Card className="p-6 mt-6 max-w-lg">
+        <h3 className="font-heading font-semibold mb-3 flex items-center gap-2">
+          <MapPin size={16} className="text-primary" /> Physical Location <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">KYC</span>
+        </h3>
+        <p className="text-xs text-muted-foreground mb-3">Pin your studio location for customer discovery and verification.</p>
+        <LocationPicker
+          latitude={latitude}
+          longitude={longitude}
+          address={physicalAddress}
+          onLocationChange={(lat, lng, addr) => {
+            setLatitude(lat);
+            setLongitude(lng);
+            setPhysicalAddress(addr);
+          }}
+        />
+      </Card>
+
+      <LocationMapFooter
+        latitude={latitude}
+        longitude={longitude}
+        address={physicalAddress}
+        label="Studio Location"
+      />
     </motion.div>
   );
 };

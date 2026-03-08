@@ -3242,9 +3242,12 @@ export type Database = {
           invoice_notes: string | null
           invoice_payment_terms: string | null
           is_active: boolean
+          latitude: number | null
           logo_url: string | null
+          longitude: number | null
           name: string
           phone: string | null
+          physical_address: string | null
           region: string | null
           slug: string
           specialties: string[] | null
@@ -3269,9 +3272,12 @@ export type Database = {
           invoice_notes?: string | null
           invoice_payment_terms?: string | null
           is_active?: boolean
+          latitude?: number | null
           logo_url?: string | null
+          longitude?: number | null
           name: string
           phone?: string | null
+          physical_address?: string | null
           region?: string | null
           slug: string
           specialties?: string[] | null
@@ -3296,9 +3302,12 @@ export type Database = {
           invoice_notes?: string | null
           invoice_payment_terms?: string | null
           is_active?: boolean
+          latitude?: number | null
           logo_url?: string | null
+          longitude?: number | null
           name?: string
           phone?: string | null
+          physical_address?: string | null
           region?: string | null
           slug?: string
           specialties?: string[] | null
@@ -4109,7 +4118,10 @@ export type Database = {
           identity_verified_at: string | null
           instagram_url: string | null
           is_deactivated: boolean
+          latitude: number | null
           linkedin_url: string | null
+          longitude: number | null
+          physical_address: string | null
           portfolio_url: string | null
           promo_consent: boolean
           promo_consent_at: string | null
@@ -4137,7 +4149,10 @@ export type Database = {
           identity_verified_at?: string | null
           instagram_url?: string | null
           is_deactivated?: boolean
+          latitude?: number | null
           linkedin_url?: string | null
+          longitude?: number | null
+          physical_address?: string | null
           portfolio_url?: string | null
           promo_consent?: boolean
           promo_consent_at?: string | null
@@ -4165,7 +4180,10 @@ export type Database = {
           identity_verified_at?: string | null
           instagram_url?: string | null
           is_deactivated?: boolean
+          latitude?: number | null
           linkedin_url?: string | null
+          longitude?: number | null
+          physical_address?: string | null
           portfolio_url?: string | null
           promo_consent?: boolean
           promo_consent_at?: string | null

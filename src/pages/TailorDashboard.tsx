@@ -14,8 +14,10 @@ import TailorCatalogueManager from "@/components/catalogue/TailorCatalogueManage
 import {
   LogOut, Package, Clock, BarChart3, Scissors, FileText,
   Wallet, User, ShoppingBag, CheckCircle2, ArrowRight,
-  Shield, DollarSign, TrendingUp, Save, Globe, Download, Star, CreditCard
+  Shield, DollarSign, TrendingUp, Save, Globe, Download, Star, CreditCard, MapPin
 } from "lucide-react";
+import LocationPicker from "@/components/shared/LocationPicker";
+import LocationMapFooter from "@/components/shared/LocationMapFooter";
 import FeaturedProductsPanel from "@/components/catalogue/FeaturedProductsPanel";
 import PaymentGatewayPanel from "@/components/settings/PaymentGatewayPanel";
 import DashboardBillingPanel from "@/components/payments/DashboardBillingPanel";
@@ -672,6 +674,9 @@ const ProfileTab = ({ userId, profile, setProfile }: { userId: string; profile: 
     youtube_url: profile?.youtube_url || "",
     linkedin_url: profile?.linkedin_url || "",
     portfolio_url: profile?.portfolio_url || "",
+    latitude: profile?.latitude || null,
+    longitude: profile?.longitude || null,
+    physical_address: profile?.physical_address || "",
   });
   const [saving, setSaving] = useState(false);
 
@@ -742,12 +747,33 @@ const ProfileTab = ({ userId, profile, setProfile }: { userId: string; profile: 
         </Card>
       </div>
 
+      {/* Physical Location */}
+      <Card className="p-6 mt-6">
+        <h3 className="font-heading font-semibold mb-4 flex items-center gap-2">
+          <MapPin size={16} className="text-primary" /> Physical Location <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">KYC</span>
+        </h3>
+        <p className="text-xs text-muted-foreground mb-3">Pin your workshop location for customer discovery and verification.</p>
+        <LocationPicker
+          latitude={form.latitude}
+          longitude={form.longitude}
+          address={form.physical_address}
+          onLocationChange={(lat, lng, addr) => setForm(f => ({ ...f, latitude: lat, longitude: lng, physical_address: addr }))}
+        />
+      </Card>
+
       <div className="flex justify-end mt-6">
         <Button variant="hero" onClick={handleSave} disabled={saving}>
           <Save size={16} className="mr-2" />
           {saving ? "Saving..." : "Save Profile"}
         </Button>
       </div>
+
+      <LocationMapFooter
+        latitude={form.latitude}
+        longitude={form.longitude}
+        address={form.physical_address}
+        label="Workshop Location"
+      />
     </motion.div>
   );
 };

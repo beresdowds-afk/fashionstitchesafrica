@@ -35,6 +35,8 @@ import TourGuide from "@/components/shared/TourGuide";
 import { useTourGuide } from "@/hooks/useTourGuide";
 import { orgAdminTourSteps, tailorTourSteps } from "@/config/tourSteps";
 import { HelpCircle } from "lucide-react";
+import LocationPicker from "@/components/shared/LocationPicker";
+import LocationMapFooter from "@/components/shared/LocationMapFooter";
 const roleLabels: Record<AppRole, string> = {
   super_admin: "Super Admin",
   super_assistant: "Super Assistant",
@@ -707,6 +709,9 @@ const SettingsTab = ({ org, role }: { org: any; role: AppRole | null }) => {
   const [email, setEmail] = useState(org.email || "");
   const [phone, setPhone] = useState(org.phone || "");
   const [address, setAddress] = useState(org.address || "");
+  const [latitude, setLatitude] = useState<number | null>(org.latitude || null);
+  const [longitude, setLongitude] = useState<number | null>(org.longitude || null);
+  const [physicalAddress, setPhysicalAddress] = useState(org.physical_address || "");
   const [invoiceAddress, setInvoiceAddress] = useState(org.invoice_address || "");
   const [invoicePaymentTerms, setInvoicePaymentTerms] = useState(org.invoice_payment_terms || "");
   const [invoiceNotes, setInvoiceNotes] = useState(org.invoice_notes || "");
@@ -738,6 +743,8 @@ const SettingsTab = ({ org, role }: { org: any; role: AppRole | null }) => {
       .from("organizations")
       .update({
         name, email, phone, address,
+        latitude, longitude,
+        physical_address: physicalAddress || null,
         invoice_address: invoiceAddress || null,
         invoice_payment_terms: invoicePaymentTerms || null,
         invoice_notes: invoiceNotes || null,
@@ -792,6 +799,26 @@ const SettingsTab = ({ org, role }: { org: any; role: AppRole | null }) => {
             className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
           />
         </div>
+
+        {/* Physical Location (KYC) */}
+        <div className="space-y-2 pt-2 border-t border-border mt-4">
+          <label className="text-sm font-medium flex items-center gap-2">
+            Physical Location <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">KYC</span>
+          </label>
+          <p className="text-xs text-muted-foreground">Pin your physical address on the map for verification.</p>
+          <LocationPicker
+            latitude={latitude}
+            longitude={longitude}
+            address={physicalAddress}
+            onLocationChange={(lat, lng, addr) => {
+              setLatitude(lat);
+              setLongitude(lng);
+              setPhysicalAddress(addr);
+            }}
+            disabled={!canEdit}
+          />
+        </div>
+
         <div className="flex items-center gap-3 pt-2">
           <div className="text-sm text-muted-foreground">
             Currency: <span className="font-medium text-foreground">{org.currency}</span> · 
@@ -914,6 +941,14 @@ const SettingsTab = ({ org, role }: { org: any; role: AppRole | null }) => {
           <AvailabilityManager orgId={org.id} />
         </div>
       )}
+
+      {/* Location Map Footer */}
+      <LocationMapFooter
+        latitude={org.latitude}
+        longitude={org.longitude}
+        address={org.physical_address}
+        label={`${org.name} — Physical Location`}
+      />
     </motion.div>
   );
 };

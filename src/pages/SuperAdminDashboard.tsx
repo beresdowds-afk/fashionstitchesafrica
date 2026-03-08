@@ -23,7 +23,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DollarSign, Smartphone, ScrollText, HelpCircle, UserX, Search, Trash2, Star, ShoppingBag, Download, Settings, LifeBuoy, Banknote } from "lucide-react";
+import { DollarSign, Smartphone, ScrollText, HelpCircle, UserX, Search, Trash2, Star, ShoppingBag, Download, Settings, LifeBuoy, Banknote, MapPin } from "lucide-react";
+import LocationMapFooter from "@/components/shared/LocationMapFooter";
 import TourGuide from "@/components/shared/TourGuide";
 import { useTourGuide } from "@/hooks/useTourGuide";
 import { useToast } from "@/hooks/use-toast";
@@ -51,6 +52,9 @@ interface OrgRow {
   currency: string | null;
   is_active: boolean;
   created_at: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  physical_address?: string | null;
 }
 
 const SuperAdminDashboard = () => {
@@ -386,6 +390,7 @@ const OrganizationsPanel = ({ orgs }: { orgs: OrgRow[] }) => {
                   <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Name</th>
                   <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Slug</th>
                   <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Currency</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Location KYC</th>
                   <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Status</th>
                   <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Created</th>
                 </tr>
@@ -403,6 +408,17 @@ const OrganizationsPanel = ({ orgs }: { orgs: OrgRow[] }) => {
                     </td>
                     <td className="px-4 py-3 text-sm text-muted-foreground">{org.slug}</td>
                     <td className="px-4 py-3 text-sm text-muted-foreground">{org.currency || "—"}</td>
+                    <td className="px-4 py-3">
+                      {org.latitude && org.longitude ? (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-secondary/10 text-secondary flex items-center gap-1 w-fit">
+                          <MapPin size={10} /> Verified
+                        </span>
+                      ) : (
+                        <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-destructive/10 text-destructive">
+                          Missing
+                        </span>
+                      )}
+                    </td>
                     <td className="px-4 py-3">
                       <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${org.is_active ? "bg-secondary/10 text-secondary" : "bg-muted text-muted-foreground"}`}>
                         {org.is_active ? "Active" : "Inactive"}
