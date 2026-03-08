@@ -743,6 +743,8 @@ const SettingsTab = ({ org, role }: { org: any; role: AppRole | null }) => {
       .from("organizations")
       .update({
         name, email, phone, address,
+        latitude, longitude,
+        physical_address: physicalAddress || null,
         invoice_address: invoiceAddress || null,
         invoice_payment_terms: invoicePaymentTerms || null,
         invoice_notes: invoiceNotes || null,
