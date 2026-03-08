@@ -256,6 +256,7 @@ const Dashboard = () => {
           {activeTab === "registrations" && <CustomerRegistrationsTab orgId={currentOrg.id} />}
           {activeTab === "bookings" && <MeasurementBookingsTab orgId={currentOrg.id} isAdmin={role === "org_admin" || role === "manager" || role === "super_admin"} />}
           {activeTab === "premium" && <FeatureGate featureKey="basic_measurement" showLocked><PremiumFeaturesTab orgId={currentOrg.id} role={role} /></FeatureGate>}
+          {activeTab === "featured" && <FeaturedProductsPanel orgId={currentOrg.id} userRole={role === "designer" ? "designer" : "org_admin"} />}
           {activeTab === "logistics" && <FeatureGate featureKey="local_logistics" showLocked><LogisticsTab orgId={currentOrg.id} role={role} currency={currentOrg.currency || "NGN"} /></FeatureGate>}
           {activeTab === "disputes" && <FeatureGate featureKey="ai_disputes" showLocked><DisputesTab orgId={currentOrg.id} role={role} /></FeatureGate>}
           {activeTab === "contracts" && <ContractsTab orgId={currentOrg.id} role={role} />}
