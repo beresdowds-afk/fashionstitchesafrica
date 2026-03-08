@@ -160,6 +160,7 @@ const SuperAdminDashboard = () => {
         { id: "invoicing", icon: ScrollText, label: "Invoicing & Payments" },
         { id: "sub_rates", icon: Crown, label: "Subscription Rates" },
         { id: "tax_compliance", icon: Globe, label: "Tax & Compliance" },
+        { id: "regional_management", icon: MapPin, label: "Regional Mgmt" },
         { id: "bank_accounts", icon: Banknote, label: "Bank Accounts" },
       ],
     },
