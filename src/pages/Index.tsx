@@ -5,6 +5,7 @@ import HowItWorks from "@/components/landing/HowItWorks";
 import Pricing from "@/components/landing/Pricing";
 import CtaBanner from "@/components/landing/CtaBanner";
 import Footer from "@/components/landing/Footer";
+import CookieConsent from "@/components/landing/CookieConsent";
 
 const Index = () => {
   return (
@@ -16,6 +17,7 @@ const Index = () => {
       <Pricing />
       <CtaBanner />
       <Footer />
+      <CookieConsent />
     </div>
   );
 };
