@@ -320,7 +320,7 @@ const PaymentGatewayPanel = ({ orgId, canEdit = true }: { orgId: string; canEdit
                         <>
                           <button
                             onClick={() => handleToggle(k.id, k.is_active)}
-                            className={`p-1 hover:bg-muted rounded text-xs ${k.is_active ? "text-green-600" : "text-muted-foreground"}`}
+                          className={`p-1 hover:bg-muted rounded text-xs ${k.is_active ? "text-primary" : "text-muted-foreground"}`}
                           >
                             {k.is_active ? "On" : "Off"}
                           </button>
