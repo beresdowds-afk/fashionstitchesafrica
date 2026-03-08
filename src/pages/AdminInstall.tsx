@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { Download, Smartphone, Check, Share, ArrowRight, Apple, Chrome, Shield, Lock, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
