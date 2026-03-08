@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { ArrowRight, Users, Scissors, Building2, Sparkles, Palette } from "lucide-react";
 import { Link } from "react-router-dom";
+import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 
 const CtaBanner = () => {
   return (
