@@ -411,8 +411,8 @@ const AccountTable = ({
   showOrg,
 }: {
   entries: AccountEntry[];
-  type: "organization" | "customer" | "tailor";
-  onAction: (action: "deactivate" | "delete" | "reactivate", target: AccountEntry, type: "organization" | "customer" | "tailor") => void;
+  type: "organization" | "customer" | "tailor" | "designer";
+  onAction: (action: "deactivate" | "delete" | "reactivate", target: AccountEntry, type: "organization" | "customer" | "tailor" | "designer") => void;
   showOrg?: boolean;
 }) => {
   if (entries.length === 0) {
