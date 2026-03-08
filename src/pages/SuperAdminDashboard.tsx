@@ -148,6 +148,15 @@ const SuperAdminDashboard = () => {
               variant="ghost"
               size="sm"
               className="text-ivory/70 hover:text-ivory text-xs"
+              onClick={() => navigate("/platform-catalogue")}
+            >
+              <ShoppingBag size={14} className="mr-1" />
+              View Catalogue
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-ivory/70 hover:text-ivory text-xs"
               onClick={() => navigate("/create-organization")}
             >
               <Plus size={14} className="mr-1" />

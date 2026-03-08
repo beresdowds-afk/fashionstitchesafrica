@@ -50,6 +50,7 @@ const App = () => (
             <Route path="/browse" element={<BrowseOrganizations />} />
             <Route path="/catalogue/tailor/:tailorId" element={<TailorCataloguePage />} />
             <Route path="/catalogue/:orgId" element={<CataloguePage />} />
+            <Route path="/platform-catalogue" element={<PlatformCataloguePage />} />
             <Route path="/docs/api" element={<ApiDocs />} />
             <Route path="/legal" element={<LegalDocs />} />
             <Route path="/demo-org" element={<DemoOrgWebsite />} />
