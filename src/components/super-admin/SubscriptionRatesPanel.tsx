@@ -10,7 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import {
-  Users, Scissors, Building2, DollarSign, Save, Plus, Trash2,
+  Users, Scissors, Building2, Save, Plus, Trash2,
   Edit2, Loader2, CheckCircle2, Crown, Palette, Ruler, Video,
   Sparkles, Bell, Package, Heart, MessageSquare, Shield, Eye,
   Globe, ExternalLink
