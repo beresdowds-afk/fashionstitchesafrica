@@ -44,7 +44,6 @@ const TaxCompliancePanel = () => {
   const [searchJurisdiction, setSearchJurisdiction] = useState("");
   const [selectedCountry, setSelectedCountry] = useState<string>("all");
 
-  const entityConfig = getConfig("entity_structure") as any;
   const isLoading = configLoading || jurLoading;
 
   if (isLoading) {
