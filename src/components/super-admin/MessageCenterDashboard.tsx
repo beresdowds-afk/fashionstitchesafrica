@@ -246,7 +246,7 @@ const MessageCenterDashboard = () => {
                     <span className="text-xs text-muted-foreground">Nigeria & Africa</span>
                   </div>
                   <p className="text-[11px] text-muted-foreground">
-                    SMS & WhatsApp for NG, GH, KE, ZA, UG, TZ, RW, SN, CI, TG, BJ, CM
+                    SMS & WhatsApp for all 54 African countries — NG, GH, KE, ZA, UG, TZ, ET, EG, MA, SN, CI, CM, CD, and more
                   </p>
                 </div>
                 <div className="p-3 rounded-lg bg-muted/50 border border-border">
