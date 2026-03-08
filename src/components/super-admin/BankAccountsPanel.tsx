@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { motion } from "framer-motion";
 import {
   Building2, Plus, Pencil, Trash2, CheckCircle2, XCircle, Clock,
-  Banknote, Shield, Eye, Search, Loader2, AlertCircle, Star
+  Banknote, Shield, Search, Loader2, Star
 } from "lucide-react";
 
 interface BankAccount {
