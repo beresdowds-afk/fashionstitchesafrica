@@ -88,6 +88,10 @@ export default function FreeTourConsentDialog({
         <div className="rounded-lg bg-muted/50 border border-border p-4 mb-6 space-y-3">
           <p className="text-sm font-medium">What you'll get:</p>
           <div className="flex items-start gap-2 text-sm text-muted-foreground">
+            <Volume2 size={14} className="mt-0.5 text-primary shrink-0" />
+            <span>A <span className="font-medium text-foreground">voice-guided tour</span> of the entire platform and its features</span>
+          </div>
+          <div className="flex items-start gap-2 text-sm text-muted-foreground">
             <Eye size={14} className="mt-0.5 text-primary shrink-0" />
             <span>Browse and preview all catalogue products in <span className="font-medium text-foreground">read-only mode</span></span>
           </div>
