@@ -47,6 +47,9 @@ const feeTypeLabels: Record<string, string> = {
   feature_access: "Premium Feature Access",
   virtual_tryon: "Virtual Try-On Fee",
   photo_enhancement: "Photo Enhancement Fee",
+  messaging_sms: "SMS Messaging Fee",
+  messaging_whatsapp: "WhatsApp Messaging Fee",
+  messaging_email: "Email Messaging Fee",
 };
 
 const feeTypeIcons: Record<string, typeof DollarSign> = {
