@@ -71,13 +71,7 @@ interface WalletData {
   currency: string;
 }
 
-// ── Bank Transfer Info ───────────────────────────────────────────────────
-const BANK_DETAILS = {
-  bank_name: "Guaranty Trust Bank (GTBank)",
-  account_number: "0123456789",
-  account_name: "Fashion Stitches Africa Ltd",
-  sort_code: "058",
-};
+// Bank details are now fetched dynamically from platform_bank_accounts
 
 // ── Main Page ────────────────────────────────────────────────────────────
 const PaymentsPortal = () => {
