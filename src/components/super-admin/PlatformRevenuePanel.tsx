@@ -202,12 +202,13 @@ const PlatformRevenuePanel = () => {
   const measurementPlatform = byType["ai_measurement_platform_share"] || 0;
   const websiteFees = (byType["website_builder_lite"] || 0) + (byType["website_builder_pro"] || 0);
   const aiServiceFees = (byType["virtual_tryon"] || 0) + (byType["photo_enhancement"] || 0);
+  const messagingFees = (byType["messaging_sms"] || 0) + (byType["messaging_whatsapp"] || 0) + (byType["messaging_email"] || 0);
 
   const totalPlatformRevenue =
     orderFees + registrationFees + measurementPlatform +
     websiteFees + (filteredOrgIds ? 0 : subscriptionRevenue) +
     (filteredOrgIds ? 0 : creditPurchaseRevenue) +
-    (filteredOrgIds ? 0 : featureAccessRevenue) + aiServiceFees;
+    (filteredOrgIds ? 0 : featureAccessRevenue) + aiServiceFees + messagingFees;
 
   const totalMeasurementRevenue =
     (byType["ai_measurement_platform_share"] || 0) + (byType["ai_measurement_org_share"] || 0);
