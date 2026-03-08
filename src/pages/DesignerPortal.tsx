@@ -50,6 +50,7 @@ const navItems: { id: TabId; icon: any; label: string }[] = [
   { id: "catalogue", icon: ShoppingBag, label: "Catalogue" },
   { id: "featured", icon: Star, label: "Featured Products" },
   { id: "website", icon: Globe, label: "My Website" },
+  { id: "billing", icon: DollarSign, label: "Billing & Payments" },
   { id: "payments", icon: CreditCard, label: "Payment Setup" },
   { id: "profile", icon: User, label: "Profile" },
 ];
