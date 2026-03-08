@@ -25,8 +25,6 @@ const DashboardBillingPanel = ({ roleLabel }: DashboardBillingPanelProps) => {
   const [wallet, setWallet] = useState<any>(null);
   const [subscription, setSubscription] = useState<any>(null);
   const [payments, setPayments] = useState<any[]>([]);
-  const [bankAccounts, setBankAccounts] = useState<any[]>([]);
-  const [transfers, setTransfers] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState("overview");
 
   // DVA state
