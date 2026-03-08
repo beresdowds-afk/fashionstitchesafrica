@@ -21,9 +21,9 @@ import {
 
 const TaxCompliancePanel = () => {
   const { toast } = useToast();
-  const { configs, isLoading: configLoading, getConfig, updateConfig } = useTaxConfig();
+  const { isLoading: configLoading, getConfig } = useTaxConfig();
   const { jurisdictions, usJurisdictions, ngJurisdictions, saasApplicable, isLoading: jurLoading, updateJurisdiction } = useTaxJurisdictions();
-  const { tracking, isLoading: nexusLoading } = useNexusTracking();
+  const { tracking } = useNexusTracking();
   const [selectedPeriod, setSelectedPeriod] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-Q${Math.ceil((now.getMonth() + 1) / 3)}`;
