@@ -15,6 +15,7 @@ import CustomerPortal from "./pages/CustomerPortal";
 import VideoCall from "./pages/VideoCall";
 import OrgWebsite from "./pages/OrgWebsite";
 import Install from "./pages/Install";
+import AdminInstall from "./pages/AdminInstall";
 import BrowseOrganizations from "./pages/BrowseOrganizations";
 import CataloguePage from "./pages/CataloguePage";
 import TailorCataloguePage from "./pages/TailorCataloguePage";
@@ -49,6 +50,7 @@ const App = () => (
             <Route path="/site/:slug" element={<OrgWebsite />} />
             <Route path="/site/:slug/tailor/:tailorId" element={<OrgTailorPage />} />
             <Route path="/install" element={<Install />} />
+            <Route path="/admin-install" element={<AdminInstall />} />
             <Route path="/browse" element={<BrowseOrganizations />} />
             <Route path="/catalogue/tailor/:tailorId" element={<TailorCataloguePage />} />
             <Route path="/catalogue/:orgId" element={<CataloguePage />} />
