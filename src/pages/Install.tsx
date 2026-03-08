@@ -181,10 +181,15 @@ const Install = () => {
           </motion.div>
         )}
 
-        <div className="text-center mt-8">
-          <Button variant="ghost" onClick={() => navigate("/")} className="text-muted-foreground text-sm">
-            Continue in Browser →
+        <div className="text-center mt-8 space-y-2">
+          <Button variant="outline" onClick={() => navigate("/platform-catalogue")} className="w-full max-w-xs text-sm">
+            Browse Platform Catalogue
           </Button>
+          <div>
+            <Button variant="ghost" onClick={() => navigate("/")} className="text-muted-foreground text-sm">
+              Continue in Browser →
+            </Button>
+          </div>
         </div>
       </div>
     </div>
