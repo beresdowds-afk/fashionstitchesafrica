@@ -45,25 +45,23 @@ const DashboardBillingPanel = ({ roleLabel }: DashboardBillingPanelProps) => {
       { data: walletData },
       { data: subData },
       { data: paymentsData },
-      { data: banksData },
-      { data: transfersData },
+      { data: vaData },
+      { data: dvaTxData },
     ] = await Promise.all([
       supabase.from("credit_wallets").select("*").eq("owner_id", user.id).eq("owner_type", "user").maybeSingle(),
       supabase.from("customer_subscriptions").select("*").eq("user_id", user.id).eq("status", "active").maybeSingle(),
       supabase.from("payments").select("*").order("created_at", { ascending: false }).limit(20),
-      supabase.from("platform_bank_accounts").select("*").eq("is_active", true).order("is_primary", { ascending: false }),
-      supabase.from("bank_transfer_payments").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
+      supabase.from("paystack_virtual_accounts").select("*").eq("user_id", user.id).eq("account_type", "dedicated").eq("is_active", true).maybeSingle(),
+      supabase.from("paystack_dva_transactions").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
     ]);
 
     setWallet(walletData);
     setSubscription(subData);
     setPayments(paymentsData || []);
-    const banks = (banksData as any[]) || [];
-    setBankAccounts(banks);
-    if (banks.length > 0 && !selectedBank) setSelectedBank(banks[0].id);
-    setTransfers((transfersData as any[]) || []);
+    setVirtualAccount(vaData);
+    setDvaTransactions((dvaTxData as any[]) || []);
     setLoading(false);
-  }, [user, selectedBank]);
+  }, [user]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
