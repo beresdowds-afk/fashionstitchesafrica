@@ -11,7 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import {
   Users, Scissors, Building2, DollarSign, Save, Plus, Trash2,
-  Edit2, Loader2, CheckCircle2, Crown
+  Edit2, Loader2, CheckCircle2, Crown, Palette, Ruler, Video,
+  Sparkles, Bell, Package, Heart, MessageSquare, Shield, Eye
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
@@ -34,15 +35,28 @@ interface SubscriptionRate {
 
 const ROLE_ICONS: Record<string, any> = {
   customer: Users,
+  designer: Palette,
   tailor: Scissors,
   organization: Building2,
 };
 
 const ROLE_COLORS: Record<string, string> = {
   customer: "bg-secondary/10 text-secondary",
+  designer: "bg-primary/10 text-primary",
   tailor: "bg-primary/10 text-primary",
   organization: "bg-accent/10 text-accent-foreground",
 };
+
+const CUSTOMER_PREMIUM_FEATURES = [
+  { key: "ai_measurements", icon: Ruler, label: "AI Body Measurements", desc: "Video-based precise body measurements using AI detection", category: "core" },
+  { key: "virtual_tryon", icon: Sparkles, label: "Virtual Try-On", desc: "See garments on your body using FASHN AI engine", category: "core" },
+  { key: "video_consultations", icon: Video, label: "Video Consultations", desc: "Live video sessions with tailors for fittings", category: "core" },
+  { key: "smart_notifications", icon: Bell, label: "Smart Notifications", desc: "Order updates via email, SMS & WhatsApp channels", category: "communication" },
+  { key: "priority_tracking", icon: Package, label: "Priority Order Tracking", desc: "Real-time order status & delivery tracking", category: "logistics" },
+  { key: "premium_catalogue", icon: Heart, label: "Premium Catalogue Access", desc: "Browse exclusive collections & wishlists", category: "access" },
+  { key: "direct_messaging", icon: MessageSquare, label: "Direct Messaging", desc: "Chat directly with tailors & organizations", category: "communication" },
+  { key: "dispute_resolution", icon: Shield, label: "Dispute Resolution", desc: "AI-powered dispute mediation support", category: "support" },
+];
 
 const emptyRate: Omit<SubscriptionRate, "id" | "created_at" | "updated_at"> = {
   role_type: "customer",
@@ -184,8 +198,8 @@ export default function SubscriptionRatesPanel() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
-        {(["customer", "tailor", "organization"] as const).map((role) => {
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {(["customer", "designer", "tailor", "organization"] as const).map((role) => {
           const Icon = ROLE_ICONS[role];
           const count = groupedRates[role]?.length || 0;
           const active = groupedRates[role]?.filter(r => r.is_active).length || 0;
@@ -204,8 +218,52 @@ export default function SubscriptionRatesPanel() {
         })}
       </div>
 
+      {/* Customer Premium Features Exposure */}
+      <div className="rounded-xl border-2 border-primary/30 bg-card overflow-hidden">
+        <div className="px-5 py-4 border-b border-border bg-primary/5 flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+            <Crown size={18} className="text-primary" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-heading font-semibold text-sm">Customer Premium Features ($10/year)</h3>
+            <p className="text-xs text-muted-foreground">All features included with the customer premium subscription</p>
+          </div>
+          <Badge className="bg-secondary/15 text-secondary text-xs">{CUSTOMER_PREMIUM_FEATURES.length} features</Badge>
+        </div>
+        <div className="divide-y divide-border">
+          {CUSTOMER_PREMIUM_FEATURES.map((feature) => {
+            const FeatureIcon = feature.icon;
+            return (
+              <div key={feature.key} className="px-5 py-4 flex items-center gap-4 hover:bg-muted/30 transition-colors">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <FeatureIcon size={18} className="text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-sm">{feature.label}</p>
+                    <Badge variant="outline" className="text-[9px] capitalize">{feature.category}</Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">{feature.desc}</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Badge className="bg-secondary/10 text-secondary text-[10px]">
+                    <CheckCircle2 size={10} className="mr-1" /> Included
+                  </Badge>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="px-5 py-3 bg-muted/30 border-t border-border">
+          <p className="text-xs text-muted-foreground">
+            <Eye size={12} className="inline mr-1" />
+            These features are gated behind the customer premium subscription. Customers must subscribe to access them. Manage pricing in the Subscription Rates section above.
+          </p>
+        </div>
+      </div>
+
       {/* Rates by role */}
-      {(["customer", "tailor", "organization"] as const).map((role) => {
+      {(["customer", "designer", "tailor", "organization"] as const).map((role) => {
         const Icon = ROLE_ICONS[role];
         const roleRates = groupedRates[role] || [];
         return (
@@ -285,6 +343,7 @@ export default function SubscriptionRatesPanel() {
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="customer">Customer</SelectItem>
+                      <SelectItem value="designer">Designer</SelectItem>
                       <SelectItem value="tailor">Tailor</SelectItem>
                       <SelectItem value="organization">Organization</SelectItem>
                     </SelectContent>
