@@ -7,13 +7,10 @@ import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import CurrencyDisplay from "@/components/shared/CurrencyDisplay";
 import {
-  Wallet, Receipt, Crown, Coins, CreditCard, CheckCircle2, Clock,
-  Banknote, Copy, Loader2, ExternalLink, AlertCircle, Sparkles
+  Receipt, Crown, Coins, CheckCircle2, Clock,
+  Banknote, Copy, Loader2, ExternalLink
 } from "lucide-react";
 
 interface DashboardBillingPanelProps {
@@ -28,16 +25,12 @@ const DashboardBillingPanel = ({ roleLabel }: DashboardBillingPanelProps) => {
   const [wallet, setWallet] = useState<any>(null);
   const [subscription, setSubscription] = useState<any>(null);
   const [payments, setPayments] = useState<any[]>([]);
-  const [bankAccounts, setBankAccounts] = useState<any[]>([]);
-  const [transfers, setTransfers] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState("overview");
 
-  // Bank transfer form
-  const [amount, setAmount] = useState("");
-  const [purpose, setPurpose] = useState("subscription");
-  const [transferRef, setTransferRef] = useState("");
-  const [selectedBank, setSelectedBank] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  // DVA state
+  const [virtualAccount, setVirtualAccount] = useState<any>(null);
+  const [dvaTransactions, setDvaTransactions] = useState<any[]>([]);
+  const [creatingDVA, setCreatingDVA] = useState(false);
 
   const fetchAll = useCallback(async () => {
     if (!user) return;
@@ -47,57 +40,42 @@ const DashboardBillingPanel = ({ roleLabel }: DashboardBillingPanelProps) => {
       { data: walletData },
       { data: subData },
       { data: paymentsData },
-      { data: banksData },
-      { data: transfersData },
+      { data: vaData },
+      { data: dvaTxData },
     ] = await Promise.all([
       supabase.from("credit_wallets").select("*").eq("owner_id", user.id).eq("owner_type", "user").maybeSingle(),
       supabase.from("customer_subscriptions").select("*").eq("user_id", user.id).eq("status", "active").maybeSingle(),
       supabase.from("payments").select("*").order("created_at", { ascending: false }).limit(20),
-      supabase.from("platform_bank_accounts").select("*").eq("is_active", true).order("is_primary", { ascending: false }),
-      supabase.from("bank_transfer_payments").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
+      supabase.from("paystack_virtual_accounts").select("*").eq("user_id", user.id).eq("account_type", "dedicated").eq("is_active", true).maybeSingle(),
+      supabase.from("paystack_dva_transactions").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(20),
     ]);
 
     setWallet(walletData);
     setSubscription(subData);
     setPayments(paymentsData || []);
-    const banks = (banksData as any[]) || [];
-    setBankAccounts(banks);
-    if (banks.length > 0 && !selectedBank) setSelectedBank(banks[0].id);
-    setTransfers((transfersData as any[]) || []);
+    setVirtualAccount(vaData);
+    setDvaTransactions((dvaTxData as any[]) || []);
     setLoading(false);
-  }, [user, selectedBank]);
+  }, [user]);
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  const selectedBankDetails = bankAccounts.find((b: any) => b.id === selectedBank);
-
-  const handleTransferSubmit = async () => {
-    if (!amount || !transferRef.trim() || !selectedBank || !user) {
-      toast({ title: "Fill all required fields", variant: "destructive" });
-      return;
+  const createDVA = async () => {
+    if (!user) return;
+    setCreatingDVA(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-dva", {
+        body: { account_type: "dedicated", purpose: "general" },
+      });
+      if (error) throw error;
+      if (data?.virtual_account) {
+        setVirtualAccount(data.virtual_account);
+        toast({ title: "Virtual account created!", description: "Transfer money to auto-credit your wallet." });
+      }
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
     }
-    setSubmitting(true);
-    const { error } = await supabase.from("bank_transfer_payments").insert({
-      user_id: user.id,
-      amount: parseFloat(amount),
-      currency: "NGN",
-      purpose,
-      transfer_reference: transferRef.trim(),
-      bank_name: selectedBankDetails?.bank_name || "",
-      account_name: selectedBankDetails?.account_name || "",
-      bank_account_id: selectedBank,
-      status: "pending",
-    } as any);
-
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Transfer submitted", description: "Your payment will be verified automatically or by an admin." });
-      setAmount("");
-      setTransferRef("");
-      fetchAll();
-    }
-    setSubmitting(false);
+    setCreatingDVA(false);
   };
 
   const copyToClipboard = (text: string) => {
@@ -154,15 +132,15 @@ const DashboardBillingPanel = ({ roleLabel }: DashboardBillingPanelProps) => {
           <div className="w-8 h-8 rounded-lg bg-accent/10 flex items-center justify-center mb-2">
             <Banknote size={16} className="text-accent-foreground" />
           </div>
-          <p className="font-heading font-bold text-lg">{transfers.filter(t => t.status === "pending").length}</p>
-          <p className="text-xs text-muted-foreground">Pending Transfers</p>
+          <p className="font-heading font-bold text-lg">{dvaTransactions.filter(t => t.status === "success").length}</p>
+          <p className="text-xs text-muted-foreground">DVA Payments</p>
         </Card>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid grid-cols-3">
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="bank">Bank Transfer</TabsTrigger>
+          <TabsTrigger value="dva">Pay via Transfer</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
         </TabsList>
 
@@ -220,8 +198,8 @@ const DashboardBillingPanel = ({ roleLabel }: DashboardBillingPanelProps) => {
 
           {/* Recent activity */}
           <div>
-            <h3 className="font-heading font-semibold text-sm mb-2">Recent Payments</h3>
-            {payments.length === 0 && transfers.length === 0 ? (
+            <h3 className="font-heading font-semibold text-sm mb-2">Recent Activity</h3>
+            {payments.length === 0 && dvaTransactions.length === 0 ? (
               <Card className="p-6 text-center">
                 <Receipt size={24} className="mx-auto text-muted-foreground mb-2" />
                 <p className="text-sm text-muted-foreground">No payment activity yet.</p>
@@ -229,19 +207,19 @@ const DashboardBillingPanel = ({ roleLabel }: DashboardBillingPanelProps) => {
             ) : (
               <div className="space-y-2">
                 {[...payments.slice(0, 3).map(p => ({
-                  id: p.id, type: "payment" as const,
+                  id: p.id,
                   amount: `${p.currency} ${Number(p.amount).toLocaleString()}`,
                   label: p.payment_type?.replace(/_/g, " ") || "Payment",
                   status: p.status, date: p.paid_at || p.created_at,
-                })), ...transfers.slice(0, 2).map(t => ({
-                  id: t.id, type: "transfer" as const,
+                })), ...dvaTransactions.slice(0, 2).map(t => ({
+                  id: t.id,
                   amount: `NGN ${Number(t.amount).toLocaleString()}`,
-                  label: `Bank transfer · ${t.purpose.replace(/_/g, " ")}`,
+                  label: `DVA transfer`,
                   status: t.status, date: t.created_at,
                 }))].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5).map(item => (
                   <Card key={item.id} className="p-3 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      {item.status === "completed" || item.status === "verified" ? (
+                      {item.status === "completed" || item.status === "success" ? (
                         <CheckCircle2 size={14} className="text-primary shrink-0" />
                       ) : (
                         <Clock size={14} className="text-muted-foreground shrink-0" />
@@ -253,7 +231,7 @@ const DashboardBillingPanel = ({ roleLabel }: DashboardBillingPanelProps) => {
                         </p>
                       </div>
                     </div>
-                    <Badge variant={item.status === "completed" || item.status === "verified" ? "default" : "secondary"} className="capitalize text-xs">
+                    <Badge variant={item.status === "completed" || item.status === "success" ? "default" : "secondary"} className="capitalize text-xs">
                       {item.status}
                     </Badge>
                   </Card>
@@ -263,111 +241,64 @@ const DashboardBillingPanel = ({ roleLabel }: DashboardBillingPanelProps) => {
           </div>
         </TabsContent>
 
-        {/* Bank Transfer */}
-        <TabsContent value="bank" className="space-y-4">
-          {bankAccounts.length > 1 && (
-            <div>
-              <label className="text-sm font-medium mb-2 block">Select Receiving Bank</label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                {bankAccounts.map((bank: any) => (
-                  <button
-                    key={bank.id}
-                    onClick={() => setSelectedBank(bank.id)}
-                    className={`p-3 rounded-lg border text-left transition-colors ${
-                      selectedBank === bank.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
-                    }`}
-                  >
-                    <p className="text-sm font-medium">{bank.bank_name}</p>
-                    <p className="text-xs text-muted-foreground capitalize">{bank.bank_type}</p>
-                  </button>
+        {/* DVA Transfer */}
+        <TabsContent value="dva" className="space-y-4">
+          {virtualAccount ? (
+            <Card className="p-5 border-primary/20">
+              <h3 className="font-heading font-semibold mb-3 flex items-center gap-2">
+                <Banknote size={16} className="text-primary" /> Your Virtual Account
+              </h3>
+              <div className="space-y-2">
+                {[
+                  { label: "Bank", value: virtualAccount.bank_name },
+                  { label: "Account Number", value: virtualAccount.account_number },
+                  { label: "Account Name", value: virtualAccount.account_name },
+                ].map(item => (
+                  <div key={item.label} className="flex items-center justify-between p-2.5 rounded-lg bg-muted/30">
+                    <div>
+                      <p className="text-[10px] text-muted-foreground">{item.label}</p>
+                      <p className="font-mono text-sm font-medium">{item.value}</p>
+                    </div>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => copyToClipboard(item.value)}>
+                      <Copy size={12} />
+                    </Button>
+                  </div>
                 ))}
               </div>
-            </div>
+              <div className="mt-3 p-2.5 rounded-lg bg-primary/5 border border-primary/20 text-[11px] text-muted-foreground">
+                <CheckCircle2 size={12} className="inline mr-1 text-primary" />
+                Transfer any amount. Credits are added automatically. ₦100 = 1 Token.
+              </div>
+            </Card>
+          ) : (
+            <Card className="p-6 text-center border-dashed">
+              <Banknote size={28} className="mx-auto text-muted-foreground mb-2" />
+              <p className="font-heading font-semibold">Get Your Virtual Account</p>
+              <p className="text-xs text-muted-foreground mb-3">
+                Create a dedicated account number. Any transfer auto-credits your wallet.
+              </p>
+              <Button variant="hero" size="sm" onClick={createDVA} disabled={creatingDVA}>
+                {creatingDVA ? <Loader2 size={14} className="animate-spin mr-1" /> : <Banknote size={14} className="mr-1" />}
+                {creatingDVA ? "Creating..." : "Create Virtual Account"}
+              </Button>
+            </Card>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Bank Details */}
-            <Card className="p-5">
-              <h3 className="font-heading font-semibold mb-3 flex items-center gap-2">
-                <Banknote size={16} className="text-primary" /> Account Details
-              </h3>
-              {selectedBankDetails ? (
-                <div className="space-y-2">
-                  {[
-                    { label: "Bank", value: selectedBankDetails.bank_name },
-                    { label: "Account Number", value: selectedBankDetails.account_number || "Contact admin" },
-                    { label: "Account Name", value: selectedBankDetails.account_name },
-                  ].map(item => (
-                    <div key={item.label} className="flex items-center justify-between p-2.5 rounded-lg bg-muted/30">
-                      <div>
-                        <p className="text-[10px] text-muted-foreground">{item.label}</p>
-                        <p className="font-mono text-sm font-medium">{item.value}</p>
-                      </div>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => copyToClipboard(item.value)}>
-                        <Copy size={12} />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">No bank accounts available.</p>
-              )}
-              <div className="mt-3 p-2.5 rounded-lg bg-chart-4/5 border border-chart-4/20 text-[11px] text-muted-foreground">
-                <AlertCircle size={12} className="inline mr-1 text-chart-4" />
-                Payments are auto-verified within minutes after submission.
-              </div>
-            </Card>
-
-            {/* Submit Form */}
-            <Card className="p-5">
-              <h3 className="font-heading font-semibold mb-3">Confirm Transfer</h3>
-              <div className="space-y-3">
-                <div>
-                  <label className="text-xs font-medium mb-1 block">Amount (₦)</label>
-                  <Input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="Enter amount" />
-                </div>
-                <div>
-                  <label className="text-xs font-medium mb-1 block">Purpose</label>
-                  <Select value={purpose} onValueChange={setPurpose}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="subscription">Subscription Payment</SelectItem>
-                      <SelectItem value="token_purchase">Token Purchase</SelectItem>
-                      <SelectItem value="feature_access">Feature Access</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="text-xs font-medium mb-1 block">Transfer Reference</label>
-                  <Input value={transferRef} onChange={e => setTransferRef(e.target.value)} placeholder="Bank reference / session ID" />
-                </div>
-                <Button variant="hero" className="w-full" onClick={handleTransferSubmit} disabled={submitting}>
-                  {submitting ? <Loader2 size={14} className="animate-spin mr-1" /> : <CheckCircle2 size={14} className="mr-1" />}
-                  {submitting ? "Submitting..." : "Submit Confirmation"}
-                </Button>
-              </div>
-            </Card>
-          </div>
-
-          {/* Transfer History */}
-          {transfers.length > 0 && (
+          {/* DVA Transaction History */}
+          {dvaTransactions.length > 0 && (
             <div>
               <h3 className="font-heading font-semibold text-sm mb-2">Transfer History</h3>
               <div className="space-y-2">
-                {transfers.slice(0, 5).map((t: any) => (
+                {dvaTransactions.slice(0, 5).map((t: any) => (
                   <Card key={t.id} className="p-3 flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium">₦{Number(t.amount).toLocaleString()}</p>
                       <p className="text-xs text-muted-foreground">
-                        {t.purpose.replace(/_/g, " ")} · Ref: {t.transfer_reference}
-                        {t.auto_verified && <span className="ml-1 text-primary">(Auto)</span>}
+                        Ref: {t.paystack_reference} · {new Date(t.created_at).toLocaleDateString()}
+                        {t.credited_wallet && <span className="ml-1 text-primary">✓ {Math.floor(Number(t.amount) / 100)} tokens</span>}
                       </p>
                     </div>
-                    <Badge
-                      variant={t.status === "verified" ? "default" : t.status === "rejected" ? "destructive" : "secondary"}
-                      className="capitalize text-xs"
-                    >
+                    <Badge variant="default" className="capitalize text-xs">
                       {t.status}
                     </Badge>
                   </Card>

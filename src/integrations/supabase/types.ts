@@ -3459,6 +3459,143 @@ export type Database = {
           },
         ]
       }
+      paystack_dva_transactions: {
+        Row: {
+          amount: number
+          channel: string | null
+          created_at: string
+          credited_at: string | null
+          credited_wallet: boolean
+          currency: string
+          gateway_response: string | null
+          id: string
+          metadata: Json | null
+          paystack_reference: string
+          purpose: string
+          sender_account: string | null
+          sender_bank: string | null
+          sender_name: string | null
+          session_id: string | null
+          status: string
+          user_id: string
+          virtual_account_id: string | null
+        }
+        Insert: {
+          amount: number
+          channel?: string | null
+          created_at?: string
+          credited_at?: string | null
+          credited_wallet?: boolean
+          currency?: string
+          gateway_response?: string | null
+          id?: string
+          metadata?: Json | null
+          paystack_reference: string
+          purpose?: string
+          sender_account?: string | null
+          sender_bank?: string | null
+          sender_name?: string | null
+          session_id?: string | null
+          status?: string
+          user_id: string
+          virtual_account_id?: string | null
+        }
+        Update: {
+          amount?: number
+          channel?: string | null
+          created_at?: string
+          credited_at?: string | null
+          credited_wallet?: boolean
+          currency?: string
+          gateway_response?: string | null
+          id?: string
+          metadata?: Json | null
+          paystack_reference?: string
+          purpose?: string
+          sender_account?: string | null
+          sender_bank?: string | null
+          sender_name?: string | null
+          session_id?: string | null
+          status?: string
+          user_id?: string
+          virtual_account_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "paystack_dva_transactions_virtual_account_id_fkey"
+            columns: ["virtual_account_id"]
+            isOneToOne: false
+            referencedRelation: "paystack_virtual_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      paystack_virtual_accounts: {
+        Row: {
+          account_name: string
+          account_number: string
+          account_type: string
+          bank_name: string
+          bank_slug: string | null
+          created_at: string
+          currency: string
+          customer_code: string
+          dva_id: string | null
+          expected_amount: number | null
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          metadata: Json | null
+          purpose: string | null
+          reference_id: string | null
+          reference_type: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_name: string
+          account_number: string
+          account_type?: string
+          bank_name: string
+          bank_slug?: string | null
+          created_at?: string
+          currency?: string
+          customer_code: string
+          dva_id?: string | null
+          expected_amount?: number | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          metadata?: Json | null
+          purpose?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_name?: string
+          account_number?: string
+          account_type?: string
+          bank_name?: string
+          bank_slug?: string | null
+          created_at?: string
+          currency?: string
+          customer_code?: string
+          dva_id?: string | null
+          expected_amount?: number | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          metadata?: Json | null
+          purpose?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       platform_api_keys: {
         Row: {
           created_at: string
