@@ -138,6 +138,9 @@ const KeysSecretsPanel = () => {
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+      {/* FSA Platform Secrets */}
+      <PlatformSecretsCard />
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="font-heading font-bold text-2xl">Keys & Secrets</h1>
