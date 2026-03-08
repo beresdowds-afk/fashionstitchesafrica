@@ -213,6 +213,11 @@ const DesignerPortal = () => {
             {activeTab === "website" && user && (
               <WebsiteTab userId={user.id} profile={profile} contracts={contracts} />
             )}
+            {activeTab === "payments" && user && contracts.length > 0 && (
+              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+                <PaymentGatewayPanel orgId={contracts[0]?.org_id} />
+              </motion.div>
+            )}
             {activeTab === "profile" && user && (
               <ProfileTab userId={user.id} profile={profile} setProfile={setProfile} />
             )}
