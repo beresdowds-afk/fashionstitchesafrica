@@ -25,20 +25,30 @@ export default defineConfig(({ mode }) => ({
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
       },
       manifest: {
-        name: "Fashion Stitches Africa",
-        short_name: "FSA",
-        description: "The operating system for African fashion commerce",
+        id: "/admin-install",
+        name: "Fashion Stitches Africa — Admin Console",
+        short_name: "FSA Admin",
+        description: "The operating system for African fashion commerce — Super Admin backend management",
         theme_color: "#C8963E",
         background_color: "#F5F0E8",
         display: "standalone",
         orientation: "portrait-primary",
         scope: "/",
-        start_url: "/",
-        categories: ["business", "lifestyle", "shopping"],
+        start_url: "/admin-install",
+        categories: ["business", "productivity"],
         icons: [
           { src: "/pwa-192x192.png", sizes: "192x192", type: "image/png" },
           { src: "/pwa-512x512.png", sizes: "512x512", type: "image/png" },
           { src: "/pwa-512x512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+        ],
+        screenshots: [
+          {
+            src: "/pwa-512x512.png",
+            sizes: "512x512",
+            type: "image/png",
+            form_factor: "narrow",
+            label: "FSA Admin Console"
+          }
         ],
       },
     }),

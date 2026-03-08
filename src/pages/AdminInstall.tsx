@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import { Download, Smartphone, Check, Share, ArrowRight, Apple, Chrome, Shield, Lock, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -210,20 +211,23 @@ const AdminInstall = () => {
               </div>
             )}
 
-            {/* Desktop fallback */}
+            {/* Desktop install */}
             {!isIOS && !isAndroid && !deferredPrompt && (
               <div className="rounded-xl bg-card border border-border p-6 text-center">
-                <Smartphone size={32} className="text-primary mx-auto mb-3" />
-                <h2 className="font-heading font-bold text-lg mb-2">Get Admin App</h2>
+                <Chrome size={32} className="text-primary mx-auto mb-3" />
+                <h2 className="font-heading font-bold text-lg mb-2">Install Admin Console</h2>
                 <p className="text-muted-foreground text-sm mb-4">
-                  Open this page on your mobile device to install the FSA Admin Console.
+                  Use Chrome or Edge on desktop — click the install icon in the address bar, or use the browser menu → <strong>"Install Fashion Stitches Africa"</strong>.
                 </p>
-                <div className="bg-muted rounded-lg p-4">
-                  <p className="text-xs text-muted-foreground mb-2">Share this link (admins only):</p>
+                <div className="bg-muted rounded-lg p-4 mb-4">
+                  <p className="text-xs text-muted-foreground mb-2">Or share this link with authorized admins:</p>
                   <code className="text-sm font-medium text-primary break-all">
                     {window.location.origin}/admin-install
                   </code>
                 </div>
+                <Button variant="outline" size="sm" onClick={() => navigator.clipboard.writeText(`${window.location.origin}/admin-install`).then(() => toast({ title: "Link copied!" }))}>
+                  Copy Install Link
+                </Button>
               </div>
             )}
 
