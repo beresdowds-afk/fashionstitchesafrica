@@ -4,6 +4,7 @@ import { ArrowRight, Download, Users, Scissors, Building2, Palette, Play } from 
 import { Link } from "react-router-dom";
 import heroBg from "@/assets/hero-bg.jpg";
 import { useHeroPricing } from "@/hooks/useHeroPricing";
+import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 
 const Hero = () => {
   const { pricing } = useHeroPricing();
