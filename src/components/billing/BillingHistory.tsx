@@ -37,6 +37,9 @@ const BillingHistory = ({ orgId }: { orgId: string }) => {
   const totalAdminFees = fees
     .filter(f => f.fee_type === "org_admin_fee")
     .reduce((sum, f) => sum + Number(f.amount), 0);
+  const totalMessagingFees = fees
+    .filter(f => f.fee_type.startsWith("messaging_"))
+    .reduce((sum, f) => sum + Number(f.amount), 0);
 
   if (loading) {
     return (
