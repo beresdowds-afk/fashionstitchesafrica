@@ -13,6 +13,7 @@ import AccountManagementPanel from "@/components/super-admin/AccountManagementPa
 import AdminInvoicingPaymentsPanel from "@/components/super-admin/AdminInvoicingPaymentsPanel";
 import AdminSupportRequestsPanel from "@/components/super-admin/AdminSupportRequestsPanel";
 import BankAccountsPanel from "@/components/super-admin/BankAccountsPanel";
+import MessageCenterDashboard from "@/components/super-admin/MessageCenterDashboard";
 import SubscriptionRatesPanel from "@/components/super-admin/SubscriptionRatesPanel";
 import FeaturedProductsAdminPanel from "@/components/super-admin/FeaturedProductsAdminPanel";
 import PlatformSettingsPanel from "@/components/super-admin/PlatformSettingsPanel";
