@@ -24,7 +24,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DollarSign, Smartphone, ScrollText, HelpCircle, UserX, Search, Trash2, Star, ShoppingBag, Download, Settings, LifeBuoy, Banknote, MapPin, MessageSquare } from "lucide-react";
+import { DollarSign, Smartphone, ScrollText, HelpCircle, UserX, Search, Trash2, Star, ShoppingBag, Download, Settings, LifeBuoy, Banknote, MapPin, MessageSquare, Menu, ChevronDown } from "lucide-react";
 import LocationMapFooter from "@/components/shared/LocationMapFooter";
 import TourGuide from "@/components/shared/TourGuide";
 import { useTourGuide } from "@/hooks/useTourGuide";
@@ -44,6 +44,35 @@ import {
   Crown,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarTrigger,
+  useSidebar,
+} from "@/components/ui/sidebar";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { cn } from "@/lib/utils";
+
+type TabId = "overview" | "platform_settings" | "organizations" | "users" | "accounts" | "revenue" | "invoicing" | "sub_rates" | "featured" | "keys" | "rates" | "websites" | "pricing" | "unified_pricing" | "backups" | "features" | "mobile" | "audit" | "support_requests" | "bank_accounts" | "message_center";
+
+interface SidebarItem {
+  id: TabId;
+  icon: React.ElementType;
+  label: string;
+}
+
+interface SidebarGroupDef {
+  label: string;
+  items: SidebarItem[];
+}
 
 interface OrgRow {
   id: string;
@@ -65,7 +94,7 @@ const SuperAdminDashboard = () => {
   const [stats, setStats] = useState({ orgs: 0, users: 0 });
   const [orgs, setOrgs] = useState<OrgRow[]>([]);
   const hasAccess = isSuperAdmin || isSuperAssistant;
-  const [activeTab, setActiveTab] = useState<"overview" | "platform_settings" | "organizations" | "users" | "accounts" | "revenue" | "invoicing" | "sub_rates" | "featured" | "keys" | "rates" | "websites" | "pricing" | "unified_pricing" | "backups" | "features" | "mobile" | "audit" | "support_requests" | "bank_accounts" | "message_center">("overview");
+  const [activeTab, setActiveTab] = useState<TabId>("overview");
   const tour = useTourGuide("super-admin-dashboard", superAdminTourSteps);
 
   useEffect(() => {
@@ -98,170 +127,276 @@ const SuperAdminDashboard = () => {
 
   if (!hasAccess) return null;
 
-  // Tabs restricted from super_assistant: pricing, features, subscription rates
   const restrictedTabs = new Set(["platform_settings", "sub_rates", "unified_pricing", "pricing", "features"]);
 
-  const sidebarItems = [
-    { id: "overview" as const, icon: BarChart3, label: "Overview" },
-    { id: "platform_settings" as const, icon: Settings, label: "Platform Settings" },
-    { id: "organizations" as const, icon: Building2, label: "Organizations" },
-    { id: "users" as const, icon: Users, label: "Users & Roles" },
-    { id: "accounts" as const, icon: UserX, label: "Account Mgmt" },
-    { id: "revenue" as const, icon: TrendingUp, label: "Platform Revenue" },
-    { id: "invoicing" as const, icon: ScrollText, label: "Invoicing & Payments" },
-    { id: "sub_rates" as const, icon: Crown, label: "Subscription Rates" },
-    { id: "featured" as const, icon: Star, label: "Featured Products" },
-    { id: "websites" as const, icon: Crown, label: "Website Requests" },
-    { id: "unified_pricing" as const, icon: DollarSign, label: "Pricing Center" },
-    { id: "pricing" as const, icon: Globe, label: "Website Pricing" },
-    { id: "keys" as const, icon: Shield, label: "Keys & Secrets" },
-    { id: "rates" as const, icon: Globe, label: "Exchange Rates" },
-    { id: "backups" as const, icon: Activity, label: "Backups" },
-    { id: "features" as const, icon: Shield, label: "Feature Flags" },
-    { id: "mobile" as const, icon: Smartphone, label: "Mobile App" },
-    { id: "audit" as const, icon: ScrollText, label: "Audit Logs" },
-    { id: "support_requests" as const, icon: LifeBuoy, label: "Support Requests" },
-    { id: "bank_accounts" as const, icon: Banknote, label: "Bank Accounts" },
-    { id: "message_center" as const, icon: MessageSquare, label: "Message Center" },
-  ].filter(item => isSuperAdmin || !restrictedTabs.has(item.id));
+  const allGroups: SidebarGroupDef[] = [
+    {
+      label: "General",
+      items: [
+        { id: "overview", icon: BarChart3, label: "Overview" },
+        { id: "platform_settings", icon: Settings, label: "Platform Settings" },
+      ],
+    },
+    {
+      label: "People & Orgs",
+      items: [
+        { id: "organizations", icon: Building2, label: "Organizations" },
+        { id: "users", icon: Users, label: "Users & Roles" },
+        { id: "accounts", icon: UserX, label: "Account Mgmt" },
+      ],
+    },
+    {
+      label: "Finance",
+      items: [
+        { id: "revenue", icon: TrendingUp, label: "Platform Revenue" },
+        { id: "invoicing", icon: ScrollText, label: "Invoicing & Payments" },
+        { id: "sub_rates", icon: Crown, label: "Subscription Rates" },
+        { id: "bank_accounts", icon: Banknote, label: "Bank Accounts" },
+      ],
+    },
+    {
+      label: "Pricing & Products",
+      items: [
+        { id: "unified_pricing", icon: DollarSign, label: "Pricing Center" },
+        { id: "pricing", icon: Globe, label: "Website Pricing" },
+        { id: "featured", icon: Star, label: "Featured Products" },
+        { id: "rates", icon: Globe, label: "Exchange Rates" },
+      ],
+    },
+    {
+      label: "Communications",
+      items: [
+        { id: "message_center", icon: MessageSquare, label: "Message Center" },
+        { id: "support_requests", icon: LifeBuoy, label: "Support Requests" },
+      ],
+    },
+    {
+      label: "System",
+      items: [
+        { id: "websites", icon: Crown, label: "Website Requests" },
+        { id: "keys", icon: Shield, label: "Keys & Secrets" },
+        { id: "backups", icon: Activity, label: "Backups" },
+        { id: "features", icon: Shield, label: "Feature Flags" },
+        { id: "mobile", icon: Smartphone, label: "Mobile App" },
+        { id: "audit", icon: ScrollText, label: "Audit Logs" },
+      ],
+    },
+  ];
+
+  // Filter restricted tabs for super_assistant
+  const sidebarGroups = allGroups.map(group => ({
+    ...group,
+    items: group.items.filter(item => isSuperAdmin || !restrictedTabs.has(item.id)),
+  })).filter(group => group.items.length > 0);
 
   return (
-    <div className="min-h-screen bg-background">
-      <TourGuide {...tour} />
-      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-brand" />
+    <SidebarProvider>
+      <div className="min-h-screen bg-background flex w-full">
+        <TourGuide {...tour} />
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-brand z-50" />
 
-      {/* Header */}
-      <header className="border-b border-border bg-ebony">
-        <div className="container mx-auto px-4 lg:px-8 flex items-center justify-between h-14">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-gradient-brand flex items-center justify-center">
-              <Shield size={16} className="text-primary-foreground" />
+        {/* Desktop Sidebar */}
+        <AdminSidebar
+          groups={sidebarGroups}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
+
+        {/* Main area */}
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* Header */}
+          <header className="border-b border-border bg-ebony sticky top-0 z-40">
+            <div className="px-4 lg:px-6 flex items-center justify-between h-14">
+              <div className="flex items-center gap-3">
+                {/* Desktop sidebar trigger */}
+                <SidebarTrigger className="text-ivory/70 hover:text-ivory hidden md:flex" />
+                {/* Mobile menu */}
+                <MobileSidebarMenu
+                  groups={sidebarGroups}
+                  activeTab={activeTab}
+                  onTabChange={setActiveTab}
+                />
+                <div className="w-8 h-8 rounded-full bg-gradient-brand flex items-center justify-center">
+                  <Shield size={16} className="text-primary-foreground" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="font-heading font-bold text-sm text-ivory hidden sm:inline">
+                    Fashion Stitches Africa
+                  </span>
+                  <span className="font-heading font-bold text-sm text-ivory sm:hidden">
+                    FSA
+                  </span>
+                  <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full font-medium">
+                    {isSuperAdmin ? "Super Admin" : "Super Assistant"}
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center gap-1 sm:gap-2">
+                <Button variant="ghost" size="sm" className="text-ivory/70 hover:text-ivory text-xs hidden lg:flex" onClick={() => navigate("/dashboard")}>
+                  <LayoutDashboard size={14} className="mr-1" /> Org Dashboard
+                </Button>
+                <Button variant="ghost" size="sm" className="text-ivory/70 hover:text-ivory text-xs hidden lg:flex" onClick={() => navigate("/platform-catalogue")}>
+                  <ShoppingBag size={14} className="mr-1" /> Catalogue
+                </Button>
+                <Button variant="ghost" size="sm" className="text-ivory/70 hover:text-ivory text-xs hidden xl:flex" onClick={() => navigate("/create-organization")}>
+                  <Plus size={14} className="mr-1" /> New Org
+                </Button>
+                <Button variant="ghost" size="sm" className="text-ivory/70 hover:text-ivory text-xs hidden xl:flex" onClick={() => navigate("/admin-install")}>
+                  <Download size={14} className="mr-1" /> Admin App
+                </Button>
+                <Button variant="ghost" size="icon" onClick={tour.restart} title="Restart tour guide" className="text-ivory/70 hover:text-ivory h-8 w-8">
+                  <HelpCircle size={16} />
+                </Button>
+                <div className="w-px h-6 bg-border/30 mx-1" />
+                <Button variant="ghost" size="icon" className="text-ivory/70 hover:text-ivory h-8 w-8" onClick={() => signOut().then(() => navigate("/"))}>
+                  <LogOut size={14} />
+                </Button>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="font-heading font-bold text-sm text-ivory">
-                Fashion Stitches Africa
-              </span>
-              <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full font-medium">
-                {isSuperAdmin ? "Super Admin" : "Super Assistant"}
-              </span>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-ivory/70 hover:text-ivory text-xs"
-              onClick={() => navigate("/dashboard")}
-            >
-              <LayoutDashboard size={14} className="mr-1" />
-              Org Dashboard
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-ivory/70 hover:text-ivory text-xs"
-              onClick={() => navigate("/platform-catalogue")}
-            >
-              <ShoppingBag size={14} className="mr-1" />
-              View Catalogue
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-ivory/70 hover:text-ivory text-xs"
-              onClick={() => navigate("/create-organization")}
-            >
-              <Plus size={14} className="mr-1" />
-              New Org
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-ivory/70 hover:text-ivory text-xs"
-              onClick={() => navigate("/admin-install")}
-            >
-              <Download size={14} className="mr-1" />
-              Admin App
-            </Button>
-            <Button variant="ghost" size="icon" onClick={tour.restart} title="Restart tour guide" className="text-ivory/70 hover:text-ivory">
-              <HelpCircle size={16} />
-            </Button>
-            <div className="w-px h-6 bg-border/30 mx-1" />
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-ivory/70 hover:text-ivory"
-              onClick={() => signOut().then(() => navigate("/"))}
-            >
-              <LogOut size={14} />
-            </Button>
-          </div>
+          </header>
+
+          {/* Main Content */}
+          <main className="flex-1 p-4 lg:p-6 overflow-auto">
+            {activeTab === "overview" && <OverviewPanel stats={stats} orgs={orgs} />}
+            {activeTab === "platform_settings" && isSuperAdmin && <PlatformSettingsPanel />}
+            {activeTab === "organizations" && <OrganizationsPanel orgs={orgs} />}
+            {activeTab === "users" && <UsersPanel />}
+            {activeTab === "accounts" && <AccountManagementPanel />}
+            {activeTab === "revenue" && <PlatformRevenuePanel />}
+            {activeTab === "invoicing" && <AdminInvoicingPaymentsPanel />}
+            {activeTab === "sub_rates" && isSuperAdmin && <SubscriptionRatesPanel />}
+            {activeTab === "featured" && <FeaturedProductsAdminPanel />}
+            {activeTab === "websites" && <WebsiteRequestsDashboard />}
+            {activeTab === "unified_pricing" && isSuperAdmin && <UnifiedPricingPanel />}
+            {activeTab === "pricing" && isSuperAdmin && <WebsitePricingPanel />}
+            {activeTab === "keys" && <KeysSecretsPanel />}
+            {activeTab === "rates" && <ExchangeRatesPanel />}
+            {activeTab === "backups" && <DataBackupPanel />}
+            {activeTab === "features" && isSuperAdmin && <FeatureFlagsPanel />}
+            {activeTab === "mobile" && <MobileAppManagementPanel />}
+            {activeTab === "audit" && <AuditLogsPanel />}
+            {activeTab === "support_requests" && <AdminSupportRequestsPanel />}
+            {activeTab === "bank_accounts" && <BankAccountsPanel />}
+            {activeTab === "message_center" && <MessageCenterDashboard />}
+          </main>
         </div>
-      </header>
+      </div>
+    </SidebarProvider>
+  );
+};
 
-      {/* Body */}
-      <div className="container mx-auto px-4 lg:px-8 py-6 flex gap-6">
-        {/* Sidebar */}
-        <nav className="hidden md:flex flex-col w-52 shrink-0 gap-1">
-          {sidebarItems.map((item) => (
-            <button
-              key={item.id}
-              data-tour={`sa-${item.id}`}
-              onClick={() => setActiveTab(item.id)}
-              className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors text-left ${
-                activeTab === item.id
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-muted"
-              }`}
-            >
-              <item.icon size={18} />
-              {item.label}
-            </button>
+/* ───────────── Admin Sidebar (Desktop) ───────────── */
+const AdminSidebar = ({
+  groups,
+  activeTab,
+  onTabChange,
+}: {
+  groups: SidebarGroupDef[];
+  activeTab: TabId;
+  onTabChange: (tab: TabId) => void;
+}) => {
+  const { state } = useSidebar();
+  const collapsed = state === "collapsed";
+
+  return (
+    <Sidebar collapsible="icon" className="border-r border-border hidden md:flex">
+      <SidebarContent className="pt-2">
+        {groups.map((group) => {
+          const groupActive = group.items.some(item => item.id === activeTab);
+          return (
+            <Collapsible key={group.label} defaultOpen={groupActive || groups.indexOf(group) < 3}>
+              <SidebarGroup>
+                <CollapsibleTrigger className="w-full">
+                  <SidebarGroupLabel className="flex items-center justify-between cursor-pointer hover:text-foreground transition-colors">
+                    {!collapsed && <span>{group.label}</span>}
+                    {!collapsed && <ChevronDown size={14} className="transition-transform duration-200 group-data-[state=open]:rotate-180" />}
+                  </SidebarGroupLabel>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <SidebarGroupContent>
+                    <SidebarMenu>
+                      {group.items.map((item) => (
+                        <SidebarMenuItem key={item.id}>
+                          <SidebarMenuButton
+                            onClick={() => onTabChange(item.id)}
+                            data-tour={`sa-${item.id}`}
+                            tooltip={item.label}
+                            className={cn(
+                              "cursor-pointer",
+                              activeTab === item.id && "bg-primary/10 text-primary font-medium"
+                            )}
+                          >
+                            <item.icon size={18} />
+                            {!collapsed && <span>{item.label}</span>}
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      ))}
+                    </SidebarMenu>
+                  </SidebarGroupContent>
+                </CollapsibleContent>
+              </SidebarGroup>
+            </Collapsible>
+          );
+        })}
+      </SidebarContent>
+    </Sidebar>
+  );
+};
+
+/* ───────────── Mobile Sidebar Sheet ───────────── */
+const MobileSidebarMenu = ({
+  groups,
+  activeTab,
+  onTabChange,
+}: {
+  groups: SidebarGroupDef[];
+  activeTab: TabId;
+  onTabChange: (tab: TabId) => void;
+}) => {
+  const [open, setOpen] = useState(false);
+
+  const handleSelect = (tab: TabId) => {
+    onTabChange(tab);
+    setOpen(false);
+  };
+
+  return (
+    <Sheet open={open} onOpenChange={setOpen}>
+      <SheetTrigger asChild>
+        <Button variant="ghost" size="icon" className="text-ivory/70 hover:text-ivory md:hidden h-8 w-8">
+          <Menu size={18} />
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="left" className="w-72 p-0 overflow-y-auto">
+        <SheetTitle className="px-4 pt-4 pb-2 font-heading font-bold text-sm text-foreground">
+          Admin Menu
+        </SheetTitle>
+        <nav className="px-2 pb-4 space-y-1">
+          {groups.map((group) => (
+            <div key={group.label}>
+              <p className="px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                {group.label}
+              </p>
+              {group.items.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => handleSelect(item.id)}
+                  className={cn(
+                    "flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left",
+                    activeTab === item.id
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  <item.icon size={16} />
+                  {item.label}
+                </button>
+              ))}
+            </div>
           ))}
         </nav>
-
-        {/* Mobile tabs */}
-        <div className="flex md:hidden fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50">
-          {sidebarItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={`flex-1 flex flex-col items-center gap-1 py-3 text-[10px] font-medium transition-colors ${
-                activeTab === item.id ? "text-primary" : "text-muted-foreground"
-              }`}
-            >
-              <item.icon size={18} />
-              {item.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Main Content */}
-        <main className="flex-1 min-w-0 pb-20 md:pb-0">
-          {activeTab === "overview" && <OverviewPanel stats={stats} orgs={orgs} />}
-          {activeTab === "platform_settings" && isSuperAdmin && <PlatformSettingsPanel />}
-          {activeTab === "organizations" && <OrganizationsPanel orgs={orgs} />}
-          {activeTab === "users" && <UsersPanel />}
-          {activeTab === "accounts" && <AccountManagementPanel />}
-          {activeTab === "revenue" && <PlatformRevenuePanel />}
-          {activeTab === "invoicing" && <AdminInvoicingPaymentsPanel />}
-          {activeTab === "sub_rates" && isSuperAdmin && <SubscriptionRatesPanel />}
-          {activeTab === "featured" && <FeaturedProductsAdminPanel />}
-          {activeTab === "websites" && <WebsiteRequestsDashboard />}
-          {activeTab === "unified_pricing" && isSuperAdmin && <UnifiedPricingPanel />}
-          {activeTab === "pricing" && isSuperAdmin && <WebsitePricingPanel />}
-          {activeTab === "keys" && <KeysSecretsPanel />}
-          {activeTab === "rates" && <ExchangeRatesPanel />}
-          {activeTab === "backups" && <DataBackupPanel />}
-          {activeTab === "features" && isSuperAdmin && <FeatureFlagsPanel />}
-          {activeTab === "mobile" && <MobileAppManagementPanel />}
-          {activeTab === "audit" && <AuditLogsPanel />}
-          {activeTab === "support_requests" && <AdminSupportRequestsPanel />}
-          {activeTab === "bank_accounts" && <BankAccountsPanel />}
-          {activeTab === "message_center" && <MessageCenterDashboard />}
-        </main>
-      </div>
-    </div>
+      </SheetContent>
+    </Sheet>
   );
 };
 
@@ -621,7 +756,6 @@ const UsersPanel = () => {
         </div>
       ) : tab === "fsa_roles" ? (
         <div className="space-y-4">
-          {/* Grant Global Role — only super_admin can grant */}
           {isSuperAdmin && (
           <div className="rounded-xl bg-card border border-border p-5">
             <h3 className="font-heading font-semibold text-sm mb-3 flex items-center gap-2">
@@ -651,7 +785,6 @@ const UsersPanel = () => {
           </div>
           )}
 
-          {/* Current Global Roles */}
           {globalRoles.length === 0 ? (
             <div className="rounded-xl bg-card border border-border p-12 text-center">
               <Shield size={40} className="text-muted-foreground mx-auto mb-3" />
@@ -681,7 +814,6 @@ const UsersPanel = () => {
                           </span>
                         </td>
                         <td className="px-4 py-3 text-right">
-                          {/* Only super_admin can revoke, and not their own role */}
                           {isSuperAdmin && r.user_id !== user?.id ? (
                             <Button
                               variant="ghost"
@@ -778,4 +910,3 @@ const UsersPanel = () => {
 
 
 export default SuperAdminDashboard;
-
