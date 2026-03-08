@@ -116,6 +116,7 @@ const SuperAdminDashboard = () => {
     { id: "mobile" as const, icon: Smartphone, label: "Mobile App" },
     { id: "audit" as const, icon: ScrollText, label: "Audit Logs" },
     { id: "support_requests" as const, icon: LifeBuoy, label: "Support Requests" },
+    { id: "bank_accounts" as const, icon: Banknote, label: "Bank Accounts" },
   ].filter(item => isSuperAdmin || !restrictedTabs.has(item.id));
 
   return (
