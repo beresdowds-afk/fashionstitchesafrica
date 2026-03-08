@@ -135,7 +135,7 @@ const SuperAdminDashboard = () => {
 
   if (!hasAccess) return null;
 
-  const restrictedTabs = new Set(["platform_settings", "sub_rates", "unified_pricing", "pricing", "features"]);
+  const restrictedTabs = new Set(["platform_settings", "sub_rates", "unified_pricing", "pricing", "features", "regional_management"]);
 
   const allGroups: SidebarGroupDef[] = [
     {
