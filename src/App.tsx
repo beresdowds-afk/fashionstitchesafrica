@@ -22,6 +22,7 @@ import OrgTailorPage from "./pages/OrgTailorPage";
 import ApiDocs from "./pages/ApiDocs";
 import LegalDocs from "./pages/LegalDocs";
 import DemoOrgWebsite from "./pages/DemoOrgWebsite";
+import PlatformCataloguePage from "./pages/PlatformCataloguePage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -49,6 +50,7 @@ const App = () => (
             <Route path="/browse" element={<BrowseOrganizations />} />
             <Route path="/catalogue/tailor/:tailorId" element={<TailorCataloguePage />} />
             <Route path="/catalogue/:orgId" element={<CataloguePage />} />
+            <Route path="/platform-catalogue" element={<PlatformCataloguePage />} />
             <Route path="/docs/api" element={<ApiDocs />} />
             <Route path="/legal" element={<LegalDocs />} />
             <Route path="/demo-org" element={<DemoOrgWebsite />} />
