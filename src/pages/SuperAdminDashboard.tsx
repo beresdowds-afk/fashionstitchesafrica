@@ -16,6 +16,7 @@ import BankAccountsPanel from "@/components/super-admin/BankAccountsPanel";
 import MessageCenterDashboard from "@/components/super-admin/MessageCenterDashboard";
 import SubscriptionRatesPanel from "@/components/super-admin/SubscriptionRatesPanel";
 import TaxCompliancePanel from "@/components/super-admin/TaxCompliancePanel";
+import RegionalManagementPanel from "@/components/super-admin/RegionalManagementPanel";
 import FeaturedProductsAdminPanel from "@/components/super-admin/FeaturedProductsAdminPanel";
 import PlatformSettingsPanel from "@/components/super-admin/PlatformSettingsPanel";
 import { useUserGlobalRole } from "@/hooks/useOrganization";
