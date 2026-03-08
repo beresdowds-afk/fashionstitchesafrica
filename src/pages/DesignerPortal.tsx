@@ -13,6 +13,7 @@ import NotificationBell from "@/components/notifications/NotificationBell";
 import TailorCatalogueManager from "@/components/catalogue/TailorCatalogueManager";
 import FeaturedProductsPanel from "@/components/catalogue/FeaturedProductsPanel";
 import PaymentGatewayPanel from "@/components/settings/PaymentGatewayPanel";
+import DashboardBillingPanel from "@/components/payments/DashboardBillingPanel";
 import {
   LogOut, Package, Clock, BarChart3, Palette, FileText,
   Wallet, User, ShoppingBag, CheckCircle2, ArrowRight,
@@ -25,7 +26,7 @@ import {
 } from "@/components/ui/sidebar";
 import fsaLogo from "@/assets/fsa-logo.png";
 
-type TabId = "overview" | "work-queue" | "contracts" | "earnings" | "catalogue" | "featured" | "website" | "payments" | "profile";
+type TabId = "overview" | "work-queue" | "contracts" | "earnings" | "catalogue" | "featured" | "website" | "billing" | "payments" | "profile";
 
 const statusLabels: Record<string, string> = {
   pending: "Pending", confirmed: "Confirmed", measuring: "Measuring",
@@ -49,6 +50,7 @@ const navItems: { id: TabId; icon: any; label: string }[] = [
   { id: "catalogue", icon: ShoppingBag, label: "Catalogue" },
   { id: "featured", icon: Star, label: "Featured Products" },
   { id: "website", icon: Globe, label: "My Website" },
+  { id: "billing", icon: DollarSign, label: "Billing & Payments" },
   { id: "payments", icon: CreditCard, label: "Payment Setup" },
   { id: "profile", icon: User, label: "Profile" },
 ];
@@ -212,6 +214,9 @@ const DesignerPortal = () => {
             )}
             {activeTab === "website" && user && (
               <WebsiteTab userId={user.id} profile={profile} contracts={contracts} />
+            )}
+            {activeTab === "billing" && user && (
+              <DashboardBillingPanel roleLabel="Designer" />
             )}
             {activeTab === "payments" && user && contracts.length > 0 && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>

@@ -18,13 +18,14 @@ import {
 } from "lucide-react";
 import FeaturedProductsPanel from "@/components/catalogue/FeaturedProductsPanel";
 import PaymentGatewayPanel from "@/components/settings/PaymentGatewayPanel";
+import DashboardBillingPanel from "@/components/payments/DashboardBillingPanel";
 import {
   SidebarProvider, SidebarTrigger, Sidebar, SidebarContent,
   SidebarGroup, SidebarGroupLabel, SidebarGroupContent,
   SidebarMenu, SidebarMenuItem, SidebarMenuButton, useSidebar
 } from "@/components/ui/sidebar";
 
-type TabId = "overview" | "work-queue" | "contracts" | "earnings" | "catalogue" | "featured" | "payments" | "profile";
+type TabId = "overview" | "work-queue" | "contracts" | "earnings" | "catalogue" | "featured" | "billing" | "payments" | "profile";
 
 const statusLabels: Record<string, string> = {
   pending: "Pending", confirmed: "Confirmed", measuring: "Measuring",
@@ -47,6 +48,7 @@ const navItems: { id: TabId; icon: any; label: string }[] = [
   { id: "earnings", icon: Wallet, label: "Earnings" },
   { id: "catalogue", icon: ShoppingBag, label: "Catalogue" },
   { id: "featured", icon: Star, label: "Featured Products" },
+  { id: "billing", icon: DollarSign, label: "Billing & Payments" },
   { id: "payments", icon: CreditCard, label: "Payment Setup" },
   { id: "profile", icon: User, label: "Profile" },
 ];
@@ -213,6 +215,9 @@ const TailorDashboard = () => {
             )}
             {activeTab === "featured" && user && (
               <FeaturedProductsPanel orgId={contracts[0]?.org_id || ""} userRole="designer" />
+            )}
+            {activeTab === "billing" && user && (
+              <DashboardBillingPanel roleLabel="Tailor" />
             )}
             {activeTab === "payments" && user && contracts.length > 0 && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
