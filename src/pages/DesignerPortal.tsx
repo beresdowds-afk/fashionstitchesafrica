@@ -585,9 +585,8 @@ const EarningsTab = ({ earnings }: { earnings: any[] }) => {
 };
 
 /* ── Website (Designer exclusive) ────────────────────────────────── */
-const WebsiteTab = ({ userId, profile, contracts }: { userId: string; profile: any; contracts: any[] }) => {
+const WebsiteTab = ({ contracts }: { userId: string; profile: any; contracts: any[] }) => {
   const navigate = useNavigate();
-  const { toast } = useToast();
   const [websiteData, setWebsiteData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
