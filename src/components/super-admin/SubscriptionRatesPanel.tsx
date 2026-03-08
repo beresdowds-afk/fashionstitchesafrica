@@ -261,19 +261,19 @@ export default function SubscriptionRatesPanel() {
       </div>
 
       {/* Rates by role */}
-      {(["customer", "designer", "tailor", "organization"] as const).map((role) => {
-        const Icon = ROLE_ICONS[role];
+      {Object.entries(ROLE_META).map(([role, meta]) => {
+        const Icon = meta.icon;
         const roleRates = groupedRates[role] || [];
         return (
           <div key={role} className="rounded-xl border border-border bg-card overflow-hidden">
             <div className="px-5 py-3 border-b border-border bg-muted/30 flex items-center gap-2">
               <Icon size={16} className="text-primary" />
-              <h3 className="font-heading font-semibold text-sm capitalize">{role} Plans</h3>
+              <h3 className="font-heading font-semibold text-sm">{meta.label} Plans</h3>
               <Badge variant="outline" className="ml-auto text-xs">{roleRates.length} plan{roleRates.length !== 1 ? "s" : ""}</Badge>
             </div>
             {roleRates.length === 0 ? (
               <div className="p-8 text-center text-muted-foreground text-sm">
-                No plans configured for {role}s.
+                No plans configured for {meta.label}.
                 <Button variant="outline" size="sm" className="ml-2" onClick={() => { setEditingRate({ ...emptyRate, role_type: role }); setFeaturesText(""); setEditDialogOpen(true); }}>
                   Add Plan
                 </Button>
