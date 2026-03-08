@@ -52,7 +52,7 @@ const PROVIDERS = [
 ];
 
 const KEY_NAMES: Record<string, string[]> = {
-  stripe: ["secret_key", "public_key", "webhook_secret"],
+  stripe: ["secret_key", "publishable_key", "webhook_secret"],
   paystack: ["secret_key", "public_key"],
   flutterwave: ["secret_key", "public_key"],
   other: ["api_key"],
