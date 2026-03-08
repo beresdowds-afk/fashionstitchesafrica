@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Menu, X, LogIn, UserPlus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import fsaLogo from "@/assets/fsa-logo.png";
+import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 
 const navLinks = [
   { label: "Features", href: "#features" },
@@ -15,14 +16,26 @@ const navLinks = [
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const { settings } = usePlatformSettings();
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-ebony/90 backdrop-blur-md border-b border-primary/10">
       <div className="container mx-auto flex items-center justify-between h-16 px-4 lg:px-8">
         <a href="#" className="flex items-center gap-2">
-          <img src={fsaLogo} alt="Fashion Stitches Africa" className="w-9 h-9 object-contain" />
+          <img
+            src={settings.logo_url || fsaLogo}
+            alt={settings.platform_name}
+            className="w-9 h-9 object-contain"
+          />
           <span className="font-heading font-bold text-lg text-ivory">
-            Fashion<span className="text-gradient-gold"> Stitches</span>
+            {settings.platform_short_name ? (
+              <>
+                {settings.platform_short_name.split(" ")[0]}
+                <span className="text-gradient-gold"> {settings.platform_short_name.split(" ").slice(1).join(" ")}</span>
+              </>
+            ) : (
+              <>Fashion<span className="text-gradient-gold"> Stitches</span></>
+            )}
           </span>
         </a>
 

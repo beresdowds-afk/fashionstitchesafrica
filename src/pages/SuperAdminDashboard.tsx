@@ -92,7 +92,7 @@ const SuperAdminDashboard = () => {
   if (!hasAccess) return null;
 
   // Tabs restricted from super_assistant: pricing, features, subscription rates
-  const restrictedTabs = new Set(["sub_rates", "unified_pricing", "pricing", "features"]);
+  const restrictedTabs = new Set(["platform_settings", "sub_rates", "unified_pricing", "pricing", "features"]);
 
   const sidebarItems = [
     { id: "overview" as const, icon: BarChart3, label: "Overview" },
