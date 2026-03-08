@@ -282,6 +282,16 @@ const AccountManagementPanel = () => {
           />
         </TabsContent>
 
+        {/* Designers */}
+        <TabsContent value="designers">
+          <AccountTable
+            entries={filteredDesigners}
+            type="designer"
+            onAction={openDialog}
+            showOrg
+          />
+        </TabsContent>
+
         {/* Customers */}
         <TabsContent value="customers">
           <AccountTable
