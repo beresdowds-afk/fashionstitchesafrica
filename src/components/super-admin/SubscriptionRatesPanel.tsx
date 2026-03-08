@@ -12,7 +12,8 @@ import { motion } from "framer-motion";
 import {
   Users, Scissors, Building2, DollarSign, Save, Plus, Trash2,
   Edit2, Loader2, CheckCircle2, Crown, Palette, Ruler, Video,
-  Sparkles, Bell, Package, Heart, MessageSquare, Shield, Eye
+  Sparkles, Bell, Package, Heart, MessageSquare, Shield, Eye,
+  Globe, ExternalLink
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
