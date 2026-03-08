@@ -256,9 +256,9 @@ const PaymentsPortal = () => {
             />
           </TabsContent>
 
-          {/* Bank Transfer */}
-          <TabsContent value="bank">
-            <BankTransferTab userId={user?.id || ""} onRefresh={fetchAll} />
+          {/* DVA Pay via Transfer */}
+          <TabsContent value="dva">
+            <DVATransferTab userId={user?.id || ""} onRefresh={fetchAll} />
           </TabsContent>
         </Tabs>
       </div>
