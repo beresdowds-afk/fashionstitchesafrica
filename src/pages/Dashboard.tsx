@@ -898,6 +898,13 @@ const SettingsTab = ({ org, role }: { org: any; role: AppRole | null }) => {
         </Button>
       )}
 
+      {/* Payment Gateways */}
+      {canEdit && (
+        <div className="mt-8">
+          <PaymentGatewayPanel orgId={org.id} canEdit={canEdit} />
+        </div>
+      )}
+
       {/* Availability Manager */}
       {canEdit && (
         <div className="mt-8">
