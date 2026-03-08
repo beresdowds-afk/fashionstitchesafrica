@@ -315,10 +315,51 @@ const WebsitePricingPanel = () => {
     setUnsavedChanges(true);
   };
 
-  const handleCreatePlan = () => {
-    toast({ title: "Plan created", description: `${newPlan.name} plan created. Configure features and pricing in the dashboard.` });
+  const handleCreatePlan = async () => {
+    if (!newPlan.name.trim() || !user) return;
+
+    const price = parseFloat(newPlan.price) || 0;
+    const platformFee = parseFloat(newPlan.platformFee) || 0;
+
+    // Determine role_type based on plan characteristics
+    const roleType = newPlan.billing === "one-time" || newPlan.billing === "hybrid"
+      ? "org_native_custom"
+      : "org_native_basic";
+
+    // Insert into subscription_rates
+    const { error: rateError } = await supabase
+      .from("subscription_rates" as any)
+      .insert({
+        plan_name: newPlan.name.trim(),
+        role_type: roleType,
+        price_amount: price,
+        price_currency: "USD",
+        billing_cycle: newPlan.billing === "hybrid" ? "monthly" : newPlan.billing === "one-time" ? "one_time" : newPlan.billing,
+        description: newPlan.description || null,
+        features: [],
+        is_active: true,
+        sort_order: 10,
+      } as any);
+
+    if (rateError) {
+      toast({ title: "Error creating plan", description: rateError.message, variant: "destructive" });
+      return;
+    }
+
+    // Record in pricing audit log
+    await supabase.from("pricing_audit_log").insert({
+      table_name: "subscription_rates",
+      record_id: "new",
+      field_name: `website_plan.${newPlan.name.trim()}`,
+      old_value: null,
+      new_value: `$${price}/${newPlan.billing} (platform fee: $${platformFee})`,
+      changed_by: user.id,
+    });
+
+    toast({ title: "✅ Plan created", description: `${newPlan.name} plan created and added to subscription rates.` });
     setCreatePlanModal(false);
     setNewPlan({ name: "", price: "", platformFee: "", billing: "monthly", description: "" });
+    await loadAll();
   };
 
   const proNetRevenue = config.pro.oneTime - config.pro.platformFee;
