@@ -196,21 +196,21 @@ export default function SubscriptionRatesPanel() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {(["customer", "designer", "tailor", "organization"] as const).map((role) => {
-          const Icon = ROLE_ICONS[role];
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        {Object.entries(ROLE_META).map(([role, meta]) => {
+          const Icon = meta.icon;
           const count = groupedRates[role]?.length || 0;
           const active = groupedRates[role]?.filter(r => r.is_active).length || 0;
           return (
             <div key={role} className="rounded-xl border border-border bg-card p-4">
               <div className="flex items-center gap-2 mb-2">
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${ROLE_COLORS[role]}`}>
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${meta.color}`}>
                   <Icon size={16} />
                 </div>
-                <span className="font-heading font-semibold text-sm capitalize">{role}s</span>
+                <span className="font-heading font-semibold text-xs">{meta.label}</span>
               </div>
               <p className="text-2xl font-heading font-bold">{count}</p>
-              <p className="text-xs text-muted-foreground">{active} active plan{active !== 1 ? "s" : ""}</p>
+              <p className="text-xs text-muted-foreground">{active} active</p>
             </div>
           );
         })}
