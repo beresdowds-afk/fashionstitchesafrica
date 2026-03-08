@@ -11,6 +11,7 @@ import MobileAppManagementPanel from "@/components/super-admin/MobileAppManageme
 import AuditLogsPanel from "@/components/super-admin/AuditLogsPanel";
 import AccountManagementPanel from "@/components/super-admin/AccountManagementPanel";
 import AdminInvoicingPaymentsPanel from "@/components/super-admin/AdminInvoicingPaymentsPanel";
+import AdminSupportRequestsPanel from "@/components/super-admin/AdminSupportRequestsPanel";
 import SubscriptionRatesPanel from "@/components/super-admin/SubscriptionRatesPanel";
 import FeaturedProductsAdminPanel from "@/components/super-admin/FeaturedProductsAdminPanel";
 import PlatformSettingsPanel from "@/components/super-admin/PlatformSettingsPanel";
