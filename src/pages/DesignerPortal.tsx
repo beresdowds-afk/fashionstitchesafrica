@@ -718,6 +718,9 @@ const ProfileTab = ({ userId, profile, setProfile }: {
   const [displayName, setDisplayName] = useState(profile?.display_name || "");
   const [specialty, setSpecialty] = useState(profile?.specialty || "");
   const [bio, setBio] = useState(profile?.bio || "");
+  const [latitude, setLatitude] = useState<number | null>(profile?.latitude || null);
+  const [longitude, setLongitude] = useState<number | null>(profile?.longitude || null);
+  const [physicalAddress, setPhysicalAddress] = useState(profile?.physical_address || "");
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
