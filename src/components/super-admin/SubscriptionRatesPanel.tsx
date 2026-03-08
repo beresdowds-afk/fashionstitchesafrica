@@ -343,6 +343,7 @@ export default function SubscriptionRatesPanel() {
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="customer">Customer</SelectItem>
+                      <SelectItem value="designer">Designer</SelectItem>
                       <SelectItem value="tailor">Tailor</SelectItem>
                       <SelectItem value="organization">Organization</SelectItem>
                     </SelectContent>
