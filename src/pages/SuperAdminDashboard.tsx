@@ -158,6 +158,7 @@ const SuperAdminDashboard = () => {
         { id: "revenue", icon: TrendingUp, label: "Platform Revenue" },
         { id: "invoicing", icon: ScrollText, label: "Invoicing & Payments" },
         { id: "sub_rates", icon: Crown, label: "Subscription Rates" },
+        { id: "tax_compliance", icon: Globe, label: "Tax & Compliance" },
         { id: "bank_accounts", icon: Banknote, label: "Bank Accounts" },
       ],
     },
