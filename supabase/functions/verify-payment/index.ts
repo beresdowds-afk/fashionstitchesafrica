@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { resolveGatewayKeys } from "../_shared/resolve-gateway-keys.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,7 +12,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Authenticate the caller
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
@@ -68,50 +68,42 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: corsHeaders });
     }
 
-    // Get org API keys
-    const { data: apiKeys } = await serviceClient
-      .from("org_api_keys")
-      .select("key_name, key_value")
-      .eq("org_id", payment.org_id)
-      .eq("provider", gateway)
-      .eq("is_active", true);
+    // Resolve keys with platform fallback
+    const keys = await resolveGatewayKeys(serviceClient, payment.org_id, gateway);
+    if (!keys) {
+      return new Response(JSON.stringify({ error: `${gateway} keys not configured` }), { status: 400, headers: corsHeaders });
+    }
 
-    const keys = Object.fromEntries((apiKeys || []).map((k: any) => [k.key_name, k.key_value]));
     let verified = false;
 
     if (gateway === "paystack") {
-      const secretKey = keys["secret_key"] || keys["PAYSTACK_SECRET_KEY"];
       const verifyRes = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
-        headers: { Authorization: `Bearer ${secretKey}` },
+        headers: { Authorization: `Bearer ${keys.secretKey}` },
       });
       const verifyData = await verifyRes.json();
       verified = verifyData.data?.status === "success";
 
     } else if (gateway === "flutterwave") {
-      const secretKey = keys["secret_key"] || keys["FLUTTERWAVE_SECRET_KEY"];
       const verifyRes = await fetch(`https://api.flutterwave.com/v3/transactions/verify_by_reference?tx_ref=${encodeURIComponent(reference)}`, {
-        headers: { Authorization: `Bearer ${secretKey}` },
+        headers: { Authorization: `Bearer ${keys.secretKey}` },
       });
       const verifyData = await verifyRes.json();
       verified = verifyData.data?.status === "successful";
 
     } else if (gateway === "stripe") {
-      const secretKey = keys["secret_key"] || keys["STRIPE_SECRET_KEY"];
       const sessionRes = await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(reference)}`, {
-        headers: { Authorization: `Basic ${btoa(secretKey + ":")}` },
+        headers: { Authorization: `Basic ${btoa(keys.secretKey + ":")}` },
       });
       const sessionData = await sessionRes.json();
       verified = sessionData.payment_status === "paid";
     }
 
     if (verified) {
-      // Update payment status
       await serviceClient.from("payments").update({
         status: "completed",
         paid_at: new Date().toISOString(),
       }).eq("id", payment.id);
 
-      // Update order payment status
       const { data: orderPayments } = await serviceClient
         .from("payments")
         .select("amount")
@@ -134,7 +126,6 @@ Deno.serve(async (req) => {
         payment_status: paymentStatus,
       }).eq("id", payment.order_id);
 
-      // Update fee ledger entries to collected
       await serviceClient.from("platform_fee_ledger").update({
         status: "collected",
       }).eq("order_id", payment.order_id).eq("status", "pending");

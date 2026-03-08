@@ -1,9 +1,35 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { resolveGatewayKeys } from "../_shared/resolve-gateway-keys.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+async function verifyWithGateway(gateway: string, secretKey: string, reference: string): Promise<boolean> {
+  if (gateway === "paystack") {
+    const res = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
+      headers: { Authorization: `Bearer ${secretKey}` },
+    });
+    const data = await res.json();
+    return data.data?.status === "success";
+  }
+  if (gateway === "stripe") {
+    const res = await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(reference)}`, {
+      headers: { Authorization: `Basic ${btoa(secretKey + ":")}` },
+    });
+    const data = await res.json();
+    return data.payment_status === "paid";
+  }
+  if (gateway === "flutterwave") {
+    const res = await fetch(`https://api.flutterwave.com/v3/transactions/verify_by_reference?tx_ref=${encodeURIComponent(reference)}`, {
+      headers: { Authorization: `Bearer ${secretKey}` },
+    });
+    const data = await res.json();
+    return data.data?.status === "successful";
+  }
+  return false;
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -11,7 +37,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Authenticate the caller
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
@@ -30,7 +55,6 @@ Deno.serve(async (req) => {
     }
 
     const userId = claimsData.claims.sub;
-
     const { reference } = await req.json();
     if (!reference) {
       return new Response(JSON.stringify({ error: "Missing reference" }), { status: 400, headers: corsHeaders });
@@ -51,9 +75,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Booking not found" }), { status: 404, headers: corsHeaders });
     }
 
-    // Verify the caller owns this booking
     if (booking.customer_id !== userId) {
-      // Also allow org members
       const { data: membership } = await serviceClient
         .from("org_members")
         .select("role")
@@ -73,35 +95,22 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get org Paystack key
-    const { data: apiKeys } = await serviceClient
-      .from("org_api_keys")
-      .select("key_name, key_value")
-      .eq("org_id", booking.org_id)
-      .eq("provider", "paystack")
-      .eq("is_active", true);
-
-    const keys = Object.fromEntries((apiKeys || []).map((k: any) => [k.key_name, k.key_value]));
-    const secretKey = keys["secret_key"] || keys["PAYSTACK_SECRET_KEY"];
-
-    if (!secretKey) {
-      return new Response(JSON.stringify({ error: "Paystack not configured" }), { status: 400, headers: corsHeaders });
+    // Use the gateway recorded during initialization, with platform fallback
+    const gateway = booking.payment_gateway || "paystack";
+    const keys = await resolveGatewayKeys(serviceClient, booking.org_id, gateway);
+    if (!keys) {
+      return new Response(JSON.stringify({ error: `${gateway} keys not configured` }), { status: 400, headers: corsHeaders });
     }
 
-    const verifyRes = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
-      headers: { Authorization: `Bearer ${secretKey}` },
-    });
-    const verifyData = await verifyRes.json();
+    const verified = await verifyWithGateway(gateway, keys.secretKey, reference);
 
-    if (verifyData.data?.status === "success") {
-      // Update booking
+    if (verified) {
       await serviceClient.from("ai_measurement_bookings").update({
         payment_status: "paid",
         booking_status: "confirmed",
         paid_at: new Date().toISOString(),
       }).eq("id", booking.id);
 
-      // Log revenue split to platform_fee_ledger
       await serviceClient.from("platform_fee_ledger").insert({
         org_id: booking.org_id,
         fee_type: "ai_measurement_platform_share",

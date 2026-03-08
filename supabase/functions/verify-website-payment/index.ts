@@ -1,9 +1,35 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { resolveGatewayKeys } from "../_shared/resolve-gateway-keys.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+async function verifyWithGateway(gateway: string, secretKey: string, reference: string): Promise<boolean> {
+  if (gateway === "paystack") {
+    const res = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
+      headers: { Authorization: `Bearer ${secretKey}` },
+    });
+    const data = await res.json();
+    return data.data?.status === "success";
+  }
+  if (gateway === "stripe") {
+    const res = await fetch(`https://api.stripe.com/v1/checkout/sessions/${encodeURIComponent(reference)}`, {
+      headers: { Authorization: `Basic ${btoa(secretKey + ":")}` },
+    });
+    const data = await res.json();
+    return data.payment_status === "paid";
+  }
+  if (gateway === "flutterwave") {
+    const res = await fetch(`https://api.flutterwave.com/v3/transactions/verify_by_reference?tx_ref=${encodeURIComponent(reference)}`, {
+      headers: { Authorization: `Bearer ${secretKey}` },
+    });
+    const data = await res.json();
+    return data.data?.status === "successful";
+  }
+  return false;
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -11,7 +37,6 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Authenticate the caller
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
@@ -30,7 +55,6 @@ Deno.serve(async (req) => {
     }
 
     const userId = claimsData.claims.sub;
-
     const { reference, org_id, plan } = await req.json();
     if (!reference || !org_id || !plan) {
       return new Response(JSON.stringify({ error: "Missing reference, org_id, or plan" }), { status: 400, headers: corsHeaders });
@@ -54,27 +78,33 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Forbidden" }), { status: 403, headers: corsHeaders });
     }
 
-    // Get org's Paystack secret key
-    const { data: apiKeys } = await serviceClient
-      .from("org_api_keys")
-      .select("key_name, key_value")
-      .eq("org_id", org_id)
-      .eq("provider", "paystack")
-      .eq("is_active", true);
-
-    const keys = Object.fromEntries((apiKeys || []).map((k: any) => [k.key_name, k.key_value]));
-    const secretKey = keys["secret_key"] || keys["PAYSTACK_SECRET_KEY"];
-
-    if (!secretKey) {
-      return new Response(JSON.stringify({ error: "Paystack secret key not found" }), { status: 400, headers: corsHeaders });
+    // Determine which gateway was used from the subscription/request record
+    let gateway = "paystack"; // default
+    if (plan === "lite") {
+      const { data: sub } = await serviceClient
+        .from("website_builder_subscriptions")
+        .select("payment_gateway")
+        .eq("org_id", org_id)
+        .eq("gateway_reference", reference)
+        .maybeSingle();
+      if (sub?.payment_gateway) gateway = sub.payment_gateway;
+    } else {
+      const { data: reqData } = await serviceClient
+        .from("website_builder_requests")
+        .select("payment_gateway")
+        .eq("org_id", org_id)
+        .eq("gateway_reference", reference)
+        .maybeSingle();
+      if (reqData?.payment_gateway) gateway = reqData.payment_gateway;
     }
 
-    // Verify with Paystack
-    const verifyRes = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
-      headers: { Authorization: `Bearer ${secretKey}` },
-    });
-    const verifyData = await verifyRes.json();
-    const verified = verifyData.data?.status === "success";
+    // Resolve keys with platform fallback
+    const keys = await resolveGatewayKeys(serviceClient, org_id, gateway);
+    if (!keys) {
+      return new Response(JSON.stringify({ error: `${gateway} keys not configured` }), { status: 400, headers: corsHeaders });
+    }
+
+    const verified = await verifyWithGateway(gateway, keys.secretKey, reference);
 
     if (verified) {
       if (plan === "lite") {
@@ -89,7 +119,7 @@ Deno.serve(async (req) => {
           trial_end: trialEnd.toISOString(),
           monthly_fee: 17,
           platform_fee: 10,
-          payment_gateway: "paystack",
+          payment_gateway: gateway,
           gateway_reference: reference,
           activated_at: new Date().toISOString(),
         }, { onConflict: "org_id" });
@@ -121,7 +151,7 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Fetch org details for email
+      // Notifications
       const { data: orgData } = await serviceClient
         .from("organizations")
         .select("name, email")
@@ -198,7 +228,7 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     } else {
-      return new Response(JSON.stringify({ status: "pending", message: "Payment not yet confirmed by Paystack" }), {
+      return new Response(JSON.stringify({ status: "pending", message: "Payment not yet confirmed" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

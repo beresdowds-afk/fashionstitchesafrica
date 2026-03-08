@@ -60,7 +60,7 @@ const FSA_KEY_NAMES: Record<string, { value: string; label: string }[]> = {
   ],
   stripe: [
     { value: "secret_key", label: "Secret Key" },
-    { value: "public_key", label: "Publishable Key" },
+    { value: "publishable_key", label: "Publishable Key" },
     { value: "webhook_secret", label: "Webhook Secret" },
   ],
   flutterwave: [

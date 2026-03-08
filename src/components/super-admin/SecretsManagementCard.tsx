@@ -19,7 +19,7 @@ const REQUIRED_SECRETS: Omit<SecretStatus, "configured">[] = [
   { name: "secret_key", provider: "paystack", description: "Paystack Secret Key for payment processing & DVA", category: "payments" },
   { name: "public_key", provider: "paystack", description: "Paystack Public Key for client-side checkout", category: "payments" },
   { name: "secret_key", provider: "stripe", description: "Stripe Secret Key for international payments", category: "payments" },
-  { name: "public_key", provider: "stripe", description: "Stripe Publishable Key for client-side", category: "payments" },
+  { name: "publishable_key", provider: "stripe", description: "Stripe Publishable Key for client-side", category: "payments" },
   { name: "secret_key", provider: "flutterwave", description: "Flutterwave Secret Key for African payments", category: "payments" },
   { name: "api_key", provider: "resend", description: "Resend API Key for transactional emails", category: "messaging" },
   { name: "api_key", provider: "termii", description: "Termii API Key for SMS & WhatsApp", category: "messaging" },

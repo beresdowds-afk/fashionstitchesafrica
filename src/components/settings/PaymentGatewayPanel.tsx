@@ -36,7 +36,7 @@ interface SupportRequest {
 const PROVIDERS = [
   { value: "paystack", label: "Paystack", keys: ["secret_key", "public_key"], docs: "https://dashboard.paystack.com/#/settings/developers" },
   { value: "flutterwave", label: "Flutterwave", keys: ["secret_key", "public_key"], docs: "https://dashboard.flutterwave.com/settings/apis" },
-  { value: "stripe", label: "Stripe", keys: ["secret_key", "publishable_key"], docs: "https://dashboard.stripe.com/apikeys" },
+  { value: "stripe", label: "Stripe", keys: ["secret_key", "public_key"], docs: "https://dashboard.stripe.com/apikeys" },
   { value: "paypal", label: "PayPal", keys: ["client_id", "client_secret"], docs: "https://developer.paypal.com/dashboard/applications" },
 ];
 
