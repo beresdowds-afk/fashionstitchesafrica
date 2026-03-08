@@ -10,20 +10,27 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
-import { ArrowLeft, Mail, Lock, User, Shield, Users, Scissors, Building2, Loader2, CheckCircle2, AlertCircle } from "lucide-react";
+import { ArrowLeft, Mail, Lock, User, Shield, Users, Scissors, Building2, Loader2, CheckCircle2, AlertCircle, Palette } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import DisclaimerDialog, { DisclaimerBanner } from "@/components/shared/DisclaimerDialog";
 
 type AuthMode = "signin" | "signup" | "forgot";
-type UserRole = "customer" | "tailor" | "organization";
+type UserRole = "customer" | "designer" | "tailor" | "organization";
 
 const ROLE_CONFIG: Record<UserRole, { label: string; icon: any; heading: string; sub: string; color: string }> = {
   customer: {
     label: "Customer",
     icon: Users,
     heading: "Join as a Customer",
-    sub: "Browse fashion houses, place orders & access AI tools",
+    sub: "Browse catalogues, place orders & discover fashion houses — free!",
     color: "bg-secondary/15 text-secondary",
+  },
+  designer: {
+    label: "Designer",
+    icon: Palette,
+    heading: "Register as a Designer",
+    sub: "All tailor tools + your own website — $15/mo",
+    color: "bg-primary/15 text-primary",
   },
   tailor: {
     label: "Tailor",
@@ -111,7 +118,7 @@ const Auth = () => {
     setVerifying(false);
   };
 
-  const requiresIdentity = selectedRole === "customer" || selectedRole === "tailor";
+  const requiresIdentity = selectedRole === "tailor" || selectedRole === "designer";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
