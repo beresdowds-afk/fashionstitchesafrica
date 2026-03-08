@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LogIn, UserPlus } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import fsaLogo from "@/assets/fsa-logo.png";
 
@@ -50,13 +50,15 @@ const Navbar = () => {
 
         <div className="hidden md:flex items-center gap-3">
           <Link to="/auth">
-            <Button variant="ghost" className="text-ivory/70 hover:text-ivory">
+            <Button variant="heroOutline" size="sm" className="gap-1.5">
+              <LogIn size={15} />
               Sign In
             </Button>
           </Link>
-          <Link to="/install">
-            <Button variant="hero" size="sm">
-              Get the App
+          <Link to="/auth?mode=signup">
+            <Button variant="hero" size="sm" className="gap-1.5">
+              <UserPlus size={15} />
+              Sign Up
             </Button>
           </Link>
         </div>
@@ -99,11 +101,20 @@ const Navbar = () => {
                   </a>
                 )
               )}
-              <Link to="/install">
-                <Button variant="hero" className="w-full mt-2">
-                  Get the App
-                </Button>
-              </Link>
+              <div className="flex flex-col gap-2 mt-2">
+                <Link to="/auth" onClick={() => setIsOpen(false)}>
+                  <Button variant="heroOutline" className="w-full gap-1.5">
+                    <LogIn size={15} />
+                    Sign In
+                  </Button>
+                </Link>
+                <Link to="/auth?mode=signup" onClick={() => setIsOpen(false)}>
+                  <Button variant="hero" className="w-full gap-1.5">
+                    <UserPlus size={15} />
+                    Sign Up
+                  </Button>
+                </Link>
+              </div>
             </div>
           </motion.div>
         )}
