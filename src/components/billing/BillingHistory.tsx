@@ -52,7 +52,7 @@ const BillingHistory = ({ orgId }: { orgId: string }) => {
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
       {/* Summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="p-4 rounded-lg border border-border bg-card">
           <div className="flex items-center gap-2 mb-2">
             <ArrowUpRight size={16} className="text-secondary" />
@@ -68,6 +68,14 @@ const BillingHistory = ({ orgId }: { orgId: string }) => {
           </div>
           <p className="font-heading font-bold text-xl">₦{totalAdminFees.toLocaleString()}</p>
           <p className="text-[10px] text-muted-foreground">Deducted from revenue</p>
+        </div>
+        <div className="p-4 rounded-lg border border-border bg-card">
+          <div className="flex items-center gap-2 mb-2">
+            <MessageSquare size={16} className="text-emerald-500" />
+            <span className="text-xs text-muted-foreground">Messaging Fees</span>
+          </div>
+          <p className="font-heading font-bold text-xl">${totalMessagingFees.toLocaleString()}</p>
+          <p className="text-[10px] text-muted-foreground">SMS, WhatsApp & Email</p>
         </div>
       </div>
 
