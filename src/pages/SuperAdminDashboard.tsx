@@ -96,6 +96,7 @@ const SuperAdminDashboard = () => {
 
   const sidebarItems = [
     { id: "overview" as const, icon: BarChart3, label: "Overview" },
+    { id: "platform_settings" as const, icon: Settings, label: "Platform Settings" },
     { id: "organizations" as const, icon: Building2, label: "Organizations" },
     { id: "users" as const, icon: Users, label: "Users & Roles" },
     { id: "accounts" as const, icon: UserX, label: "Account Mgmt" },
