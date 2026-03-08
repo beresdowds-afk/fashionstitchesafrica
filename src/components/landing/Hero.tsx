@@ -6,6 +6,8 @@ import heroBg from "@/assets/hero-bg.jpg";
 import { useHeroPricing } from "@/hooks/useHeroPricing";
 
 const Hero = () => {
+  const { pricing } = useHeroPricing();
+
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden">
       <div
