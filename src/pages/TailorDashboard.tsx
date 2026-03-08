@@ -674,6 +674,9 @@ const ProfileTab = ({ userId, profile, setProfile }: { userId: string; profile: 
     youtube_url: profile?.youtube_url || "",
     linkedin_url: profile?.linkedin_url || "",
     portfolio_url: profile?.portfolio_url || "",
+    latitude: profile?.latitude || null,
+    longitude: profile?.longitude || null,
+    physical_address: profile?.physical_address || "",
   });
   const [saving, setSaving] = useState(false);
 
