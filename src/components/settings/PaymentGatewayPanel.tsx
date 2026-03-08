@@ -297,7 +297,7 @@ const PaymentGatewayPanel = ({ orgId, canEdit = true }: { orgId: string; canEdit
                 <div className="flex items-center gap-2">
                   <Badge variant="secondary" className="capitalize">{prov}</Badge>
                   {provKeys.every(k => k.is_active) ? (
-                    <Badge variant="outline" className="text-green-600 border-green-300 text-xs">Active</Badge>
+                    <Badge variant="outline" className="text-primary border-primary/30 text-xs">Active</Badge>
                   ) : (
                     <Badge variant="outline" className="text-muted-foreground text-xs">Inactive</Badge>
                   )}
