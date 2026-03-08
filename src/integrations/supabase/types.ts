@@ -3667,6 +3667,7 @@ export type Database = {
           deactivated_at: string | null
           display_name: string | null
           facebook_url: string | null
+          free_tours_used: number
           id: string
           identity_number: string | null
           identity_type: string | null
@@ -3677,6 +3678,8 @@ export type Database = {
           is_deactivated: boolean
           linkedin_url: string | null
           portfolio_url: string | null
+          promo_consent: boolean
+          promo_consent_at: string | null
           specialty: string | null
           tiktok_url: string | null
           twitter_url: string | null
@@ -3692,6 +3695,7 @@ export type Database = {
           deactivated_at?: string | null
           display_name?: string | null
           facebook_url?: string | null
+          free_tours_used?: number
           id: string
           identity_number?: string | null
           identity_type?: string | null
@@ -3702,6 +3706,8 @@ export type Database = {
           is_deactivated?: boolean
           linkedin_url?: string | null
           portfolio_url?: string | null
+          promo_consent?: boolean
+          promo_consent_at?: string | null
           specialty?: string | null
           tiktok_url?: string | null
           twitter_url?: string | null
@@ -3717,6 +3723,7 @@ export type Database = {
           deactivated_at?: string | null
           display_name?: string | null
           facebook_url?: string | null
+          free_tours_used?: number
           id?: string
           identity_number?: string | null
           identity_type?: string | null
@@ -3727,6 +3734,8 @@ export type Database = {
           is_deactivated?: boolean
           linkedin_url?: string | null
           portfolio_url?: string | null
+          promo_consent?: boolean
+          promo_consent_at?: string | null
           specialty?: string | null
           tiktok_url?: string | null
           twitter_url?: string | null
