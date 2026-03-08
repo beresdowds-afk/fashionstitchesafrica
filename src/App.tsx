@@ -26,6 +26,7 @@ import LegalDocs from "./pages/LegalDocs";
 import DemoOrgWebsite from "./pages/DemoOrgWebsite";
 import PlatformCataloguePage from "./pages/PlatformCataloguePage";
 import PlatformTour from "./pages/PlatformTour";
+import PaymentsPortal from "./pages/PaymentsPortal";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
