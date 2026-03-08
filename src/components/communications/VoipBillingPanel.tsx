@@ -129,7 +129,8 @@ const VoipBillingPanel = ({ orgId, role }: VoipBillingPanelProps) => {
               </div>
             )}
             <p className="text-[10px] text-muted-foreground mt-4">
-              Rate: $0.50/min for VoIP · $1.00/min for Video · $1.50/min for Conference
+              VoIP: $0.50/min · Video: $1.00/min · Conference: $1.50/min<br />
+              SMS (Africa/Termii): $0.02 · SMS (Intl/Twilio): $0.05 · WhatsApp (Africa): $0.03 · WhatsApp (Intl): $0.06 · Email: $0.01
             </p>
           </Card>
         </TabsContent>
