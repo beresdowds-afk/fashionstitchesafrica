@@ -154,7 +154,7 @@ const Pricing = () => {
                 </span>
               </div>
 
-              <Link to={`/auth?role=${plan.popular ? "organization" : plan.name === "Starter" ? "tailor" : "organization"}`}>
+              <Link to={`/auth?role=${(plan as any).role || "organization"}`}>
                 <Button
                   variant={plan.popular ? "hero" : "heroOutline"}
                   className="w-full mb-8"
