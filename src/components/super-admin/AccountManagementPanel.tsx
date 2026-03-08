@@ -252,6 +252,9 @@ const AccountManagementPanel = () => {
           <TabsTrigger value="tailors" className="gap-1.5">
             <Scissors size={14} /> Tailors
           </TabsTrigger>
+          <TabsTrigger value="designers" className="gap-1.5">
+            <Palette size={14} /> Designers
+          </TabsTrigger>
           <TabsTrigger value="customers" className="gap-1.5">
             <Users size={14} /> Customers
           </TabsTrigger>
