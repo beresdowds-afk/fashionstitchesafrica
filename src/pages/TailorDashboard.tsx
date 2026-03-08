@@ -747,12 +747,33 @@ const ProfileTab = ({ userId, profile, setProfile }: { userId: string; profile: 
         </Card>
       </div>
 
+      {/* Physical Location */}
+      <Card className="p-6 mt-6">
+        <h3 className="font-heading font-semibold mb-4 flex items-center gap-2">
+          <MapPin size={16} className="text-primary" /> Physical Location <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">KYC</span>
+        </h3>
+        <p className="text-xs text-muted-foreground mb-3">Pin your workshop location for customer discovery and verification.</p>
+        <LocationPicker
+          latitude={form.latitude}
+          longitude={form.longitude}
+          address={form.physical_address}
+          onLocationChange={(lat, lng, addr) => setForm(f => ({ ...f, latitude: lat, longitude: lng, physical_address: addr }))}
+        />
+      </Card>
+
       <div className="flex justify-end mt-6">
         <Button variant="hero" onClick={handleSave} disabled={saving}>
           <Save size={16} className="mr-2" />
           {saving ? "Saving..." : "Save Profile"}
         </Button>
       </div>
+
+      <LocationMapFooter
+        latitude={form.latitude}
+        longitude={form.longitude}
+        address={form.physical_address}
+        label="Workshop Location"
+      />
     </motion.div>
   );
 };

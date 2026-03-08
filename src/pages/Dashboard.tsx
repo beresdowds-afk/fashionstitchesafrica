@@ -941,6 +941,14 @@ const SettingsTab = ({ org, role }: { org: any; role: AppRole | null }) => {
           <AvailabilityManager orgId={org.id} />
         </div>
       )}
+
+      {/* Location Map Footer */}
+      <LocationMapFooter
+        latitude={org.latitude}
+        longitude={org.longitude}
+        address={org.physical_address}
+        label={`${org.name} — Physical Location`}
+      />
     </motion.div>
   );
 };

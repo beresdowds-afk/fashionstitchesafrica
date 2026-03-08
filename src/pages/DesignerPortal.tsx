@@ -763,6 +763,31 @@ const ProfileTab = ({ userId, profile, setProfile }: {
           </Button>
         </div>
       </Card>
+
+      {/* Physical Location */}
+      <Card className="p-6 mt-6 max-w-lg">
+        <h3 className="font-heading font-semibold mb-3 flex items-center gap-2">
+          <MapPin size={16} className="text-primary" /> Physical Location <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">KYC</span>
+        </h3>
+        <p className="text-xs text-muted-foreground mb-3">Pin your studio location for customer discovery and verification.</p>
+        <LocationPicker
+          latitude={latitude}
+          longitude={longitude}
+          address={physicalAddress}
+          onLocationChange={(lat, lng, addr) => {
+            setLatitude(lat);
+            setLongitude(lng);
+            setPhysicalAddress(addr);
+          }}
+        />
+      </Card>
+
+      <LocationMapFooter
+        latitude={latitude}
+        longitude={longitude}
+        address={physicalAddress}
+        label="Studio Location"
+      />
     </motion.div>
   );
 };
