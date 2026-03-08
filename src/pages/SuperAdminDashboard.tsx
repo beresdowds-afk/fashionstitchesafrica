@@ -248,6 +248,7 @@ const SuperAdminDashboard = () => {
           {activeTab === "features" && isSuperAdmin && <FeatureFlagsPanel />}
           {activeTab === "mobile" && <MobileAppManagementPanel />}
           {activeTab === "audit" && <AuditLogsPanel />}
+          {activeTab === "support_requests" && <AdminSupportRequestsPanel />}
         </main>
       </div>
     </div>
