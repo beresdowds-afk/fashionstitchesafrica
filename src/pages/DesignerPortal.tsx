@@ -17,8 +17,10 @@ import DashboardBillingPanel from "@/components/payments/DashboardBillingPanel";
 import {
   LogOut, Package, Clock, BarChart3, Palette, FileText,
   Wallet, User, ShoppingBag, CheckCircle2, ArrowRight,
-  Shield, DollarSign, TrendingUp, Save, Globe, Download, Star, CreditCard
+  Shield, DollarSign, TrendingUp, Save, Globe, Download, Star, CreditCard, MapPin
 } from "lucide-react";
+import LocationPicker from "@/components/shared/LocationPicker";
+import LocationMapFooter from "@/components/shared/LocationMapFooter";
 import {
   SidebarProvider, SidebarTrigger, Sidebar, SidebarContent,
   SidebarGroup, SidebarGroupLabel, SidebarGroupContent,
