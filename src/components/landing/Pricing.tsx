@@ -5,6 +5,22 @@ import { Link } from "react-router-dom";
 
 const plans = [
   {
+    name: "Designer",
+    price: "$15",
+    period: "/month",
+    description: "For independent fashion designers building their brand.",
+    features: [
+      "Personal Portfolio Website",
+      "Catalogue Showcase",
+      "AI Measurements",
+      "Customer Management",
+      "Order Tracking",
+      "Direct Messaging",
+    ],
+    popular: false,
+    role: "designer",
+  },
+  {
     name: "Starter",
     price: "$29",
     period: "/month",
@@ -18,6 +34,7 @@ const plans = [
       "Free Subdomain",
     ],
     popular: false,
+    role: "tailor",
   },
   {
     name: "Professional",
@@ -35,6 +52,7 @@ const plans = [
       "WhatsApp Integration",
     ],
     popular: true,
+    role: "organization",
   },
   {
     name: "Enterprise",
@@ -54,6 +72,7 @@ const plans = [
       "SLA Guarantee",
     ],
     popular: false,
+    role: "organization",
   },
 ];
 
