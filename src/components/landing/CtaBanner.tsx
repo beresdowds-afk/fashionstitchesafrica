@@ -2,8 +2,11 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { ArrowRight, Users, Scissors, Building2, Sparkles, Palette } from "lucide-react";
 import { Link } from "react-router-dom";
+import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 
 const CtaBanner = () => {
+  const { settings } = usePlatformSettings();
+
   return (
     <section className="py-24 relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-brand opacity-90" />

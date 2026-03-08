@@ -4,9 +4,11 @@ import { ArrowRight, Download, Users, Scissors, Building2, Palette, Play } from 
 import { Link } from "react-router-dom";
 import heroBg from "@/assets/hero-bg.jpg";
 import { useHeroPricing } from "@/hooks/useHeroPricing";
+import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 
 const Hero = () => {
   const { pricing } = useHeroPricing();
+  const { settings } = usePlatformSettings();
 
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden">
@@ -30,7 +32,7 @@ const Hero = () => {
           >
             <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
             <span className="text-primary text-sm font-medium">
-              The Future of African Fashion Tech
+              {settings.tagline || "The Future of African Fashion Tech"}
             </span>
           </motion.div>
 

@@ -13,6 +13,7 @@ import AccountManagementPanel from "@/components/super-admin/AccountManagementPa
 import AdminInvoicingPaymentsPanel from "@/components/super-admin/AdminInvoicingPaymentsPanel";
 import SubscriptionRatesPanel from "@/components/super-admin/SubscriptionRatesPanel";
 import FeaturedProductsAdminPanel from "@/components/super-admin/FeaturedProductsAdminPanel";
+import PlatformSettingsPanel from "@/components/super-admin/PlatformSettingsPanel";
 import { useUserGlobalRole } from "@/hooks/useOrganization";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -20,7 +21,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DollarSign, Smartphone, ScrollText, HelpCircle, UserX, Search, Trash2, Star, ShoppingBag, Download } from "lucide-react";
+import { DollarSign, Smartphone, ScrollText, HelpCircle, UserX, Search, Trash2, Star, ShoppingBag, Download, Settings } from "lucide-react";
 import TourGuide from "@/components/shared/TourGuide";
 import { useTourGuide } from "@/hooks/useTourGuide";
 import { useToast } from "@/hooks/use-toast";
@@ -57,7 +58,7 @@ const SuperAdminDashboard = () => {
   const [stats, setStats] = useState({ orgs: 0, users: 0 });
   const [orgs, setOrgs] = useState<OrgRow[]>([]);
   const hasAccess = isSuperAdmin || isSuperAssistant;
-  const [activeTab, setActiveTab] = useState<"overview" | "organizations" | "users" | "accounts" | "revenue" | "invoicing" | "sub_rates" | "featured" | "keys" | "rates" | "websites" | "pricing" | "unified_pricing" | "backups" | "features" | "mobile" | "audit">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "platform_settings" | "organizations" | "users" | "accounts" | "revenue" | "invoicing" | "sub_rates" | "featured" | "keys" | "rates" | "websites" | "pricing" | "unified_pricing" | "backups" | "features" | "mobile" | "audit">("overview");
   const tour = useTourGuide("super-admin-dashboard", superAdminTourSteps);
 
   useEffect(() => {
@@ -91,10 +92,11 @@ const SuperAdminDashboard = () => {
   if (!hasAccess) return null;
 
   // Tabs restricted from super_assistant: pricing, features, subscription rates
-  const restrictedTabs = new Set(["sub_rates", "unified_pricing", "pricing", "features"]);
+  const restrictedTabs = new Set(["platform_settings", "sub_rates", "unified_pricing", "pricing", "features"]);
 
   const sidebarItems = [
     { id: "overview" as const, icon: BarChart3, label: "Overview" },
+    { id: "platform_settings" as const, icon: Settings, label: "Platform Settings" },
     { id: "organizations" as const, icon: Building2, label: "Organizations" },
     { id: "users" as const, icon: Users, label: "Users & Roles" },
     { id: "accounts" as const, icon: UserX, label: "Account Mgmt" },
@@ -227,6 +229,7 @@ const SuperAdminDashboard = () => {
         {/* Main Content */}
         <main className="flex-1 min-w-0 pb-20 md:pb-0">
           {activeTab === "overview" && <OverviewPanel stats={stats} orgs={orgs} />}
+          {activeTab === "platform_settings" && isSuperAdmin && <PlatformSettingsPanel />}
           {activeTab === "organizations" && <OrganizationsPanel orgs={orgs} />}
           {activeTab === "users" && <UsersPanel />}
           {activeTab === "accounts" && <AccountManagementPanel />}
