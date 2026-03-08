@@ -75,14 +75,6 @@ const TaxCompliancePanel = () => {
     await updateJurisdiction.mutateAsync({ id: j.id, updates: { is_active: !j.is_active } });
   };
 
-  const handleUpdateRate = async (j: TaxJurisdiction, rate: string) => {
-    const numRate = parseFloat(rate);
-    if (isNaN(numRate) || numRate < 0 || numRate > 1) return;
-    await updateJurisdiction.mutateAsync({ id: j.id, updates: { tax_rate: numRate } });
-    toast({ title: `${j.jurisdiction_name} rate updated to ${(numRate * 100).toFixed(2)}%` });
-  };
-
-  const nexusTriggeredCount = tracking.filter(t => t.nexus_triggered).length;
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
