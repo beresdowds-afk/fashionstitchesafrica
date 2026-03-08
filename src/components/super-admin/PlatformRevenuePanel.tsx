@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import {
   DollarSign, Building2, TrendingUp, Receipt, Video, UserPlus,
   ArrowUpRight, Globe, CreditCard, Sparkles, Wallet, Crown, Coins,
-  Search, Scissors, Palette, Users
+  Search, Scissors, Palette, Users, Phone, MessageSquare, Mail
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
