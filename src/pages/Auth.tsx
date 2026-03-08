@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { motion } from "framer-motion";
-import { ArrowLeft, Mail, Lock, User, Shield, Users, Scissors, Building2, Loader2, CheckCircle2, AlertCircle, Palette } from "lucide-react";
+import { ArrowLeft, Mail, Lock, User, Shield, Users, Scissors, Building2, Loader2, CheckCircle2, AlertCircle, Palette, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import DisclaimerDialog, { DisclaimerBanner } from "@/components/shared/DisclaimerDialog";
 
@@ -75,6 +75,7 @@ const Auth = () => {
   const { toast } = useToast();
 
   const [selectedRole, setSelectedRole] = useState<UserRole>(roleParam && ROLE_CONFIG[roleParam] ? roleParam : "customer");
+  const [showPassword, setShowPassword] = useState(false);
 
   // Identity verification fields (for customer & tailor)
   const [identityType, setIdentityType] = useState("");
@@ -358,14 +359,22 @@ const Auth = () => {
                   <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     id="password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
                     required
                     minLength={6}
-                    className="pl-10"
+                    className="pl-10 pr-10"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
                 </div>
               </div>
             )}
