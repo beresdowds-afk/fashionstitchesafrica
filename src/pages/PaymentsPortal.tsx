@@ -217,12 +217,12 @@ const PaymentsPortal = () => {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-5 mb-6">
+           <TabsList className="grid grid-cols-5 mb-6">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="tokens">Buy Tokens</TabsTrigger>
             <TabsTrigger value="history">History</TabsTrigger>
             <TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
-            <TabsTrigger value="bank">Bank Transfer</TabsTrigger>
+            <TabsTrigger value="dva">Pay via Transfer</TabsTrigger>
           </TabsList>
 
           {/* Overview */}
