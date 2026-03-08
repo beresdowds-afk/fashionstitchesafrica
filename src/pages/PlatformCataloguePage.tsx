@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import IdentityVerificationGate from "@/components/shared/IdentityVerificationGate";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
-import { ArrowLeft, Search, ShoppingBag, Tag, Building2 } from "lucide-react";
+import { ArrowLeft, Search, ShoppingBag, Tag, Building2, LogIn } from "lucide-react";
 
 interface CatalogueItem {
   id: string;
@@ -23,10 +25,28 @@ interface CatalogueItem {
 
 const PlatformCataloguePage = () => {
   const navigate = useNavigate();
+  const { user, loading: authLoading } = useAuth();
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [roleLoading, setRoleLoading] = useState(true);
   const [items, setItems] = useState<CatalogueItem[]>([]);
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [loading, setLoading] = useState(true);
+
+  // Determine user role
+  useEffect(() => {
+    if (!user) { setRoleLoading(false); return; }
+    const fetchRole = async () => {
+      const { data } = await supabase
+        .from("user_roles" as any)
+        .select("role")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      setUserRole((data as any)?.role || "customer");
+      setRoleLoading(false);
+    };
+    fetchRole();
+  }, [user]);
 
   useEffect(() => {
     const load = async () => {
@@ -55,7 +75,7 @@ const PlatformCataloguePage = () => {
     return matchSearch && matchCat;
   });
 
-  if (loading) {
+  if (authLoading || roleLoading || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
@@ -63,7 +83,27 @@ const PlatformCataloguePage = () => {
     );
   }
 
-  return (
+  // Require authentication
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="rounded-xl border border-border bg-card p-8 text-center max-w-md mx-auto">
+          <LogIn size={32} className="mx-auto text-primary mb-3" />
+          <h3 className="font-heading font-bold text-lg mb-2">Sign In Required</h3>
+          <p className="text-sm text-muted-foreground mb-6">
+            Please sign in to access the Platform Catalogue.
+          </p>
+          <Button variant="default" onClick={() => navigate("/auth")}>
+            Sign In / Sign Up
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const isPrivilegedRole = ["super_admin", "super_assistant", "org_admin", "manager", "tailor", "designer"].includes(userRole || "");
+
+  const catalogueContent = (
     <div className="min-h-screen bg-background">
       <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-brand" />
 
@@ -153,6 +193,15 @@ const PlatformCataloguePage = () => {
         )}
       </div>
     </div>
+  );
+
+  // Privileged roles get unrestricted access; customers must pass subscription + identity verification
+  if (isPrivilegedRole) return catalogueContent;
+
+  return (
+    <IdentityVerificationGate featureLabel="the Platform Catalogue">
+      {catalogueContent}
+    </IdentityVerificationGate>
   );
 };
 
