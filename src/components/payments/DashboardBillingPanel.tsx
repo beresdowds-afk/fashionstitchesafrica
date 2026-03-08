@@ -241,111 +241,64 @@ const DashboardBillingPanel = ({ roleLabel }: DashboardBillingPanelProps) => {
           </div>
         </TabsContent>
 
-        {/* Bank Transfer */}
-        <TabsContent value="bank" className="space-y-4">
-          {bankAccounts.length > 1 && (
-            <div>
-              <label className="text-sm font-medium mb-2 block">Select Receiving Bank</label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                {bankAccounts.map((bank: any) => (
-                  <button
-                    key={bank.id}
-                    onClick={() => setSelectedBank(bank.id)}
-                    className={`p-3 rounded-lg border text-left transition-colors ${
-                      selectedBank === bank.id ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
-                    }`}
-                  >
-                    <p className="text-sm font-medium">{bank.bank_name}</p>
-                    <p className="text-xs text-muted-foreground capitalize">{bank.bank_type}</p>
-                  </button>
+        {/* DVA Transfer */}
+        <TabsContent value="dva" className="space-y-4">
+          {virtualAccount ? (
+            <Card className="p-5 border-primary/20">
+              <h3 className="font-heading font-semibold mb-3 flex items-center gap-2">
+                <Banknote size={16} className="text-primary" /> Your Virtual Account
+              </h3>
+              <div className="space-y-2">
+                {[
+                  { label: "Bank", value: virtualAccount.bank_name },
+                  { label: "Account Number", value: virtualAccount.account_number },
+                  { label: "Account Name", value: virtualAccount.account_name },
+                ].map(item => (
+                  <div key={item.label} className="flex items-center justify-between p-2.5 rounded-lg bg-muted/30">
+                    <div>
+                      <p className="text-[10px] text-muted-foreground">{item.label}</p>
+                      <p className="font-mono text-sm font-medium">{item.value}</p>
+                    </div>
+                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => copyToClipboard(item.value)}>
+                      <Copy size={12} />
+                    </Button>
+                  </div>
                 ))}
               </div>
-            </div>
+              <div className="mt-3 p-2.5 rounded-lg bg-primary/5 border border-primary/20 text-[11px] text-muted-foreground">
+                <CheckCircle2 size={12} className="inline mr-1 text-primary" />
+                Transfer any amount. Credits are added automatically. ₦100 = 1 Token.
+              </div>
+            </Card>
+          ) : (
+            <Card className="p-6 text-center border-dashed">
+              <Banknote size={28} className="mx-auto text-muted-foreground mb-2" />
+              <p className="font-heading font-semibold">Get Your Virtual Account</p>
+              <p className="text-xs text-muted-foreground mb-3">
+                Create a dedicated account number. Any transfer auto-credits your wallet.
+              </p>
+              <Button variant="hero" size="sm" onClick={createDVA} disabled={creatingDVA}>
+                {creatingDVA ? <Loader2 size={14} className="animate-spin mr-1" /> : <Banknote size={14} className="mr-1" />}
+                {creatingDVA ? "Creating..." : "Create Virtual Account"}
+              </Button>
+            </Card>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Bank Details */}
-            <Card className="p-5">
-              <h3 className="font-heading font-semibold mb-3 flex items-center gap-2">
-                <Banknote size={16} className="text-primary" /> Account Details
-              </h3>
-              {selectedBankDetails ? (
-                <div className="space-y-2">
-                  {[
-                    { label: "Bank", value: selectedBankDetails.bank_name },
-                    { label: "Account Number", value: selectedBankDetails.account_number || "Contact admin" },
-                    { label: "Account Name", value: selectedBankDetails.account_name },
-                  ].map(item => (
-                    <div key={item.label} className="flex items-center justify-between p-2.5 rounded-lg bg-muted/30">
-                      <div>
-                        <p className="text-[10px] text-muted-foreground">{item.label}</p>
-                        <p className="font-mono text-sm font-medium">{item.value}</p>
-                      </div>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => copyToClipboard(item.value)}>
-                        <Copy size={12} />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">No bank accounts available.</p>
-              )}
-              <div className="mt-3 p-2.5 rounded-lg bg-chart-4/5 border border-chart-4/20 text-[11px] text-muted-foreground">
-                <AlertCircle size={12} className="inline mr-1 text-chart-4" />
-                Payments are auto-verified within minutes after submission.
-              </div>
-            </Card>
-
-            {/* Submit Form */}
-            <Card className="p-5">
-              <h3 className="font-heading font-semibold mb-3">Confirm Transfer</h3>
-              <div className="space-y-3">
-                <div>
-                  <label className="text-xs font-medium mb-1 block">Amount (₦)</label>
-                  <Input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="Enter amount" />
-                </div>
-                <div>
-                  <label className="text-xs font-medium mb-1 block">Purpose</label>
-                  <Select value={purpose} onValueChange={setPurpose}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="subscription">Subscription Payment</SelectItem>
-                      <SelectItem value="token_purchase">Token Purchase</SelectItem>
-                      <SelectItem value="feature_access">Feature Access</SelectItem>
-                      <SelectItem value="other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="text-xs font-medium mb-1 block">Transfer Reference</label>
-                  <Input value={transferRef} onChange={e => setTransferRef(e.target.value)} placeholder="Bank reference / session ID" />
-                </div>
-                <Button variant="hero" className="w-full" onClick={handleTransferSubmit} disabled={submitting}>
-                  {submitting ? <Loader2 size={14} className="animate-spin mr-1" /> : <CheckCircle2 size={14} className="mr-1" />}
-                  {submitting ? "Submitting..." : "Submit Confirmation"}
-                </Button>
-              </div>
-            </Card>
-          </div>
-
-          {/* Transfer History */}
-          {transfers.length > 0 && (
+          {/* DVA Transaction History */}
+          {dvaTransactions.length > 0 && (
             <div>
               <h3 className="font-heading font-semibold text-sm mb-2">Transfer History</h3>
               <div className="space-y-2">
-                {transfers.slice(0, 5).map((t: any) => (
+                {dvaTransactions.slice(0, 5).map((t: any) => (
                   <Card key={t.id} className="p-3 flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium">₦{Number(t.amount).toLocaleString()}</p>
                       <p className="text-xs text-muted-foreground">
-                        {t.purpose.replace(/_/g, " ")} · Ref: {t.transfer_reference}
-                        {t.auto_verified && <span className="ml-1 text-primary">(Auto)</span>}
+                        Ref: {t.paystack_reference} · {new Date(t.created_at).toLocaleDateString()}
+                        {t.credited_wallet && <span className="ml-1 text-primary">✓ {Math.floor(Number(t.amount) / 100)} tokens</span>}
                       </p>
                     </div>
-                    <Badge
-                      variant={t.status === "verified" ? "default" : t.status === "rejected" ? "destructive" : "secondary"}
-                      className="capitalize text-xs"
-                    >
+                    <Badge variant="default" className="capitalize text-xs">
                       {t.status}
                     </Badge>
                   </Card>
