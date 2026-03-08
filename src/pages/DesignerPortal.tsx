@@ -13,6 +13,7 @@ import NotificationBell from "@/components/notifications/NotificationBell";
 import TailorCatalogueManager from "@/components/catalogue/TailorCatalogueManager";
 import FeaturedProductsPanel from "@/components/catalogue/FeaturedProductsPanel";
 import PaymentGatewayPanel from "@/components/settings/PaymentGatewayPanel";
+import DashboardBillingPanel from "@/components/payments/DashboardBillingPanel";
 import {
   LogOut, Package, Clock, BarChart3, Palette, FileText,
   Wallet, User, ShoppingBag, CheckCircle2, ArrowRight,
