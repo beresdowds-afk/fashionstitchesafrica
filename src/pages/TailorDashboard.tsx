@@ -14,8 +14,10 @@ import TailorCatalogueManager from "@/components/catalogue/TailorCatalogueManage
 import {
   LogOut, Package, Clock, BarChart3, Scissors, FileText,
   Wallet, User, ShoppingBag, CheckCircle2, ArrowRight,
-  Shield, DollarSign, TrendingUp, Save, Globe, Download, Star, CreditCard
+  Shield, DollarSign, TrendingUp, Save, Globe, Download, Star, CreditCard, MapPin
 } from "lucide-react";
+import LocationPicker from "@/components/shared/LocationPicker";
+import LocationMapFooter from "@/components/shared/LocationMapFooter";
 import FeaturedProductsPanel from "@/components/catalogue/FeaturedProductsPanel";
 import PaymentGatewayPanel from "@/components/settings/PaymentGatewayPanel";
 import DashboardBillingPanel from "@/components/payments/DashboardBillingPanel";
