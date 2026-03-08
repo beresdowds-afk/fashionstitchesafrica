@@ -52,6 +52,9 @@ interface OrgRow {
   currency: string | null;
   is_active: boolean;
   created_at: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  physical_address?: string | null;
 }
 
 const SuperAdminDashboard = () => {
