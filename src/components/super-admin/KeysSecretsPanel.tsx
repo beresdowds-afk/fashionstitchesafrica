@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import { Key, Plus, Trash2, Eye, EyeOff, Save, X } from "lucide-react";
 import PlatformSecretsCard from "./PlatformSecretsCard";
+import SecretsManagementCard from "./SecretsManagementCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -140,6 +141,9 @@ const KeysSecretsPanel = () => {
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
       {/* FSA Platform Secrets */}
       <PlatformSecretsCard />
+
+      {/* Secrets Audit / Deployment Readiness */}
+      <SecretsManagementCard />
 
       <div className="flex items-center justify-between">
         <div>
