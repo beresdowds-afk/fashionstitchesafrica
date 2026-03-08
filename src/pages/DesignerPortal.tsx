@@ -16,7 +16,7 @@ import PaymentGatewayPanel from "@/components/settings/PaymentGatewayPanel";
 import {
   LogOut, Package, Clock, BarChart3, Palette, FileText,
   Wallet, User, ShoppingBag, CheckCircle2, ArrowRight,
-  Shield, DollarSign, TrendingUp, Save, Globe, Download, Star
+  Shield, DollarSign, TrendingUp, Save, Globe, Download, Star, CreditCard
 } from "lucide-react";
 import {
   SidebarProvider, SidebarTrigger, Sidebar, SidebarContent,
