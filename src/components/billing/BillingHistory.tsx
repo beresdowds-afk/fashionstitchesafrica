@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
-import { Receipt, ArrowUpRight, ArrowDownLeft } from "lucide-react";
+import { Receipt, ArrowUpRight, ArrowDownLeft, MessageSquare } from "lucide-react";
 
 interface FeeEntry {
   id: string;
@@ -37,6 +37,9 @@ const BillingHistory = ({ orgId }: { orgId: string }) => {
   const totalAdminFees = fees
     .filter(f => f.fee_type === "org_admin_fee")
     .reduce((sum, f) => sum + Number(f.amount), 0);
+  const totalMessagingFees = fees
+    .filter(f => f.fee_type.startsWith("messaging_"))
+    .reduce((sum, f) => sum + Number(f.amount), 0);
 
   if (loading) {
     return (
@@ -49,7 +52,7 @@ const BillingHistory = ({ orgId }: { orgId: string }) => {
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
       {/* Summary cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="p-4 rounded-lg border border-border bg-card">
           <div className="flex items-center gap-2 mb-2">
             <ArrowUpRight size={16} className="text-secondary" />
@@ -65,6 +68,14 @@ const BillingHistory = ({ orgId }: { orgId: string }) => {
           </div>
           <p className="font-heading font-bold text-xl">₦{totalAdminFees.toLocaleString()}</p>
           <p className="text-[10px] text-muted-foreground">Deducted from revenue</p>
+        </div>
+        <div className="p-4 rounded-lg border border-border bg-card">
+          <div className="flex items-center gap-2 mb-2">
+            <MessageSquare size={16} className="text-emerald-500" />
+            <span className="text-xs text-muted-foreground">Messaging Fees</span>
+          </div>
+          <p className="font-heading font-bold text-xl">${totalMessagingFees.toLocaleString()}</p>
+          <p className="text-[10px] text-muted-foreground">SMS, WhatsApp & Email</p>
         </div>
       </div>
 
@@ -85,14 +96,24 @@ const BillingHistory = ({ orgId }: { orgId: string }) => {
               <div key={fee.id} className="px-4 py-3 flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium">
-                    {fee.fee_type === "customer_surcharge" ? "Customer Platform Fee" : "Organization Admin Fee"}
+                    {fee.fee_type === "customer_surcharge" ? "Customer Platform Fee" :
+                     fee.fee_type === "org_admin_fee" ? "Organization Admin Fee" :
+                     fee.fee_type === "messaging_sms" ? "SMS Messaging Fee" :
+                     fee.fee_type === "messaging_whatsapp" ? "WhatsApp Messaging Fee" :
+                     fee.fee_type === "messaging_email" ? "Email Messaging Fee" :
+                     fee.fee_type}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {new Date(fee.created_at).toLocaleDateString()} · {fee.status}
+                    {fee.fee_type.startsWith("messaging_") && " · Provider cost"}
                   </p>
                 </div>
                 <div className="text-right">
-                  <p className={`text-sm font-bold ${fee.fee_type === "customer_surcharge" ? "text-secondary" : "text-accent"}`}>
+                  <p className={`text-sm font-bold ${
+                    fee.fee_type === "customer_surcharge" ? "text-secondary" :
+                    fee.fee_type.startsWith("messaging_") ? "text-emerald-500" :
+                    "text-accent"
+                  }`}>
                     ₦{Number(fee.amount).toLocaleString()}
                   </p>
                   <p className="text-[10px] text-muted-foreground">{fee.currency}</p>

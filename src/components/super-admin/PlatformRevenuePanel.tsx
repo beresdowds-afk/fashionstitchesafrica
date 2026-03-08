@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import {
   DollarSign, Building2, TrendingUp, Receipt, Video, UserPlus,
   ArrowUpRight, Globe, CreditCard, Sparkles, Wallet, Crown, Coins,
-  Search, Scissors, Palette, Users
+  Search, Scissors, Palette, Users, Phone, MessageSquare, Mail
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -47,6 +47,9 @@ const feeTypeLabels: Record<string, string> = {
   feature_access: "Premium Feature Access",
   virtual_tryon: "Virtual Try-On Fee",
   photo_enhancement: "Photo Enhancement Fee",
+  messaging_sms: "SMS Messaging Fee",
+  messaging_whatsapp: "WhatsApp Messaging Fee",
+  messaging_email: "Email Messaging Fee",
 };
 
 const feeTypeIcons: Record<string, typeof DollarSign> = {
@@ -62,6 +65,9 @@ const feeTypeIcons: Record<string, typeof DollarSign> = {
   feature_access: Sparkles,
   virtual_tryon: Sparkles,
   photo_enhancement: Sparkles,
+  messaging_sms: Phone,
+  messaging_whatsapp: MessageSquare,
+  messaging_email: Mail,
 };
 
 type RoleFilter = "all" | "tailor" | "designer" | "customer";
@@ -196,12 +202,13 @@ const PlatformRevenuePanel = () => {
   const measurementPlatform = byType["ai_measurement_platform_share"] || 0;
   const websiteFees = (byType["website_builder_lite"] || 0) + (byType["website_builder_pro"] || 0);
   const aiServiceFees = (byType["virtual_tryon"] || 0) + (byType["photo_enhancement"] || 0);
+  const messagingFees = (byType["messaging_sms"] || 0) + (byType["messaging_whatsapp"] || 0) + (byType["messaging_email"] || 0);
 
   const totalPlatformRevenue =
     orderFees + registrationFees + measurementPlatform +
     websiteFees + (filteredOrgIds ? 0 : subscriptionRevenue) +
     (filteredOrgIds ? 0 : creditPurchaseRevenue) +
-    (filteredOrgIds ? 0 : featureAccessRevenue) + aiServiceFees;
+    (filteredOrgIds ? 0 : featureAccessRevenue) + aiServiceFees + messagingFees;
 
   const totalMeasurementRevenue =
     (byType["ai_measurement_platform_share"] || 0) + (byType["ai_measurement_org_share"] || 0);
@@ -231,6 +238,8 @@ const PlatformRevenuePanel = () => {
     { label: "Website Builder Revenue", value: websiteFees, icon: Globe, color: "bg-primary/10 text-primary",
       detail: `Lite: $${(byType["website_builder_lite"] || 0).toLocaleString()} · Pro: $${(byType["website_builder_pro"] || 0).toLocaleString()}` },
     { label: "AI Service Fees", value: aiServiceFees, icon: Sparkles, color: "bg-accent/10 text-accent" },
+    { label: "Messaging Fees", value: messagingFees, icon: MessageSquare, color: "bg-emerald-500/10 text-emerald-600",
+      detail: `SMS: $${(byType["messaging_sms"] || 0).toLocaleString()} · WhatsApp: $${(byType["messaging_whatsapp"] || 0).toLocaleString()} · Email: $${(byType["messaging_email"] || 0).toLocaleString()}` },
   ];
 
   // Only show non-org-filtered revenue streams when no filter is active
@@ -343,6 +352,7 @@ const PlatformRevenuePanel = () => {
                       <th className="text-right text-xs font-medium text-muted-foreground px-4 py-3">AI Meas</th>
                       <th className="text-right text-xs font-medium text-muted-foreground px-4 py-3">Website</th>
                       <th className="text-right text-xs font-medium text-muted-foreground px-4 py-3">AI Services</th>
+                      <th className="text-right text-xs font-medium text-muted-foreground px-4 py-3">Messaging</th>
                       <th className="text-right text-xs font-medium text-muted-foreground px-4 py-3 font-bold">Total</th>
                     </tr>
                   </thead>
@@ -353,7 +363,8 @@ const PlatformRevenuePanel = () => {
                       const measTotal = (fees["ai_measurement_platform_share"] || 0) + (fees["ai_measurement_org_share"] || 0);
                       const webFees = (fees["website_builder_lite"] || 0) + (fees["website_builder_pro"] || 0);
                       const aiSvc = (fees["virtual_tryon"] || 0) + (fees["photo_enhancement"] || 0);
-                      const total = regFees + orgOrderFees + measTotal + webFees + aiSvc;
+                      const msgFees = (fees["messaging_sms"] || 0) + (fees["messaging_whatsapp"] || 0) + (fees["messaging_email"] || 0);
+                      const total = regFees + orgOrderFees + measTotal + webFees + aiSvc + msgFees;
                       return (
                         <tr key={orgId} className="border-t border-border hover:bg-muted/30">
                           <td className="px-4 py-3">
@@ -367,6 +378,7 @@ const PlatformRevenuePanel = () => {
                           <td className="px-4 py-3 text-sm text-right">${measTotal.toLocaleString()}</td>
                           <td className="px-4 py-3 text-sm text-right">${webFees.toLocaleString()}</td>
                           <td className="px-4 py-3 text-sm text-right">${aiSvc.toLocaleString()}</td>
+                          <td className="px-4 py-3 text-sm text-right">${msgFees.toLocaleString()}</td>
                           <td className="px-4 py-3 text-sm text-right font-bold">${total.toLocaleString()}</td>
                         </tr>
                       );

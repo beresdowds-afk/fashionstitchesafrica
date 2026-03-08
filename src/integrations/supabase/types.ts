@@ -2276,6 +2276,42 @@ export type Database = {
           },
         ]
       }
+      messaging_rate_config: {
+        Row: {
+          channel: string
+          created_at: string | null
+          currency: string
+          id: string
+          is_active: boolean | null
+          provider: string
+          rate_per_message: number
+          region: string
+          updated_at: string | null
+        }
+        Insert: {
+          channel: string
+          created_at?: string | null
+          currency?: string
+          id?: string
+          is_active?: boolean | null
+          provider: string
+          rate_per_message?: number
+          region?: string
+          updated_at?: string | null
+        }
+        Update: {
+          channel?: string
+          created_at?: string | null
+          currency?: string
+          id?: string
+          is_active?: boolean | null
+          provider?: string
+          rate_per_message?: number
+          region?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
