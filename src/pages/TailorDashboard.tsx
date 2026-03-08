@@ -16,13 +16,14 @@ import {
   Wallet, User, ShoppingBag, CheckCircle2, ArrowRight,
   Shield, DollarSign, TrendingUp, Save, Globe, Download
 } from "lucide-react";
+import FeaturedProductsPanel from "@/components/catalogue/FeaturedProductsPanel";
 import {
   SidebarProvider, SidebarTrigger, Sidebar, SidebarContent,
   SidebarGroup, SidebarGroupLabel, SidebarGroupContent,
   SidebarMenu, SidebarMenuItem, SidebarMenuButton, useSidebar
 } from "@/components/ui/sidebar";
 
-type TabId = "overview" | "work-queue" | "contracts" | "earnings" | "catalogue" | "profile";
+type TabId = "overview" | "work-queue" | "contracts" | "earnings" | "catalogue" | "featured" | "profile";
 
 const statusLabels: Record<string, string> = {
   pending: "Pending", confirmed: "Confirmed", measuring: "Measuring",
