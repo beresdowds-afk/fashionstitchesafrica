@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
-import { Receipt, ArrowUpRight, ArrowDownLeft } from "lucide-react";
+import { Receipt, ArrowUpRight, ArrowDownLeft, MessageSquare } from "lucide-react";
 
 interface FeeEntry {
   id: string;
