@@ -24,7 +24,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DollarSign, Smartphone, ScrollText, HelpCircle, UserX, Search, Trash2, Star, ShoppingBag, Download, Settings, LifeBuoy, Banknote, MapPin, MessageSquare, Menu, ChevronDown } from "lucide-react";
+import { DollarSign, Smartphone, ScrollText, HelpCircle, UserX, Search, Trash2, Star, ShoppingBag, Download, Settings, LifeBuoy, Banknote, MapPin, MessageSquare, Menu } from "lucide-react";
 import LocationMapFooter from "@/components/shared/LocationMapFooter";
 import TourGuide from "@/components/shared/TourGuide";
 import { useTourGuide } from "@/hooks/useTourGuide";
@@ -58,7 +58,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+
 import { cn } from "@/lib/utils";
 
 type TabId = "overview" | "platform_settings" | "organizations" | "users" | "accounts" | "revenue" | "invoicing" | "sub_rates" | "featured" | "keys" | "rates" | "websites" | "pricing" | "unified_pricing" | "backups" | "features" | "mobile" | "audit" | "support_requests" | "bank_accounts" | "message_center";
@@ -301,43 +301,33 @@ const AdminSidebar = ({
   return (
     <Sidebar collapsible="icon" className="border-r border-border hidden md:flex">
       <SidebarContent className="pt-2">
-        {groups.map((group) => {
-          const groupActive = group.items.some(item => item.id === activeTab);
-          return (
-            <Collapsible key={group.label} defaultOpen={groupActive || groups.indexOf(group) < 3}>
-              <SidebarGroup>
-                <CollapsibleTrigger className="w-full">
-                  <SidebarGroupLabel className="flex items-center justify-between cursor-pointer hover:text-foreground transition-colors">
-                    {!collapsed && <span>{group.label}</span>}
-                    {!collapsed && <ChevronDown size={14} className="transition-transform duration-200 group-data-[state=open]:rotate-180" />}
-                  </SidebarGroupLabel>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <SidebarGroupContent>
-                    <SidebarMenu>
-                      {group.items.map((item) => (
-                        <SidebarMenuItem key={item.id}>
-                          <SidebarMenuButton
-                            onClick={() => onTabChange(item.id)}
-                            data-tour={`sa-${item.id}`}
-                            tooltip={item.label}
-                            className={cn(
-                              "cursor-pointer",
-                              activeTab === item.id && "bg-primary/10 text-primary font-medium"
-                            )}
-                          >
-                            <item.icon size={18} />
-                            {!collapsed && <span>{item.label}</span>}
-                          </SidebarMenuButton>
-                        </SidebarMenuItem>
-                      ))}
-                    </SidebarMenu>
-                  </SidebarGroupContent>
-                </CollapsibleContent>
-              </SidebarGroup>
-            </Collapsible>
-          );
-        })}
+        {groups.map((group) => (
+          <SidebarGroup key={group.label}>
+            <SidebarGroupLabel>
+              {!collapsed && <span>{group.label}</span>}
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {group.items.map((item) => (
+                  <SidebarMenuItem key={item.id}>
+                    <SidebarMenuButton
+                      onClick={() => onTabChange(item.id)}
+                      data-tour={`sa-${item.id}`}
+                      tooltip={item.label}
+                      className={cn(
+                        "cursor-pointer",
+                        activeTab === item.id && "bg-primary/10 text-primary font-medium"
+                      )}
+                    >
+                      <item.icon size={18} />
+                      {!collapsed && <span>{item.label}</span>}
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        ))}
       </SidebarContent>
     </Sidebar>
   );
