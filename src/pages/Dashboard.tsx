@@ -799,6 +799,26 @@ const SettingsTab = ({ org, role }: { org: any; role: AppRole | null }) => {
             className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
           />
         </div>
+
+        {/* Physical Location (KYC) */}
+        <div className="space-y-2 pt-2 border-t border-border mt-4">
+          <label className="text-sm font-medium flex items-center gap-2">
+            Physical Location <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">KYC</span>
+          </label>
+          <p className="text-xs text-muted-foreground">Pin your physical address on the map for verification.</p>
+          <LocationPicker
+            latitude={latitude}
+            longitude={longitude}
+            address={physicalAddress}
+            onLocationChange={(lat, lng, addr) => {
+              setLatitude(lat);
+              setLongitude(lng);
+              setPhysicalAddress(addr);
+            }}
+            disabled={!canEdit}
+          />
+        </div>
+
         <div className="flex items-center gap-3 pt-2">
           <div className="text-sm text-muted-foreground">
             Currency: <span className="font-medium text-foreground">{org.currency}</span> · 
