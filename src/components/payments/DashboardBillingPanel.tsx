@@ -65,35 +65,22 @@ const DashboardBillingPanel = ({ roleLabel }: DashboardBillingPanelProps) => {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  const selectedBankDetails = bankAccounts.find((b: any) => b.id === selectedBank);
-
-  const handleTransferSubmit = async () => {
-    if (!amount || !transferRef.trim() || !selectedBank || !user) {
-      toast({ title: "Fill all required fields", variant: "destructive" });
-      return;
+  const createDVA = async () => {
+    if (!user) return;
+    setCreatingDVA(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-dva", {
+        body: { account_type: "dedicated", purpose: "general" },
+      });
+      if (error) throw error;
+      if (data?.virtual_account) {
+        setVirtualAccount(data.virtual_account);
+        toast({ title: "Virtual account created!", description: "Transfer money to auto-credit your wallet." });
+      }
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
     }
-    setSubmitting(true);
-    const { error } = await supabase.from("bank_transfer_payments").insert({
-      user_id: user.id,
-      amount: parseFloat(amount),
-      currency: "NGN",
-      purpose,
-      transfer_reference: transferRef.trim(),
-      bank_name: selectedBankDetails?.bank_name || "",
-      account_name: selectedBankDetails?.account_name || "",
-      bank_account_id: selectedBank,
-      status: "pending",
-    } as any);
-
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Transfer submitted", description: "Your payment will be verified automatically or by an admin." });
-      setAmount("");
-      setTransferRef("");
-      fetchAll();
-    }
-    setSubmitting(false);
+    setCreatingDVA(false);
   };
 
   const copyToClipboard = (text: string) => {

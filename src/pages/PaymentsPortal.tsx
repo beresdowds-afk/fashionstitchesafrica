@@ -692,75 +692,69 @@ const SubscriptionsTab = ({
   </motion.div>
 );
 
-// ── Bank Transfer Tab ────────────────────────────────────────────────────
-const BankTransferTab = ({ userId, onRefresh }: { userId: string; onRefresh: () => void }) => {
+// ── DVA Transfer Tab ─────────────────────────────────────────────────────
+const DVATransferTab = ({ userId, onRefresh }: { userId: string; onRefresh: () => void }) => {
   const { toast } = useToast();
-  const [transfers, setTransfers] = useState<any[]>([]);
-  const [bankAccounts, setBankAccounts] = useState<any[]>([]);
+  const [virtualAccount, setVirtualAccount] = useState<any>(null);
+  const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [amount, setAmount] = useState("");
-  const [purpose, setPurpose] = useState("token_purchase");
-  const [transferRef, setTransferRef] = useState("");
-  const [selectedBank, setSelectedBank] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
-    Promise.all([
-      supabase
-        .from("bank_transfer_payments")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("platform_bank_accounts")
-        .select("*")
-        .eq("is_active", true)
-        .order("is_primary", { ascending: false })
-        .order("bank_name"),
-    ]).then(([transfersRes, banksRes]) => {
-      setTransfers((transfersRes.data as any[]) || []);
-      const banks = (banksRes.data as any[]) || [];
-      setBankAccounts(banks);
-      if (banks.length > 0) setSelectedBank(banks[0].id);
+    const fetchData = async () => {
+      const [vaRes, txRes] = await Promise.all([
+        supabase
+          .from("paystack_virtual_accounts")
+          .select("*")
+          .eq("user_id", userId)
+          .eq("account_type", "dedicated")
+          .eq("is_active", true)
+          .maybeSingle(),
+        supabase
+          .from("paystack_dva_transactions")
+          .select("*")
+          .eq("user_id", userId)
+          .order("created_at", { ascending: false })
+          .limit(20),
+      ]);
+      setVirtualAccount(vaRes.data);
+      setTransactions((txRes.data as any[]) || []);
       setLoading(false);
-    });
-  }, [userId]);
+    };
+    fetchData();
 
-  const selectedBankDetails = bankAccounts.find(b => b.id === selectedBank);
+    // Realtime subscription for new transactions
+    const channel = supabase
+      .channel("dva-transactions")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "paystack_dva_transactions", filter: `user_id=eq.${userId}` },
+        (payload) => {
+          setTransactions(prev => [payload.new as any, ...prev]);
+          toast({ title: "Payment received!", description: `₦${Number(payload.new.amount).toLocaleString()} credited to your account.` });
+          onRefresh();
+        }
+      )
+      .subscribe();
 
-  const handleSubmit = async () => {
-    if (!amount || !transferRef.trim() || !selectedBank) {
-      toast({ title: "Fill all required fields", variant: "destructive" });
-      return;
+    return () => { supabase.removeChannel(channel); };
+  }, [userId, onRefresh, toast]);
+
+  const createDVA = async () => {
+    setCreating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-dva", {
+        body: { account_type: "dedicated", purpose: "general" },
+      });
+      if (error) throw error;
+      if (data?.virtual_account) {
+        setVirtualAccount(data.virtual_account);
+        toast({ title: "Virtual account created!", description: "You can now receive payments via bank transfer." });
+      }
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
     }
-    setSubmitting(true);
-    const { error } = await supabase.from("bank_transfer_payments").insert({
-      user_id: userId,
-      amount: parseFloat(amount),
-      currency: "NGN",
-      purpose,
-      transfer_reference: transferRef.trim(),
-      bank_name: selectedBankDetails?.bank_name || "",
-      account_name: selectedBankDetails?.account_name || "",
-      bank_account_id: selectedBank,
-      status: "pending",
-    } as any);
-
-    if (error) {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: "Bank transfer submitted", description: "Your payment will be verified automatically or by an admin." });
-      setAmount("");
-      setTransferRef("");
-      onRefresh();
-      const { data } = await supabase
-        .from("bank_transfer_payments")
-        .select("*")
-        .eq("user_id", userId)
-        .order("created_at", { ascending: false });
-      setTransfers((data as any[]) || []);
-    }
-    setSubmitting(false);
+    setCreating(false);
   };
 
   const copyToClipboard = (text: string) => {
@@ -779,51 +773,24 @@ const BankTransferTab = ({ userId, onRefresh }: { userId: string; onRefresh: () 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
       <div>
-        <h2 className="font-heading font-bold text-xl mb-1">Bank Transfer (Nigeria)</h2>
+        <h2 className="font-heading font-bold text-xl mb-1">Pay via Bank Transfer</h2>
         <p className="text-sm text-muted-foreground">
-          Make a direct bank transfer and submit the details for auto-verification.
+          Get a dedicated virtual account number. Transfer any amount and it's automatically credited — no manual confirmation needed.
         </p>
       </div>
 
-      {/* Bank account selector */}
-      {bankAccounts.length > 1 && (
-        <div>
-          <label className="text-sm font-medium mb-2 block">Select Receiving Bank</label>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-            {bankAccounts.map(bank => (
-              <button
-                key={bank.id}
-                onClick={() => setSelectedBank(bank.id)}
-                className={`p-3 rounded-lg border text-left transition-colors ${
-                  selectedBank === bank.id
-                    ? "border-primary bg-primary/5"
-                    : "border-border hover:border-primary/40"
-                }`}
-              >
-                <p className="text-sm font-medium">{bank.bank_name}</p>
-                <p className="text-xs text-muted-foreground capitalize">{bank.bank_type}</p>
-                {bank.is_primary && (
-                  <Badge className="bg-primary/10 text-primary text-[10px] mt-1">Primary</Badge>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Bank Details */}
-        <Card className="p-6">
-          <h3 className="font-heading font-semibold mb-4 flex items-center gap-2">
-            <Banknote size={18} className="text-primary" /> Bank Account Details
-          </h3>
-          {selectedBankDetails ? (
+      {virtualAccount ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Virtual Account Details */}
+          <Card className="p-6 border-primary/20">
+            <h3 className="font-heading font-semibold mb-4 flex items-center gap-2">
+              <Banknote size={18} className="text-primary" /> Your Virtual Account
+            </h3>
             <div className="space-y-3">
               {[
-                { label: "Bank", value: selectedBankDetails.bank_name },
-                { label: "Account Number", value: selectedBankDetails.account_number || "Contact admin" },
-                { label: "Account Name", value: selectedBankDetails.account_name },
-                ...(selectedBankDetails.bank_code ? [{ label: "Bank Code", value: selectedBankDetails.bank_code }] : []),
+                { label: "Bank", value: virtualAccount.bank_name },
+                { label: "Account Number", value: virtualAccount.account_number },
+                { label: "Account Name", value: virtualAccount.account_name },
               ].map(item => (
                 <div key={item.label} className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
                   <div>
@@ -836,79 +803,72 @@ const BankTransferTab = ({ userId, onRefresh }: { userId: string; onRefresh: () 
                 </div>
               ))}
             </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">No bank accounts available. Contact support.</p>
-          )}
-          <div className="mt-4 p-3 rounded-lg bg-chart-4/5 border border-chart-4/20 text-xs text-muted-foreground">
-            <AlertCircle size={14} className="inline mr-1 text-chart-4" />
-            After transferring, fill in the confirmation form. Payments are auto-verified within minutes.
-          </div>
-        </Card>
+            <div className="mt-4 p-3 rounded-lg bg-primary/5 border border-primary/20 text-xs text-muted-foreground">
+              <CheckCircle2 size={14} className="inline mr-1 text-primary" />
+              Transfer any amount to this account. Credits are added automatically within seconds.
+              <br />
+              <span className="font-medium">Rate: ₦100 = 1 Token</span>
+            </div>
+          </Card>
 
-        {/* Submit Transfer */}
-        <Card className="p-6">
-          <h3 className="font-heading font-semibold mb-4">Confirm Transfer</h3>
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium mb-1 block">Amount (₦)</label>
-              <Input
-                type="number"
-                value={amount}
-                onChange={e => setAmount(e.target.value)}
-                placeholder="Enter amount transferred"
-              />
+          {/* How it works */}
+          <Card className="p-6">
+            <h3 className="font-heading font-semibold mb-4 flex items-center gap-2">
+              <Sparkles size={18} className="text-chart-4" /> How It Works
+            </h3>
+            <div className="space-y-4">
+              {[
+                { step: "1", title: "Transfer", desc: "Send any amount from your bank app to the account number above" },
+                { step: "2", title: "Auto-Detect", desc: "Paystack instantly detects your payment and notifies us" },
+                { step: "3", title: "Auto-Credit", desc: "Tokens are automatically added to your wallet (₦100 = 1 token)" },
+              ].map(item => (
+                <div key={item.step} className="flex items-start gap-3">
+                  <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <span className="text-xs font-bold text-primary">{item.step}</span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">{item.title}</p>
+                    <p className="text-xs text-muted-foreground">{item.desc}</p>
+                  </div>
+                </div>
+              ))}
             </div>
-            <div>
-              <label className="text-sm font-medium mb-1 block">Purpose</label>
-              <Select value={purpose} onValueChange={setPurpose}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="token_purchase">Token Purchase</SelectItem>
-                  <SelectItem value="subscription">Subscription Payment</SelectItem>
-                  <SelectItem value="registration">Registration Fee</SelectItem>
-                  <SelectItem value="order_payment">Order Payment</SelectItem>
-                  <SelectItem value="feature_access">Feature Access</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="text-sm font-medium mb-1 block">Transfer Reference / Session ID</label>
-              <Input
-                value={transferRef}
-                onChange={e => setTransferRef(e.target.value)}
-                placeholder="Enter your bank transfer reference"
-              />
-            </div>
-            <Button variant="hero" className="w-full" onClick={handleSubmit} disabled={submitting}>
-              {submitting ? <Loader2 size={14} className="animate-spin mr-1" /> : <CheckCircle2 size={14} className="mr-1" />}
-              {submitting ? "Submitting..." : "Submit Transfer Confirmation"}
-            </Button>
-          </div>
+          </Card>
+        </div>
+      ) : (
+        <Card className="p-8 text-center border-dashed">
+          <Banknote size={36} className="mx-auto text-muted-foreground mb-3" />
+          <h3 className="font-heading font-semibold text-lg">Get Your Virtual Account</h3>
+          <p className="text-sm text-muted-foreground mt-1 mb-4">
+            Create a dedicated bank account number linked to your wallet. Any transfer to this account auto-credits your tokens.
+          </p>
+          <Button variant="hero" onClick={createDVA} disabled={creating}>
+            {creating ? <Loader2 size={14} className="animate-spin mr-1" /> : <Banknote size={14} className="mr-1" />}
+            {creating ? "Creating..." : "Create Virtual Account"}
+          </Button>
         </Card>
-      </div>
+      )}
 
-      {/* Transfer History */}
-      {transfers.length > 0 && (
+      {/* Transaction History */}
+      {transactions.length > 0 && (
         <div>
           <h3 className="font-heading font-semibold mb-3">Transfer History</h3>
           <div className="space-y-2">
-            {transfers.map((t: any) => (
+            {transactions.map((t: any) => (
               <Card key={t.id} className="p-3 flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium">₦{Number(t.amount).toLocaleString()}</p>
                   <p className="text-xs text-muted-foreground">
-                    {t.purpose.replace(/_/g, " ")} · Ref: {t.transfer_reference} · {new Date(t.created_at).toLocaleDateString()}
-                    {t.auto_verified && <span className="ml-1 text-primary">(Auto-verified)</span>}
+                    Ref: {t.paystack_reference} · {new Date(t.created_at).toLocaleDateString()}
+                    {t.sender_name && ` · From: ${t.sender_name}`}
                   </p>
-                  {t.rejection_reason && (
-                    <p className="text-xs text-destructive mt-0.5">{t.rejection_reason}</p>
+                  {t.credited_wallet && (
+                    <p className="text-xs text-primary mt-0.5">
+                      ✓ {Math.floor(Number(t.amount) / 100)} tokens credited
+                    </p>
                   )}
                 </div>
-                <Badge
-                  variant={t.status === "verified" ? "default" : t.status === "rejected" ? "destructive" : "secondary"}
-                  className="capitalize text-xs"
-                >
+                <Badge variant="default" className="capitalize text-xs">
                   {t.status}
                 </Badge>
               </Card>
