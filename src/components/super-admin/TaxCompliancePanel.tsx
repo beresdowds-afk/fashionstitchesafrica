@@ -6,7 +6,6 @@ import {
   useNexusTracking,
   useTaxLedger,
   type TaxJurisdiction,
-  type TaxRegion,
 } from "@/hooks/useTaxSystem";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,10 +15,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Receipt, Building2, Globe, AlertTriangle, CheckCircle,
-  BarChart3, Shield, MapPin, FileText, Search, Plus,
+  Receipt, Globe, AlertTriangle, CheckCircle,
+  BarChart3, Shield, MapPin, FileText, Search,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 
 /* ─── Helpers ───────────────────────────────────────────────── */
 
