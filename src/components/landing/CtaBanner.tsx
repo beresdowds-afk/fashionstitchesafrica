@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { ArrowRight, Users, Scissors, Building2, Sparkles } from "lucide-react";
+import { ArrowRight, Users, Scissors, Building2, Sparkles, Palette } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const CtaBanner = () => {
