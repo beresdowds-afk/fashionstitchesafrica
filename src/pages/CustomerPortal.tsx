@@ -14,6 +14,7 @@ import {
   MapPin, Heart, HelpCircle, Sparkles, Crown
 } from "lucide-react";
 import FeatureGate from "@/components/shared/FeatureGate";
+import IdentityVerificationGate from "@/components/shared/IdentityVerificationGate";
 import UserNotificationPreferences from "@/components/communications/UserNotificationPreferences";
 import BookMeasurementDialog from "@/components/measurements/BookMeasurementDialog";
 import MeasurementBookingsTab from "@/components/measurements/MeasurementBookingsTab";
@@ -362,56 +363,60 @@ const CustomerPortal = () => {
                 <CustomerSubscriptionPanel orgId={selectedOrgId} />
               </TabsContent>
 
-              {/* AI Measurements Tab (Paid Feature) */}
+              {/* AI Measurements Tab (Paid Feature - Identity Gated) */}
               <TabsContent value="measurements">
-                <FeatureGate featureKey="basic_measurement" showLocked>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h2 className="font-heading font-bold text-xl">AI Measurement Sessions</h2>
-                      <BookMeasurementDialog orgId={selectedOrgId}>
-                        <Button variant="hero" size="sm">
-                          <Video size={14} className="mr-1" /> Book Session
-                        </Button>
-                      </BookMeasurementDialog>
+                <IdentityVerificationGate featureLabel="AI Measurement Sessions">
+                  <FeatureGate featureKey="basic_measurement" showLocked>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h2 className="font-heading font-bold text-xl">AI Measurement Sessions</h2>
+                        <BookMeasurementDialog orgId={selectedOrgId}>
+                          <Button variant="hero" size="sm">
+                            <Video size={14} className="mr-1" /> Book Session
+                          </Button>
+                        </BookMeasurementDialog>
+                      </div>
+                      <MeasurementBookingsTab orgId={selectedOrgId} />
                     </div>
-                    <MeasurementBookingsTab orgId={selectedOrgId} />
-                  </div>
-                </FeatureGate>
+                  </FeatureGate>
+                </IdentityVerificationGate>
               </TabsContent>
 
-              {/* Payments Tab */}
+              {/* Payments Tab (Identity Gated) */}
               <TabsContent value="payments">
-                <h2 className="font-heading font-bold text-xl mb-4">Payment History</h2>
-                {payments.length === 0 ? (
-                  <div className="rounded-xl bg-card border border-border p-12 text-center">
-                    <CreditCard size={40} className="mx-auto text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground">No payments recorded yet.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {payments.map((p) => (
-                      <div key={p.id} className="rounded-lg bg-card border border-border p-4 flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium">
-                            {p.payment_type === "deposit" ? "Deposit" : "Payment"} — {p.currency} {Number(p.amount).toLocaleString()}
-                          </p>
-                          <p className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Clock size={10} />
-                            {p.paid_at ? new Date(p.paid_at).toLocaleDateString() : "Pending"}
-                            {p.payment_method && ` · ${p.payment_method}`}
-                          </p>
+                <IdentityVerificationGate featureLabel="payment history">
+                  <h2 className="font-heading font-bold text-xl mb-4">Payment History</h2>
+                  {payments.length === 0 ? (
+                    <div className="rounded-xl bg-card border border-border p-12 text-center">
+                      <CreditCard size={40} className="mx-auto text-muted-foreground mb-4" />
+                      <p className="text-muted-foreground">No payments recorded yet.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {payments.map((p) => (
+                        <div key={p.id} className="rounded-lg bg-card border border-border p-4 flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium">
+                              {p.payment_type === "deposit" ? "Deposit" : "Payment"} — {p.currency} {Number(p.amount).toLocaleString()}
+                            </p>
+                            <p className="text-xs text-muted-foreground flex items-center gap-1">
+                              <Clock size={10} />
+                              {p.paid_at ? new Date(p.paid_at).toLocaleDateString() : "Pending"}
+                              {p.payment_method && ` · ${p.payment_method}`}
+                            </p>
+                          </div>
+                          <Badge variant={p.status === "completed" ? "default" : "outline"}>
+                            {p.status === "completed" ? (
+                              <span className="flex items-center gap-1"><CheckCircle2 size={12} /> Paid</span>
+                            ) : (
+                              <span className="flex items-center gap-1"><AlertCircle size={12} /> {p.status}</span>
+                            )}
+                          </Badge>
                         </div>
-                        <Badge variant={p.status === "completed" ? "default" : "outline"}>
-                          {p.status === "completed" ? (
-                            <span className="flex items-center gap-1"><CheckCircle2 size={12} /> Paid</span>
-                          ) : (
-                            <span className="flex items-center gap-1"><AlertCircle size={12} /> {p.status}</span>
-                          )}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                      ))}
+                    </div>
+                  )}
+                </IdentityVerificationGate>
               </TabsContent>
 
               {/* Notifications Tab (Paid Feature) */}
