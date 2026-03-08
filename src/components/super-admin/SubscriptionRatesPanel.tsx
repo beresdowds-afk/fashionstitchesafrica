@@ -43,7 +43,7 @@ const ROLE_META: Record<string, { icon: any; color: string; label: string }> = {
   org_external: { icon: ExternalLink, color: "bg-chart-5/10 text-chart-5", label: "Orgs (External Site)" },
 };
 
-const ALL_ROLE_KEYS = Object.keys(ROLE_META);
+
 
 const CUSTOMER_PREMIUM_FEATURES = [
   { key: "ai_measurements", icon: Ruler, label: "AI Body Measurements", desc: "Video-based precise body measurements using AI detection", category: "core" },
