@@ -33,19 +33,16 @@ interface SubscriptionRate {
   updated_at: string;
 }
 
-const ROLE_ICONS: Record<string, any> = {
-  customer: Users,
-  designer: Palette,
-  tailor: Scissors,
-  organization: Building2,
+const ROLE_META: Record<string, { icon: any; color: string; label: string }> = {
+  customer: { icon: Users, color: "bg-secondary/10 text-secondary", label: "Customers" },
+  tailor: { icon: Scissors, color: "bg-primary/10 text-primary", label: "Tailors" },
+  designer: { icon: Palette, color: "bg-chart-4/10 text-chart-4", label: "Designers" },
+  org_native_basic: { icon: Building2, color: "bg-accent/10 text-accent-foreground", label: "Orgs (Native Basic)" },
+  org_native_custom: { icon: Globe, color: "bg-chart-2/10 text-chart-2", label: "Orgs (Native Custom)" },
+  org_external: { icon: ExternalLink, color: "bg-chart-5/10 text-chart-5", label: "Orgs (External Site)" },
 };
 
-const ROLE_COLORS: Record<string, string> = {
-  customer: "bg-secondary/10 text-secondary",
-  designer: "bg-primary/10 text-primary",
-  tailor: "bg-primary/10 text-primary",
-  organization: "bg-accent/10 text-accent-foreground",
-};
+const ALL_ROLE_KEYS = Object.keys(ROLE_META);
 
 const CUSTOMER_PREMIUM_FEATURES = [
   { key: "ai_measurements", icon: Ruler, label: "AI Body Measurements", desc: "Video-based precise body measurements using AI detection", category: "core" },
