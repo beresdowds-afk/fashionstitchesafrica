@@ -162,6 +162,15 @@ const SuperAdminDashboard = () => {
               <Plus size={14} className="mr-1" />
               New Org
             </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-ivory/70 hover:text-ivory text-xs"
+              onClick={() => navigate("/admin-install")}
+            >
+              <Download size={14} className="mr-1" />
+              Admin App
+            </Button>
             <Button variant="ghost" size="icon" onClick={tour.restart} title="Restart tour guide" className="text-ivory/70 hover:text-ivory">
               <HelpCircle size={16} />
             </Button>
