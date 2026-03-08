@@ -444,6 +444,9 @@ export type Database = {
         Row: {
           account_name: string | null
           amount: number
+          auto_verified: boolean | null
+          auto_verified_at: string | null
+          bank_account_id: string | null
           bank_name: string | null
           created_at: string
           currency: string
@@ -454,16 +457,21 @@ export type Database = {
           purpose: string
           reference_id: string | null
           reference_type: string | null
+          rejection_reason: string | null
           status: string
           transfer_reference: string | null
           updated_at: string
           user_id: string
+          verification_method: string | null
           verified_at: string | null
           verified_by: string | null
         }
         Insert: {
           account_name?: string | null
           amount: number
+          auto_verified?: boolean | null
+          auto_verified_at?: string | null
+          bank_account_id?: string | null
           bank_name?: string | null
           created_at?: string
           currency?: string
@@ -474,16 +482,21 @@ export type Database = {
           purpose: string
           reference_id?: string | null
           reference_type?: string | null
+          rejection_reason?: string | null
           status?: string
           transfer_reference?: string | null
           updated_at?: string
           user_id: string
+          verification_method?: string | null
           verified_at?: string | null
           verified_by?: string | null
         }
         Update: {
           account_name?: string | null
           amount?: number
+          auto_verified?: boolean | null
+          auto_verified_at?: string | null
+          bank_account_id?: string | null
           bank_name?: string | null
           created_at?: string
           currency?: string
@@ -494,14 +507,23 @@ export type Database = {
           purpose?: string
           reference_id?: string | null
           reference_type?: string | null
+          rejection_reason?: string | null
           status?: string
           transfer_reference?: string | null
           updated_at?: string
           user_id?: string
+          verification_method?: string | null
           verified_at?: string | null
           verified_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "bank_transfer_payments_bank_account_id_fkey"
+            columns: ["bank_account_id"]
+            isOneToOne: false
+            referencedRelation: "platform_bank_accounts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "bank_transfer_payments_org_id_fkey"
             columns: ["org_id"]
@@ -3467,6 +3489,57 @@ export type Database = {
           key_value?: string
           provider?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      platform_bank_accounts: {
+        Row: {
+          account_name: string
+          account_number: string
+          bank_code: string | null
+          bank_name: string
+          bank_type: string
+          created_at: string | null
+          currency: string
+          id: string
+          is_active: boolean | null
+          is_primary: boolean | null
+          notes: string | null
+          provider_slug: string
+          sort_code: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          account_name: string
+          account_number: string
+          bank_code?: string | null
+          bank_name: string
+          bank_type?: string
+          created_at?: string | null
+          currency?: string
+          id?: string
+          is_active?: boolean | null
+          is_primary?: boolean | null
+          notes?: string | null
+          provider_slug: string
+          sort_code?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          account_name?: string
+          account_number?: string
+          bank_code?: string | null
+          bank_name?: string
+          bank_type?: string
+          created_at?: string | null
+          currency?: string
+          id?: string
+          is_active?: boolean | null
+          is_primary?: boolean | null
+          notes?: string | null
+          provider_slug?: string
+          sort_code?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
