@@ -144,14 +144,16 @@ const UnifiedPricingPanel = () => {
 
   const loadAll = useCallback(async () => {
     setLoading(true);
-    const [feeRes, planRes, auditRes] = await Promise.all([
+    const [feeRes, planRes, auditRes, ratesRes] = await Promise.all([
       supabase.from("platform_fee_config").select("*").order("fee_category,fee_key"),
       supabase.from("subscription_plans").select("*").order("sort_order"),
       supabase.from("pricing_audit_log").select("*").order("changed_at", { ascending: false }).limit(50),
+      supabase.from("subscription_rates" as any).select("*").order("role_type").order("sort_order"),
     ]);
     setFees((feeRes.data as PlatformFee[]) || []);
     setPlans((planRes.data as SubPlan[]) || []);
     setAuditLog((auditRes.data as AuditEntry[]) || []);
+    setSubRates((ratesRes.data as unknown as SubRate[]) || []);
     setLoading(false);
   }, []);
 
