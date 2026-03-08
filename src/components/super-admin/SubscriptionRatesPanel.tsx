@@ -10,9 +10,10 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { motion } from "framer-motion";
 import {
-  Users, Scissors, Building2, DollarSign, Save, Plus, Trash2,
+  Users, Scissors, Building2, Save, Plus, Trash2,
   Edit2, Loader2, CheckCircle2, Crown, Palette, Ruler, Video,
-  Sparkles, Bell, Package, Heart, MessageSquare, Shield, Eye
+  Sparkles, Bell, Package, Heart, MessageSquare, Shield, Eye,
+  Globe, ExternalLink
 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter
@@ -33,19 +34,16 @@ interface SubscriptionRate {
   updated_at: string;
 }
 
-const ROLE_ICONS: Record<string, any> = {
-  customer: Users,
-  designer: Palette,
-  tailor: Scissors,
-  organization: Building2,
+const ROLE_META: Record<string, { icon: any; color: string; label: string }> = {
+  customer: { icon: Users, color: "bg-secondary/10 text-secondary", label: "Customers" },
+  tailor: { icon: Scissors, color: "bg-primary/10 text-primary", label: "Tailors" },
+  designer: { icon: Palette, color: "bg-chart-4/10 text-chart-4", label: "Designers" },
+  org_native_basic: { icon: Building2, color: "bg-accent/10 text-accent-foreground", label: "Orgs (Native Basic)" },
+  org_native_custom: { icon: Globe, color: "bg-chart-2/10 text-chart-2", label: "Orgs (Native Custom)" },
+  org_external: { icon: ExternalLink, color: "bg-chart-5/10 text-chart-5", label: "Orgs (External Site)" },
 };
 
-const ROLE_COLORS: Record<string, string> = {
-  customer: "bg-secondary/10 text-secondary",
-  designer: "bg-primary/10 text-primary",
-  tailor: "bg-primary/10 text-primary",
-  organization: "bg-accent/10 text-accent-foreground",
-};
+
 
 const CUSTOMER_PREMIUM_FEATURES = [
   { key: "ai_measurements", icon: Ruler, label: "AI Body Measurements", desc: "Video-based precise body measurements using AI detection", category: "core" },
@@ -189,7 +187,7 @@ export default function SubscriptionRatesPanel() {
             <Crown size={22} className="text-primary" /> Subscription Rates
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Manage subscription pricing for customers, tailors, and organizations.
+            Manage subscription pricing for all roles and organization website tiers.
           </p>
         </div>
         <Button variant="hero" size="sm" onClick={openCreate}>
@@ -198,21 +196,21 @@ export default function SubscriptionRatesPanel() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {(["customer", "designer", "tailor", "organization"] as const).map((role) => {
-          const Icon = ROLE_ICONS[role];
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        {Object.entries(ROLE_META).map(([role, meta]) => {
+          const Icon = meta.icon;
           const count = groupedRates[role]?.length || 0;
           const active = groupedRates[role]?.filter(r => r.is_active).length || 0;
           return (
             <div key={role} className="rounded-xl border border-border bg-card p-4">
               <div className="flex items-center gap-2 mb-2">
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${ROLE_COLORS[role]}`}>
+                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${meta.color}`}>
                   <Icon size={16} />
                 </div>
-                <span className="font-heading font-semibold text-sm capitalize">{role}s</span>
+                <span className="font-heading font-semibold text-xs">{meta.label}</span>
               </div>
               <p className="text-2xl font-heading font-bold">{count}</p>
-              <p className="text-xs text-muted-foreground">{active} active plan{active !== 1 ? "s" : ""}</p>
+              <p className="text-xs text-muted-foreground">{active} active</p>
             </div>
           );
         })}
@@ -263,19 +261,19 @@ export default function SubscriptionRatesPanel() {
       </div>
 
       {/* Rates by role */}
-      {(["customer", "designer", "tailor", "organization"] as const).map((role) => {
-        const Icon = ROLE_ICONS[role];
+      {Object.entries(ROLE_META).map(([role, meta]) => {
+        const Icon = meta.icon;
         const roleRates = groupedRates[role] || [];
         return (
           <div key={role} className="rounded-xl border border-border bg-card overflow-hidden">
             <div className="px-5 py-3 border-b border-border bg-muted/30 flex items-center gap-2">
               <Icon size={16} className="text-primary" />
-              <h3 className="font-heading font-semibold text-sm capitalize">{role} Plans</h3>
+              <h3 className="font-heading font-semibold text-sm">{meta.label} Plans</h3>
               <Badge variant="outline" className="ml-auto text-xs">{roleRates.length} plan{roleRates.length !== 1 ? "s" : ""}</Badge>
             </div>
             {roleRates.length === 0 ? (
               <div className="p-8 text-center text-muted-foreground text-sm">
-                No plans configured for {role}s.
+                No plans configured for {meta.label}.
                 <Button variant="outline" size="sm" className="ml-2" onClick={() => { setEditingRate({ ...emptyRate, role_type: role }); setFeaturesText(""); setEditDialogOpen(true); }}>
                   Add Plan
                 </Button>
@@ -343,9 +341,11 @@ export default function SubscriptionRatesPanel() {
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="customer">Customer</SelectItem>
-                      <SelectItem value="designer">Designer</SelectItem>
                       <SelectItem value="tailor">Tailor</SelectItem>
-                      <SelectItem value="organization">Organization</SelectItem>
+                      <SelectItem value="designer">Designer</SelectItem>
+                      <SelectItem value="org_native_basic">Org – Native Basic Website</SelectItem>
+                      <SelectItem value="org_native_custom">Org – Native Custom Website</SelectItem>
+                      <SelectItem value="org_external">Org – External Website</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
