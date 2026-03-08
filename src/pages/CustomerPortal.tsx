@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   LogOut, Package, CreditCard, Bell, Ruler, Clock, ChevronRight,
   CheckCircle2, AlertCircle, KeyRound, Loader2, Video, Search,
-  MapPin, Heart, HelpCircle, Sparkles, Crown
+  MapPin, Heart, HelpCircle, Sparkles, Crown, ShoppingBag
 } from "lucide-react";
 import FeatureGate from "@/components/shared/FeatureGate";
 import IdentityVerificationGate from "@/components/shared/IdentityVerificationGate";
@@ -234,7 +234,10 @@ const CustomerPortal = () => {
               )}
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/platform-catalogue")} title="Platform Catalogue" className="text-primary">
+              <ShoppingBag size={16} className="mr-1" /> <span className="hidden sm:inline text-xs">Catalogue</span>
+            </Button>
             <Button variant="ghost" size="icon" onClick={tour.restart} title="Restart tour guide" className="text-muted-foreground">
               <HelpCircle size={16} />
             </Button>

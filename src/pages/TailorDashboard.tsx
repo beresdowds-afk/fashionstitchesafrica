@@ -170,6 +170,9 @@ const TailorDashboard = () => {
               <Button variant="ghost" size="sm" onClick={() => navigate("/install")} title="Install FSA App" className="text-primary">
                 <Download size={16} className="mr-1" /> <span className="hidden sm:inline text-xs">Install App</span>
               </Button>
+              <Button variant="ghost" size="sm" onClick={() => navigate("/platform-catalogue")} title="Platform Catalogue" className="text-primary">
+                <ShoppingBag size={16} className="mr-1" /> <span className="hidden sm:inline text-xs">Catalogue</span>
+              </Button>
               <span className="text-sm text-muted-foreground hidden md:block">
                 {profile?.display_name || user.email}
               </span>
