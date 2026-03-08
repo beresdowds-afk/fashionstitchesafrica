@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { motion } from "framer-motion";
 import { Key, Plus, Trash2, Eye, EyeOff, Save, X } from "lucide-react";
+import PlatformSecretsCard from "./PlatformSecretsCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
