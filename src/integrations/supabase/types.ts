@@ -440,6 +440,77 @@ export type Database = {
           },
         ]
       }
+      bank_transfer_payments: {
+        Row: {
+          account_name: string | null
+          amount: number
+          bank_name: string | null
+          created_at: string
+          currency: string
+          id: string
+          notes: string | null
+          org_id: string | null
+          proof_url: string | null
+          purpose: string
+          reference_id: string | null
+          reference_type: string | null
+          status: string
+          transfer_reference: string | null
+          updated_at: string
+          user_id: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          account_name?: string | null
+          amount: number
+          bank_name?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          notes?: string | null
+          org_id?: string | null
+          proof_url?: string | null
+          purpose: string
+          reference_id?: string | null
+          reference_type?: string | null
+          status?: string
+          transfer_reference?: string | null
+          updated_at?: string
+          user_id: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          account_name?: string | null
+          amount?: number
+          bank_name?: string | null
+          created_at?: string
+          currency?: string
+          id?: string
+          notes?: string | null
+          org_id?: string | null
+          proof_url?: string | null
+          purpose?: string
+          reference_id?: string | null
+          reference_type?: string | null
+          status?: string
+          transfer_reference?: string | null
+          updated_at?: string
+          user_id?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_transfer_payments_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       billing_queries: {
         Row: {
           category: string
@@ -4521,6 +4592,117 @@ export type Database = {
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      token_packages: {
+        Row: {
+          bonus_credits: number
+          created_at: string
+          credits: number
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          price_amount: number
+          price_currency: string
+          sort_order: number
+          target_role: string
+          updated_at: string
+        }
+        Insert: {
+          bonus_credits?: number
+          created_at?: string
+          credits: number
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          price_amount?: number
+          price_currency?: string
+          sort_order?: number
+          target_role?: string
+          updated_at?: string
+        }
+        Update: {
+          bonus_credits?: number
+          created_at?: string
+          credits?: number
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          price_amount?: number
+          price_currency?: string
+          sort_order?: number
+          target_role?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      token_purchases: {
+        Row: {
+          amount_paid: number
+          created_at: string
+          credits_purchased: number
+          currency: string
+          gateway_checkout_url: string | null
+          gateway_reference: string | null
+          id: string
+          org_id: string | null
+          package_id: string | null
+          paid_at: string | null
+          payment_gateway: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount_paid?: number
+          created_at?: string
+          credits_purchased: number
+          currency?: string
+          gateway_checkout_url?: string | null
+          gateway_reference?: string | null
+          id?: string
+          org_id?: string | null
+          package_id?: string | null
+          paid_at?: string | null
+          payment_gateway: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount_paid?: number
+          created_at?: string
+          credits_purchased?: number
+          currency?: string
+          gateway_checkout_url?: string | null
+          gateway_reference?: string | null
+          id?: string
+          org_id?: string | null
+          package_id?: string | null
+          paid_at?: string | null
+          payment_gateway?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "token_purchases_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "token_purchases_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "token_packages"
             referencedColumns: ["id"]
           },
         ]
