@@ -186,6 +186,7 @@ const SuperAdminDashboard = () => {
       items: [
         { id: "websites", icon: Crown, label: "Website Requests" },
         { id: "keys", icon: Shield, label: "Keys & Secrets" },
+        { id: "phone_numbers", icon: Globe, label: "Phone Numbers" },
         { id: "backups", icon: Activity, label: "Backups" },
         { id: "features", icon: Shield, label: "Feature Flags" },
         { id: "mobile", icon: Smartphone, label: "Mobile App" },
