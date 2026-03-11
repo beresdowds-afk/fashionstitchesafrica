@@ -20,6 +20,9 @@ import RegionalManagementPanel from "@/components/super-admin/RegionalManagement
 import FeaturedProductsAdminPanel from "@/components/super-admin/FeaturedProductsAdminPanel";
 import PlatformSettingsPanel from "@/components/super-admin/PlatformSettingsPanel";
 import PlatformPhoneNumbersPanel from "@/components/super-admin/PlatformPhoneNumbersPanel";
+import CommsOversightPanel from "@/components/super-admin/CommsOversightPanel";
+import VideoBillingPanel from "@/components/super-admin/VideoBillingPanel";
+import DomainManagementPanel from "@/components/super-admin/DomainManagementPanel";
 import { useUserGlobalRole } from "@/hooks/useOrganization";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
