@@ -1,12 +1,11 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw, Zap, AlertTriangle, Shield } from "lucide-react";
+import { Zap, AlertTriangle } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface AutoTopupPanelProps {
