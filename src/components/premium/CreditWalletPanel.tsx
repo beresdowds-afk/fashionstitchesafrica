@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Wallet, TrendingUp, TrendingDown, Clock, AlertTriangle, CreditCard, RefreshCw } from "lucide-react";
 import { useCreditWallet } from "@/hooks/useCreditWallet";
 import { useToast } from "@/hooks/use-toast";
+import AutoTopupPanel from "./AutoTopupPanel";
 
 interface CreditWalletPanelProps {
   orgId: string;
