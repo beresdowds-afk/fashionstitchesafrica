@@ -25,7 +25,7 @@ interface AutoTopupConfig {
 const AutoTopupPanel = ({ walletId }: AutoTopupPanelProps) => {
   const [config, setConfig] = useState<AutoTopupConfig | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [_saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!walletId) { setLoading(false); return; }
