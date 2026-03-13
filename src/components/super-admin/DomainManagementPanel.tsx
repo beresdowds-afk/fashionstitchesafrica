@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Globe, Search, CheckCircle2, Clock,
   Loader2, DollarSign,
-  Wifi, Server,
+  Wifi, Server, Mail,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "@/hooks/use-toast";
