@@ -146,6 +146,7 @@ const DomainManagementPanel = () => {
       <Tabs defaultValue="domains">
         <TabsList className="mb-4">
           <TabsTrigger value="domains" className="gap-2"><Globe size={14} /> Domain Requests</TabsTrigger>
+          <TabsTrigger value="dns" className="gap-2"><Mail size={14} /> DNS & Email</TabsTrigger>
           <TabsTrigger value="vendors" className="gap-2"><Server size={14} /> Vendor Integration</TabsTrigger>
           <TabsTrigger value="native" className="gap-2"><Wifi size={14} /> Native Domains</TabsTrigger>
         </TabsList>
