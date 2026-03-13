@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Globe, Search, CheckCircle2, Clock,
   Loader2, DollarSign,
-  Wifi, Server,
+  Wifi, Server, Mail,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "@/hooks/use-toast";
@@ -146,6 +146,7 @@ const DomainManagementPanel = () => {
       <Tabs defaultValue="domains">
         <TabsList className="mb-4">
           <TabsTrigger value="domains" className="gap-2"><Globe size={14} /> Domain Requests</TabsTrigger>
+          <TabsTrigger value="dns" className="gap-2"><Mail size={14} /> DNS & Email</TabsTrigger>
           <TabsTrigger value="vendors" className="gap-2"><Server size={14} /> Vendor Integration</TabsTrigger>
           <TabsTrigger value="native" className="gap-2"><Wifi size={14} /> Native Domains</TabsTrigger>
         </TabsList>
@@ -316,24 +317,258 @@ const DomainManagementPanel = () => {
                     </Select>
                   </div>
                 </div>
-                <p className="text-[10px] text-muted-foreground mt-3">
-                  Example: orgname.fashionstitchesafrica.com → auto-created on subscription.
-                  Update the platform URL on the Assets Management page.
-                </p>
-              </div>
-
-              <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
-                <p className="text-sm font-medium mb-1">How Native Domains Work</p>
-                <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
-                  <li>User selects Website Builder Lite or Pro plan</li>
-                  <li>Payment confirmed via integrated gateway</li>
-                  <li>Subdomain auto-created: <code className="bg-muted px-1 rounded">orgslug.platform.com</code></li>
-                  <li>SSL automatically provisioned</li>
-                  <li>Website builder activated with the chosen plan features</li>
-                </ol>
               </div>
             </div>
           </Card>
+        </TabsContent>
+
+        {/* DNS Settings Portal */}
+        <TabsContent value="dns">
+          <div className="space-y-6">
+            {/* FSA Domain */}
+            <Card className="p-5 border-primary/30">
+              <div className="flex items-center gap-2 mb-4">
+                <Globe size={18} className="text-primary" />
+                <h3 className="font-semibold text-base">fs-africa.org.ng — Fashion Stitches Africa</h3>
+                <Badge className="bg-emerald-500/10 text-emerald-600 text-[10px]">Primary Platform</Badge>
+              </div>
+
+              <div className="space-y-4">
+                {/* Hosting DNS */}
+                <div className="p-4 rounded-lg bg-muted/50 border border-border">
+                  <p className="text-sm font-semibold mb-3 flex items-center gap-2"><Server size={14} /> Hosting DNS Records</p>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b border-border text-left">
+                          <th className="pb-2 pr-4 font-medium text-muted-foreground">Type</th>
+                          <th className="pb-2 pr-4 font-medium text-muted-foreground">Name</th>
+                          <th className="pb-2 pr-4 font-medium text-muted-foreground">Value</th>
+                          <th className="pb-2 pr-4 font-medium text-muted-foreground">TTL</th>
+                          <th className="pb-2 font-medium text-muted-foreground">Purpose</th>
+                        </tr>
+                      </thead>
+                      <tbody className="font-mono">
+                        <tr className="border-b border-border/50">
+                          <td className="py-2 pr-4"><Badge variant="outline" className="text-[10px]">A</Badge></td>
+                          <td className="py-2 pr-4">@</td>
+                          <td className="py-2 pr-4">185.158.133.1</td>
+                          <td className="py-2 pr-4">3600</td>
+                          <td className="py-2 text-muted-foreground font-sans">Root domain → Lovable hosting</td>
+                        </tr>
+                        <tr className="border-b border-border/50">
+                          <td className="py-2 pr-4"><Badge variant="outline" className="text-[10px]">A</Badge></td>
+                          <td className="py-2 pr-4">www</td>
+                          <td className="py-2 pr-4">185.158.133.1</td>
+                          <td className="py-2 pr-4">3600</td>
+                          <td className="py-2 text-muted-foreground font-sans">www subdomain → Lovable hosting</td>
+                        </tr>
+                        <tr className="border-b border-border/50">
+                          <td className="py-2 pr-4"><Badge variant="outline" className="text-[10px]">TXT</Badge></td>
+                          <td className="py-2 pr-4">_lovable</td>
+                          <td className="py-2 pr-4">lovable_verify=fs-africa</td>
+                          <td className="py-2 pr-4">3600</td>
+                          <td className="py-2 text-muted-foreground font-sans">Domain ownership verification</td>
+                        </tr>
+                        <tr className="border-b border-border/50">
+                          <td className="py-2 pr-4"><Badge variant="outline" className="text-[10px]">CNAME</Badge></td>
+                          <td className="py-2 pr-4">app</td>
+                          <td className="py-2 pr-4">fashionstitchesafrica.lovable.app</td>
+                          <td className="py-2 pr-4">3600</td>
+                          <td className="py-2 text-muted-foreground font-sans">App subdomain alias</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Email DNS */}
+                <div className="p-4 rounded-lg bg-muted/50 border border-border">
+                  <p className="text-sm font-semibold mb-3 flex items-center gap-2"><Mail size={14} /> Email DNS Records</p>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b border-border text-left">
+                          <th className="pb-2 pr-4 font-medium text-muted-foreground">Type</th>
+                          <th className="pb-2 pr-4 font-medium text-muted-foreground">Name</th>
+                          <th className="pb-2 pr-4 font-medium text-muted-foreground">Value</th>
+                          <th className="pb-2 pr-4 font-medium text-muted-foreground">Priority</th>
+                          <th className="pb-2 font-medium text-muted-foreground">Purpose</th>
+                        </tr>
+                      </thead>
+                      <tbody className="font-mono">
+                        <tr className="border-b border-border/50">
+                          <td className="py-2 pr-4"><Badge variant="outline" className="text-[10px]">MX</Badge></td>
+                          <td className="py-2 pr-4">@</td>
+                          <td className="py-2 pr-4">mx1.hostinger.com</td>
+                          <td className="py-2 pr-4">10</td>
+                          <td className="py-2 text-muted-foreground font-sans">Primary mail server</td>
+                        </tr>
+                        <tr className="border-b border-border/50">
+                          <td className="py-2 pr-4"><Badge variant="outline" className="text-[10px]">MX</Badge></td>
+                          <td className="py-2 pr-4">@</td>
+                          <td className="py-2 pr-4">mx2.hostinger.com</td>
+                          <td className="py-2 pr-4">20</td>
+                          <td className="py-2 text-muted-foreground font-sans">Backup mail server</td>
+                        </tr>
+                        <tr className="border-b border-border/50">
+                          <td className="py-2 pr-4"><Badge variant="outline" className="text-[10px]">TXT</Badge></td>
+                          <td className="py-2 pr-4">@</td>
+                          <td className="py-2 pr-4 break-all">v=spf1 include:_spf.hostinger.com ~all</td>
+                          <td className="py-2 pr-4">—</td>
+                          <td className="py-2 text-muted-foreground font-sans">SPF — Sender Policy Framework</td>
+                        </tr>
+                        <tr className="border-b border-border/50">
+                          <td className="py-2 pr-4"><Badge variant="outline" className="text-[10px]">TXT</Badge></td>
+                          <td className="py-2 pr-4">default._domainkey</td>
+                          <td className="py-2 pr-4 break-all max-w-[200px] truncate">v=DKIM1; k=rsa; p=...</td>
+                          <td className="py-2 pr-4">—</td>
+                          <td className="py-2 text-muted-foreground font-sans">DKIM — Email authentication</td>
+                        </tr>
+                        <tr className="border-b border-border/50">
+                          <td className="py-2 pr-4"><Badge variant="outline" className="text-[10px]">TXT</Badge></td>
+                          <td className="py-2 pr-4">_dmarc</td>
+                          <td className="py-2 pr-4 break-all">v=DMARC1; p=quarantine; rua=mailto:admin@fs-africa.org.ng</td>
+                          <td className="py-2 pr-4">—</td>
+                          <td className="py-2 text-muted-foreground font-sans">DMARC — Email policy</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="mt-3 p-3 rounded bg-primary/5 border border-primary/20">
+                    <p className="text-xs font-medium mb-1">Email Addresses</p>
+                    <div className="flex flex-wrap gap-2">
+                      {["admin@fs-africa.org.ng", "support@fs-africa.org.ng", "info@fs-africa.org.ng", "noreply@fs-africa.org.ng"].map(e => (
+                        <Badge key={e} variant="secondary" className="text-[10px] font-mono">{e}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            {/* GABULK Domain */}
+            <Card className="p-5 border-secondary/30">
+              <div className="flex items-center gap-2 mb-4">
+                <Globe size={18} className="text-secondary" />
+                <h3 className="font-semibold text-base">gabulkfashionstudio.org.ng — GABULK FASHION STUDIO</h3>
+                <Badge className="bg-blue-500/10 text-blue-600 text-[10px]">Organization</Badge>
+              </div>
+
+              <div className="space-y-4">
+                {/* Hosting DNS */}
+                <div className="p-4 rounded-lg bg-muted/50 border border-border">
+                  <p className="text-sm font-semibold mb-3 flex items-center gap-2"><Server size={14} /> Hosting DNS Records</p>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b border-border text-left">
+                          <th className="pb-2 pr-4 font-medium text-muted-foreground">Type</th>
+                          <th className="pb-2 pr-4 font-medium text-muted-foreground">Name</th>
+                          <th className="pb-2 pr-4 font-medium text-muted-foreground">Value</th>
+                          <th className="pb-2 pr-4 font-medium text-muted-foreground">TTL</th>
+                          <th className="pb-2 font-medium text-muted-foreground">Purpose</th>
+                        </tr>
+                      </thead>
+                      <tbody className="font-mono">
+                        <tr className="border-b border-border/50">
+                          <td className="py-2 pr-4"><Badge variant="outline" className="text-[10px]">A</Badge></td>
+                          <td className="py-2 pr-4">@</td>
+                          <td className="py-2 pr-4">185.158.133.1</td>
+                          <td className="py-2 pr-4">3600</td>
+                          <td className="py-2 text-muted-foreground font-sans">Root domain → Lovable hosting</td>
+                        </tr>
+                        <tr className="border-b border-border/50">
+                          <td className="py-2 pr-4"><Badge variant="outline" className="text-[10px]">A</Badge></td>
+                          <td className="py-2 pr-4">www</td>
+                          <td className="py-2 pr-4">185.158.133.1</td>
+                          <td className="py-2 pr-4">3600</td>
+                          <td className="py-2 text-muted-foreground font-sans">www subdomain → Lovable hosting</td>
+                        </tr>
+                        <tr className="border-b border-border/50">
+                          <td className="py-2 pr-4"><Badge variant="outline" className="text-[10px]">TXT</Badge></td>
+                          <td className="py-2 pr-4">_lovable</td>
+                          <td className="py-2 pr-4">lovable_verify=gabulkfashionstudio</td>
+                          <td className="py-2 pr-4">3600</td>
+                          <td className="py-2 text-muted-foreground font-sans">Domain ownership verification</td>
+                        </tr>
+                        <tr className="border-b border-border/50">
+                          <td className="py-2 pr-4"><Badge variant="outline" className="text-[10px]">CNAME</Badge></td>
+                          <td className="py-2 pr-4">shop</td>
+                          <td className="py-2 pr-4">fashionstitchesafrica.lovable.app</td>
+                          <td className="py-2 pr-4">3600</td>
+                          <td className="py-2 text-muted-foreground font-sans">Shop subdomain alias</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Email DNS */}
+                <div className="p-4 rounded-lg bg-muted/50 border border-border">
+                  <p className="text-sm font-semibold mb-3 flex items-center gap-2"><Mail size={14} /> Email DNS Records</p>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="border-b border-border text-left">
+                          <th className="pb-2 pr-4 font-medium text-muted-foreground">Type</th>
+                          <th className="pb-2 pr-4 font-medium text-muted-foreground">Name</th>
+                          <th className="pb-2 pr-4 font-medium text-muted-foreground">Value</th>
+                          <th className="pb-2 pr-4 font-medium text-muted-foreground">Priority</th>
+                          <th className="pb-2 font-medium text-muted-foreground">Purpose</th>
+                        </tr>
+                      </thead>
+                      <tbody className="font-mono">
+                        <tr className="border-b border-border/50">
+                          <td className="py-2 pr-4"><Badge variant="outline" className="text-[10px]">MX</Badge></td>
+                          <td className="py-2 pr-4">@</td>
+                          <td className="py-2 pr-4">mx1.hostinger.com</td>
+                          <td className="py-2 pr-4">10</td>
+                          <td className="py-2 text-muted-foreground font-sans">Primary mail server</td>
+                        </tr>
+                        <tr className="border-b border-border/50">
+                          <td className="py-2 pr-4"><Badge variant="outline" className="text-[10px]">MX</Badge></td>
+                          <td className="py-2 pr-4">@</td>
+                          <td className="py-2 pr-4">mx2.hostinger.com</td>
+                          <td className="py-2 pr-4">20</td>
+                          <td className="py-2 text-muted-foreground font-sans">Backup mail server</td>
+                        </tr>
+                        <tr className="border-b border-border/50">
+                          <td className="py-2 pr-4"><Badge variant="outline" className="text-[10px]">TXT</Badge></td>
+                          <td className="py-2 pr-4">@</td>
+                          <td className="py-2 pr-4 break-all">v=spf1 include:_spf.hostinger.com ~all</td>
+                          <td className="py-2 pr-4">—</td>
+                          <td className="py-2 text-muted-foreground font-sans">SPF — Sender Policy Framework</td>
+                        </tr>
+                        <tr className="border-b border-border/50">
+                          <td className="py-2 pr-4"><Badge variant="outline" className="text-[10px]">TXT</Badge></td>
+                          <td className="py-2 pr-4">default._domainkey</td>
+                          <td className="py-2 pr-4 break-all max-w-[200px] truncate">v=DKIM1; k=rsa; p=...</td>
+                          <td className="py-2 pr-4">—</td>
+                          <td className="py-2 text-muted-foreground font-sans">DKIM — Email authentication</td>
+                        </tr>
+                        <tr className="border-b border-border/50">
+                          <td className="py-2 pr-4"><Badge variant="outline" className="text-[10px]">TXT</Badge></td>
+                          <td className="py-2 pr-4">_dmarc</td>
+                          <td className="py-2 pr-4 break-all">v=DMARC1; p=quarantine; rua=mailto:admin@gabulkfashionstudio.org.ng</td>
+                          <td className="py-2 pr-4">—</td>
+                          <td className="py-2 text-muted-foreground font-sans">DMARC — Email policy</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="mt-3 p-3 rounded bg-secondary/5 border border-secondary/20">
+                    <p className="text-xs font-medium mb-1">Email Addresses</p>
+                    <div className="flex flex-wrap gap-2">
+                      {["admin@gabulkfashionstudio.org.ng", "info@gabulkfashionstudio.org.ng", "orders@gabulkfashionstudio.org.ng", "support@gabulkfashionstudio.org.ng"].map(e => (
+                        <Badge key={e} variant="secondary" className="text-[10px] font-mono">{e}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </div>
         </TabsContent>
       </Tabs>
     </motion.div>
