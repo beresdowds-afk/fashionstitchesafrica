@@ -58,6 +58,21 @@ export const TIER_FEATURES: Record<string, TierFeatures> = {
     seoTools: true,
     prioritySupport: true,
   },
+  "pro-lite": {
+    templates: 10,
+    pages: "unlimited",
+    storageMB: 2048,
+    customDomain: true,
+    ecommerce: true,
+    analytics: "advanced",
+    support: "priority",
+    aiGeneration: true,
+    dragDrop: "basic",
+    ssl: true,
+    hosting: true,
+    seoTools: true,
+    prioritySupport: false,
+  },
 };
 
 export const TIER_LIMITS: Record<string, TierLimits> = {
