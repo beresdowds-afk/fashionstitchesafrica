@@ -434,7 +434,7 @@ const PricingSection = ({
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {/* Lite Plan */}
         <div className={`relative rounded-2xl border-2 p-6 transition-all ${hasActiveLite ? "border-primary/50 bg-primary/5" : "border-border bg-card hover:border-primary/30"}`}>
           {hasActiveLite && (
