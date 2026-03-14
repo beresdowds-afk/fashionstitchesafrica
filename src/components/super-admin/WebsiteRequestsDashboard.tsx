@@ -382,6 +382,9 @@ function RequestDetail({
               {req.status.replace("_", " ")}
             </span>
             <Badge variant={req.priority === "urgent" ? "destructive" : "outline"} className="text-[10px]">{req.priority}</Badge>
+            <Badge variant="outline" className={`text-[10px] ${req.plan === "pro-lite" ? "border-blue-500/30 text-blue-600" : "border-accent/30 text-accent"}`}>
+              {req.plan === "pro-lite" ? "Pro-Lite" : "Pro"}
+            </Badge>
             {isOverdue && <Badge variant="destructive" className="text-[10px]">OVERDUE</Badge>}
           </div>
           <p className="text-xs text-muted-foreground mt-0.5">
