@@ -573,6 +573,82 @@ const PricingSection = ({
             Our team contacts you within 24h after payment
           </p>
         </div>
+
+        {/* Pro-Lite Plan */}
+        <div className={`relative rounded-2xl border-2 p-6 transition-all ${
+          proRequest?.plan === "pro-lite" && proRequest?.payment_status === "paid"
+            ? "border-blue-500/50 bg-blue-500/5"
+            : "border-border bg-card hover:border-blue-500/30"
+        }`}>
+          {proRequest?.plan === "pro-lite" && proRequest?.payment_status === "paid" && (
+            <div className="absolute -top-3 left-4">
+              <span className="text-xs bg-blue-500 text-white px-3 py-1 rounded-full font-medium">Current Plan</span>
+            </div>
+          )}
+          <div className="absolute -top-3 right-4">
+            <span className="text-xs bg-blue-500/10 text-blue-600 px-3 py-1 rounded-full font-medium flex items-center gap-1">
+              <Link2 size={10} /> Integrate
+            </span>
+          </div>
+
+          <div className="mb-4">
+            <div className="flex items-center gap-2 mb-1">
+              <Link2 size={18} className="text-blue-500" />
+              <h4 className="font-heading font-bold text-base">Website Builder Pro-Lite</h4>
+            </div>
+            <div className="flex items-baseline gap-1 mb-1">
+              <span className="text-3xl font-bold">$99</span>
+              <span className="text-sm text-muted-foreground">one-time</span>
+              <span className="text-lg font-semibold ml-2">+ $5</span>
+              <span className="text-sm text-muted-foreground">/month</span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              + $50 one-time platform fee · Total today: <strong className="text-foreground">$149</strong>
+            </p>
+          </div>
+
+          <ul className="space-y-2 mb-6 text-sm">
+            {[
+              "Link your existing website",
+              "FSA platform integration",
+              "AI Measurement tools added",
+              "Virtual Try-On integration",
+              "Video consultation widget",
+              "Booking system integration",
+              "SEO optimization audit",
+              "SSL & performance check",
+              "Missing feature evaluation",
+              "Ongoing platform sync",
+            ].map((f) => (
+              <li key={f} className="flex items-center gap-2 text-muted-foreground">
+                <CheckCircle2 size={13} className="text-blue-500 shrink-0" /> {f}
+              </li>
+            ))}
+          </ul>
+
+          {proRequest?.plan === "pro-lite" && proRequest?.payment_status === "paid" ? (
+            <div className="flex items-center gap-2 text-sm text-blue-500 font-medium">
+              <CheckCircle2 size={16} />
+              {proRequest.status === "completed" ? "Integration Live" : "Evaluation In Progress"}
+            </div>
+          ) : (
+            <Button
+              className="w-full bg-blue-500 text-white hover:bg-blue-600 font-semibold"
+              onClick={() => handleSubscribe("pro-lite")}
+              disabled={!!loading || !canEdit || !!hasActivePro || !!hasActiveLite}
+            >
+              {loading === "pro-lite" ? "Redirecting to payment…" : (
+                <>
+                  <Link2 size={14} /> Get Pro-Lite — $149 today
+                </>
+              )}
+            </Button>
+          )}
+
+          <p className="text-xs text-muted-foreground mt-2 text-center">
+            We evaluate & integrate your site within 48h
+          </p>
+        </div>
       </div>
 
       {/* Note about Paystack key */}

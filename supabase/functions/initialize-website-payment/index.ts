@@ -84,9 +84,14 @@ Deno.serve(async (req) => {
     }
 
     const currency = org.currency || "NGN";
-    const amountUSD = plan === "lite" ? 27 : 339;
-    const amountNGN = amountUSD * 1500;
-    const amount = currency === "NGN" ? amountNGN : amountUSD;
+    const amountByPlan: Record<string, { usd: number }> = {
+      lite: { usd: 27 },
+      pro: { usd: 339 },
+      "pro-lite": { usd: 149 },
+    };
+    const planAmount = amountByPlan[plan] || amountByPlan.lite;
+    const amountNGN = planAmount.usd * 1500;
+    const amount = currency === "NGN" ? amountNGN : planAmount.usd;
 
     // Resolve gateway: preferred > priority list with org+platform fallback
     const gatewayOrder = preferredGateway
