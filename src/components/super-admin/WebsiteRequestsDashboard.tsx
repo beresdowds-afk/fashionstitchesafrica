@@ -222,7 +222,6 @@ export default function WebsiteRequestsDashboard() {
                              {req.plan === "pro-lite" ? "Pro-Lite" : "Pro"}
                            </Badge>
                          </td>
-                        </td>
                         <td className="px-4 py-3">
                           <Badge variant={req.priority === "urgent" ? "destructive" : "outline"} className="text-[10px]">
                             {req.priority}
