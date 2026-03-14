@@ -372,7 +372,7 @@ const PricingSection = ({
         hasExemption = !!fallback;
       }
 
-      if (exemptionData) {
+      if (hasExemption) {
         // Free activation — create subscription/request directly without payment
         if (plan === "lite") {
           const trialEnd = new Date();
