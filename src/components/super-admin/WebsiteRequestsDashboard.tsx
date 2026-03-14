@@ -99,8 +99,8 @@ export default function WebsiteRequestsDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="font-heading font-bold text-2xl">Website Requests</h1>
-          <p className="text-muted-foreground text-sm mt-1">Manage Pro website build requests end-to-end.</p>
+         <h1 className="font-heading font-bold text-2xl">Website Requests</h1>
+          <p className="text-muted-foreground text-sm mt-1">Manage Pro & Pro-Lite website build/integration requests end-to-end.</p>
         </div>
         <Button variant="outline" size="sm" onClick={exportCSV}>
           <Download size={14} className="mr-1" /> Export CSV
@@ -190,15 +190,16 @@ export default function WebsiteRequestsDashboard() {
               <table className="w-full">
                 <thead>
                   <tr className="bg-muted/50">
-                    <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Organization</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Priority</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Status</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Payment</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Fee</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Deadline</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Assigned</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Date</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3"></th>
+                     <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Organization</th>
+                     <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Plan</th>
+                     <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Priority</th>
+                     <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Status</th>
+                     <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Payment</th>
+                     <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Fee</th>
+                     <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Deadline</th>
+                     <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Assigned</th>
+                     <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Date</th>
+                     <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -210,10 +211,17 @@ export default function WebsiteRequestsDashboard() {
                         className={`border-t border-border hover:bg-muted/30 transition-colors cursor-pointer ${isOverdue ? "bg-destructive/5" : ""}`}
                         onClick={() => setSelectedId(req.id)}
                       >
-                        <td className="px-4 py-3">
-                          <p className="text-sm font-medium">{req.organizations?.name || "Unknown"}</p>
-                          <p className="text-xs text-muted-foreground">{req.organizations?.email}</p>
-                        </td>
+                         <td className="px-4 py-3">
+                           <p className="text-sm font-medium">{req.organizations?.name || "Unknown"}</p>
+                           <p className="text-xs text-muted-foreground">{req.organizations?.email}</p>
+                         </td>
+                         <td className="px-4 py-3">
+                           <Badge variant="outline" className={`text-[10px] ${
+                             req.plan === "pro-lite" ? "border-blue-500/30 text-blue-600" : "border-accent/30 text-accent"
+                           }`}>
+                             {req.plan === "pro-lite" ? "Pro-Lite" : "Pro"}
+                           </Badge>
+                         </td>
                         <td className="px-4 py-3">
                           <Badge variant={req.priority === "urgent" ? "destructive" : "outline"} className="text-[10px]">
                             {req.priority}
@@ -374,6 +382,9 @@ function RequestDetail({
               {req.status.replace("_", " ")}
             </span>
             <Badge variant={req.priority === "urgent" ? "destructive" : "outline"} className="text-[10px]">{req.priority}</Badge>
+            <Badge variant="outline" className={`text-[10px] ${req.plan === "pro-lite" ? "border-blue-500/30 text-blue-600" : "border-accent/30 text-accent"}`}>
+              {req.plan === "pro-lite" ? "Pro-Lite" : "Pro"}
+            </Badge>
             {isOverdue && <Badge variant="destructive" className="text-[10px]">OVERDUE</Badge>}
           </div>
           <p className="text-xs text-muted-foreground mt-0.5">

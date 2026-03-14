@@ -84,9 +84,14 @@ Deno.serve(async (req) => {
     }
 
     const currency = org.currency || "NGN";
-    const amountUSD = plan === "lite" ? 27 : 339;
-    const amountNGN = amountUSD * 1500;
-    const amount = currency === "NGN" ? amountNGN : amountUSD;
+    const amountByPlan: Record<string, { usd: number }> = {
+      lite: { usd: 27 },
+      pro: { usd: 339 },
+      "pro-lite": { usd: 149 },
+    };
+    const planAmount = amountByPlan[plan] || amountByPlan.lite;
+    const amountNGN = planAmount.usd * 1500;
+    const amount = currency === "NGN" ? amountNGN : planAmount.usd;
 
     // Resolve gateway: preferred > priority list with org+platform fallback
     const gatewayOrder = preferredGateway
@@ -134,6 +139,19 @@ Deno.serve(async (req) => {
         gateway_reference: result.reference,
         gateway_checkout_url: result.checkoutUrl,
       }, { onConflict: "org_id" });
+    } else if (plan === "pro-lite") {
+      await serviceClient.from("website_builder_requests").insert({
+        org_id,
+        plan: "pro-lite",
+        status: "pending",
+        one_time_fee: 99,
+        platform_fee: 50,
+        monthly_maintenance: 5,
+        payment_gateway: resolvedGateway,
+        gateway_reference: result.reference,
+        gateway_checkout_url: result.checkoutUrl,
+        payment_status: "unpaid",
+      });
     } else {
       await serviceClient.from("website_builder_requests").insert({
         org_id,
