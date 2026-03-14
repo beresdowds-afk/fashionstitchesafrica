@@ -94,6 +94,15 @@ export const TIER_LIMITS: Record<string, TierLimits> = {
     teamMembers: 5,
     customDomains: 3,
   },
+  "pro-lite": {
+    maxTemplates: 10,
+    maxPages: 999,
+    maxStorageMB: 2048,
+    maxProducts: 50,
+    bandwidthGB: 50,
+    teamMembers: 3,
+    customDomains: 1,
+  },
 };
 
 export function getTierFeatures(tier: string): TierFeatures {
