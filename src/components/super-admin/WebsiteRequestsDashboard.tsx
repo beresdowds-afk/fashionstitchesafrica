@@ -211,9 +211,17 @@ export default function WebsiteRequestsDashboard() {
                         className={`border-t border-border hover:bg-muted/30 transition-colors cursor-pointer ${isOverdue ? "bg-destructive/5" : ""}`}
                         onClick={() => setSelectedId(req.id)}
                       >
-                        <td className="px-4 py-3">
-                          <p className="text-sm font-medium">{req.organizations?.name || "Unknown"}</p>
-                          <p className="text-xs text-muted-foreground">{req.organizations?.email}</p>
+                         <td className="px-4 py-3">
+                           <p className="text-sm font-medium">{req.organizations?.name || "Unknown"}</p>
+                           <p className="text-xs text-muted-foreground">{req.organizations?.email}</p>
+                         </td>
+                         <td className="px-4 py-3">
+                           <Badge variant="outline" className={`text-[10px] ${
+                             req.plan === "pro-lite" ? "border-blue-500/30 text-blue-600" : "border-accent/30 text-accent"
+                           }`}>
+                             {req.plan === "pro-lite" ? "Pro-Lite" : "Pro"}
+                           </Badge>
+                         </td>
                         </td>
                         <td className="px-4 py-3">
                           <Badge variant={req.priority === "urgent" ? "destructive" : "outline"} className="text-[10px]">
