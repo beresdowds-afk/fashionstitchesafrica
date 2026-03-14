@@ -190,15 +190,16 @@ export default function WebsiteRequestsDashboard() {
               <table className="w-full">
                 <thead>
                   <tr className="bg-muted/50">
-                    <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Organization</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Priority</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Status</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Payment</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Fee</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Deadline</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Assigned</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Date</th>
-                    <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3"></th>
+                     <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Organization</th>
+                     <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Plan</th>
+                     <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Priority</th>
+                     <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Status</th>
+                     <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Payment</th>
+                     <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Fee</th>
+                     <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Deadline</th>
+                     <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Assigned</th>
+                     <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Date</th>
+                     <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3"></th>
                   </tr>
                 </thead>
                 <tbody>
