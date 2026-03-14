@@ -341,7 +341,7 @@ const PricingSection = ({
   const hasActivePro = proRequest && proRequest.payment_status === "paid"
     || (subscription && (subscription.status === "grandfathered" || subscription.status === "special"));
 
-  const handleSubscribe = async (plan: "lite" | "pro") => {
+  const handleSubscribe = async (plan: "lite" | "pro" | "pro-lite") => {
     if (!canEdit) return;
     setLoading(plan);
 
