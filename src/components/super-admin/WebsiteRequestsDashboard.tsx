@@ -99,8 +99,8 @@ export default function WebsiteRequestsDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="font-heading font-bold text-2xl">Website Requests</h1>
-          <p className="text-muted-foreground text-sm mt-1">Manage Pro website build requests end-to-end.</p>
+         <h1 className="font-heading font-bold text-2xl">Website Requests</h1>
+          <p className="text-muted-foreground text-sm mt-1">Manage Pro & Pro-Lite website build/integration requests end-to-end.</p>
         </div>
         <Button variant="outline" size="sm" onClick={exportCSV}>
           <Download size={14} className="mr-1" /> Export CSV

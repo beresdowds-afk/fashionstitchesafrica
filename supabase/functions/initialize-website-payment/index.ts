@@ -139,6 +139,19 @@ Deno.serve(async (req) => {
         gateway_reference: result.reference,
         gateway_checkout_url: result.checkoutUrl,
       }, { onConflict: "org_id" });
+    } else if (plan === "pro-lite") {
+      await serviceClient.from("website_builder_requests").insert({
+        org_id,
+        plan: "pro-lite",
+        status: "pending",
+        one_time_fee: 99,
+        platform_fee: 50,
+        monthly_maintenance: 5,
+        payment_gateway: resolvedGateway,
+        gateway_reference: result.reference,
+        gateway_checkout_url: result.checkoutUrl,
+        payment_status: "unpaid",
+      });
     } else {
       await serviceClient.from("website_builder_requests").insert({
         org_id,
