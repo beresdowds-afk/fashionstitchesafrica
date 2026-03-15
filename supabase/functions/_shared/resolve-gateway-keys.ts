@@ -62,6 +62,39 @@ export async function resolveGatewayKeys(
   return null;
 }
 
+
+/** African country currency codes supported by Flutterwave */
+const AFRICAN_CURRENCIES = new Set([
+  "NGN", "KES", "GHS", "ZAR", "UGX", "TZS", "RWF", "XOF", "XAF",
+  "EGP", "MAD", "ETB", "MWK", "ZMW", "SLL", "GMD",
+]);
+
+/** Map currencies to optimal Flutterwave payment options */
+function getFlutterwavePaymentOptions(currency: string): string {
+  const cur = currency.toUpperCase();
+  if (cur === "NGN") return "card, banktransfer, ussd, nqr";
+  if (cur === "KES") return "card, mpesa";
+  if (cur === "GHS") return "card, mobilemoneysn";
+  if (cur === "UGX") return "card, mobilemoneyuganda";
+  if (cur === "RWF") return "card, mobilemoneyfranco";
+  if (cur === "TZS") return "card, mobilemoneytanzania";
+  if (cur === "XOF" || cur === "XAF") return "card, mobilemoneyfranco";
+  if (cur === "ZAR") return "card";
+  if (AFRICAN_CURRENCIES.has(cur)) return "card, banktransfer";
+  // Non-African: international cards, Apple Pay, Google Pay
+  return "card";
+}
+
+/** Determine Flutterwave country code from currency */
+function getFlutterwaveCountry(currency: string): string {
+  const map: Record<string, string> = {
+    NGN: "NG", KES: "KE", GHS: "GH", ZAR: "ZA", UGX: "UG",
+    TZS: "TZ", RWF: "RW", XOF: "CI", XAF: "CM", EGP: "EG",
+    USD: "US", GBP: "GB", EUR: "FR", CAD: "CA", AUD: "AU",
+  };
+  return map[currency.toUpperCase()] || "NG";
+}
+
 /**
  * Initialize a payment transaction across gateways.
  * Returns { checkoutUrl, reference } or throws.
@@ -76,8 +109,10 @@ export async function initializeGatewayPayment(opts: {
   email: string;
   metadata: Record<string, unknown>;
   productName?: string;
+  customerName?: string;
+  customerPhone?: string;
 }): Promise<{ checkoutUrl: string; reference: string }> {
-  const { gateway, keys, amount, currency, reference, callbackUrl, email, metadata, productName } = opts;
+  const { gateway, keys, amount, currency, reference, callbackUrl, email, metadata, productName, customerName, customerPhone } = opts;
 
   if (gateway === "paystack") {
     const res = await fetch("https://api.paystack.co/transaction/initialize", {
@@ -128,20 +163,43 @@ export async function initializeGatewayPayment(opts: {
   }
 
   if (gateway === "flutterwave") {
+    const cur = (currency || "NGN").toUpperCase();
+    const paymentOptions = getFlutterwavePaymentOptions(cur);
+    const country = getFlutterwaveCountry(cur);
+    const isAfrican = AFRICAN_CURRENCIES.has(cur);
+
+    const payload: Record<string, unknown> = {
+      tx_ref: reference,
+      amount,
+      currency: cur,
+      redirect_url: callbackUrl,
+      meta: metadata,
+      customer: {
+        email,
+        ...(customerName ? { name: customerName } : {}),
+        ...(customerPhone ? { phonenumber: customerPhone } : {}),
+      },
+      customizations: {
+        title: productName || "Payment",
+        description: `Payment via Fashion Stitches Africa`,
+        logo: "https://fashionstitchesafrica.lovable.app/pwa-192x192.png",
+      },
+      payment_options: paymentOptions,
+      country,
+    };
+
+    // For non-African currencies, enable currency switching so customers can pay in their local currency
+    if (!isAfrican) {
+      payload.currency = cur;
+    }
+
     const res = await fetch("https://api.flutterwave.com/v3/payments", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${keys.secretKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        tx_ref: reference,
-        amount,
-        currency: currency || "NGN",
-        redirect_url: callbackUrl,
-        meta: metadata,
-        customer: { email },
-      }),
+      body: JSON.stringify(payload),
     });
     const data = await res.json();
     if (data.status !== "success") throw new Error(data.message || "Flutterwave initialization failed");
