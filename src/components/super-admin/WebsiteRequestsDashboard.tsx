@@ -364,9 +364,46 @@ function RequestDetail({
 
   const sectionTabs = [
     { id: "details" as const, label: "Details & Actions", icon: FileText },
+    { id: "github" as const, label: "GitHub Repo", icon: Github },
     { id: "contacts" as const, label: "Contact History", icon: MessageCircle },
     { id: "audit" as const, label: "Audit Log", icon: ArrowUpDown },
   ];
+
+  const [githubLoading, setGithubLoading] = useState(false);
+  const [githubResult, setGithubResult] = useState<{ repo_url?: string; message?: string } | null>(null);
+
+  const handleCreateRepo = async () => {
+    setGithubLoading(true);
+    setGithubResult(null);
+    try {
+      const orgName = req.organizations?.name || "website";
+      const { data, error } = await supabase.functions.invoke("github-repo-push", {
+        body: { action: "create-repo", org_name: orgName, repo_name: req.organizations?.slug || orgName },
+      });
+      if (error) throw error;
+      setGithubResult(data);
+      toast({ title: "Repository ready", description: data?.message || "Repo created on GitHub" });
+    } catch (e: any) {
+      toast({ title: "GitHub error", description: e.message, variant: "destructive" });
+    }
+    setGithubLoading(false);
+  };
+
+  const handlePushFiles = async () => {
+    setGithubLoading(true);
+    try {
+      const orgName = req.organizations?.name || "website";
+      const { data, error } = await supabase.functions.invoke("github-repo-push", {
+        body: { action: "push-files", org_name: orgName, repo_name: req.organizations?.slug || orgName },
+      });
+      if (error) throw error;
+      setGithubResult(data);
+      toast({ title: "Files pushed", description: "Website files deployed to GitHub" });
+    } catch (e: any) {
+      toast({ title: "Push error", description: e.message, variant: "destructive" });
+    }
+    setGithubLoading(false);
+  };
 
   return (
     <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
