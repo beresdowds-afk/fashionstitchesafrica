@@ -101,62 +101,60 @@ serve(async (req) => {
       }
 
       const files = website_content || [];
-      if (files.length === 0) {
-        const defaultFiles = [
-          {
-            path: "README.md",
-            content: `# ${org_name} - Fashion Stitches Africa\n\nNatively generated website powered by Fashion Stitches Africa platform.\n\n## Deployment\nThis website is auto-deployed and managed by the FSA platform.\n`,
-          },
-          {
-            path: "index.html",
-            content: `<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>${org_name} | Fashion Stitches Africa</title>\n  <link rel="stylesheet" href="styles.css">\n</head>\n<body>\n  <header>\n    <h1>${org_name}</h1>\n    <p>Powered by Fashion Stitches Africa</p>\n  </header>\n  <main>\n    <section id="catalogue"></section>\n    <section id="measurements"></section>\n    <section id="contact"></section>\n  </main>\n  <script src="app.js"></script>\n</body>\n</html>\n`,
-          },
-          {
-            path: "styles.css",
-            content: `/* ${org_name} - FSA Generated Website */\n:root {\n  --primary: #C9A84C;\n  --bg: #1A1A2E;\n  --text: #F5F0E8;\n}\nbody { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; }\nheader { padding: 2rem; text-align: center; border-bottom: 2px solid var(--primary); }\nh1 { color: var(--primary); }\n`,
-          },
-          {
-            path: "app.js",
-            content: `// ${org_name} - FSA Platform Integration\nconsole.log("${org_name} website loaded - powered by Fashion Stitches Africa");\n`,
-          },
-        ];
+      const filesToPush = files.length > 0 ? files : [
+        {
+          path: "README.md",
+          content: `# ${org_name} - Fashion Stitches Africa\n\nNatively generated website powered by Fashion Stitches Africa platform.\n\n## Deployment\nThis website is auto-deployed and managed by the FSA platform.\n`,
+        },
+        {
+          path: "index.html",
+          content: `<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>${org_name} | Fashion Stitches Africa</title>\n  <link rel="stylesheet" href="styles.css">\n</head>\n<body>\n  <header>\n    <h1>${org_name}</h1>\n    <p>Powered by Fashion Stitches Africa</p>\n  </header>\n  <main>\n    <section id="catalogue"></section>\n    <section id="measurements"></section>\n    <section id="contact"></section>\n  </main>\n  <script src="app.js"></script>\n</body>\n</html>\n`,
+        },
+        {
+          path: "styles.css",
+          content: `/* ${org_name} - FSA Generated Website */\n:root {\n  --primary: #C9A84C;\n  --bg: #1A1A2E;\n  --text: #F5F0E8;\n}\nbody { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; }\nheader { padding: 2rem; text-align: center; border-bottom: 2px solid var(--primary); }\nh1 { color: var(--primary); }\n`,
+        },
+        {
+          path: "app.js",
+          content: `// ${org_name} - FSA Platform Integration\nconsole.log("${org_name} website loaded - powered by Fashion Stitches Africa");\n`,
+        },
+      ];
 
-        const refRes = await fetch(`https://api.github.com/repos/${repoOwner}/${sanitizedRepo}/git/ref/heads/main`, { headers });
-        if (!refRes.ok) throw new Error(`Failed to get ref: ${refRes.status}`);
-        const refData = await refRes.json();
-        const latestCommitSha = refData.object.sha;
+      const refRes = await fetch(`https://api.github.com/repos/${repoOwner}/${sanitizedRepo}/git/ref/heads/main`, { headers });
+      if (!refRes.ok) throw new Error(`Failed to get ref: ${refRes.status}`);
+      const refData = await refRes.json();
+      const latestCommitSha = refData.object.sha;
 
-        const blobShas = [];
-        for (const file of defaultFiles) {
-          const blobRes = await fetch(`https://api.github.com/repos/${repoOwner}/${sanitizedRepo}/git/blobs`, {
-            method: "POST", headers,
-            body: JSON.stringify({ content: file.content, encoding: "utf-8" }),
-          });
-          const blob = await blobRes.json();
-          blobShas.push({ path: file.path, mode: "100644", type: "blob", sha: blob.sha });
-        }
-
-        const treeRes = await fetch(`https://api.github.com/repos/${repoOwner}/${sanitizedRepo}/git/trees`, {
+      const blobShas = [];
+      for (const file of filesToPush) {
+        const blobRes = await fetch(`https://api.github.com/repos/${repoOwner}/${sanitizedRepo}/git/blobs`, {
           method: "POST", headers,
-          body: JSON.stringify({ base_tree: latestCommitSha, tree: blobShas }),
+          body: JSON.stringify({ content: file.content, encoding: "utf-8" }),
         });
-        const tree = await treeRes.json();
-
-        const commitRes = await fetch(`https://api.github.com/repos/${repoOwner}/${sanitizedRepo}/git/commits`, {
-          method: "POST", headers,
-          body: JSON.stringify({ message: `Initial website deployment for ${org_name}`, tree: tree.sha, parents: [latestCommitSha] }),
-        });
-        const commit = await commitRes.json();
-
-        await fetch(`https://api.github.com/repos/${repoOwner}/${sanitizedRepo}/git/refs/heads/main`, {
-          method: "PATCH", headers,
-          body: JSON.stringify({ sha: commit.sha }),
-        });
-
-        return new Response(JSON.stringify({ success: true, commit_sha: commit.sha, message: "Files pushed successfully" }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        const blob = await blobRes.json();
+        blobShas.push({ path: file.path, mode: "100644", type: "blob", sha: blob.sha });
       }
+
+      const treeRes = await fetch(`https://api.github.com/repos/${repoOwner}/${sanitizedRepo}/git/trees`, {
+        method: "POST", headers,
+        body: JSON.stringify({ base_tree: latestCommitSha, tree: blobShas }),
+      });
+      const tree = await treeRes.json();
+
+      const commitRes = await fetch(`https://api.github.com/repos/${repoOwner}/${sanitizedRepo}/git/commits`, {
+        method: "POST", headers,
+        body: JSON.stringify({ message: `Website update for ${org_name}`, tree: tree.sha, parents: [latestCommitSha] }),
+      });
+      const commit = await commitRes.json();
+
+      await fetch(`https://api.github.com/repos/${repoOwner}/${sanitizedRepo}/git/refs/heads/main`, {
+        method: "PATCH", headers,
+        body: JSON.stringify({ sha: commit.sha }),
+      });
+
+      return new Response(JSON.stringify({ success: true, commit_sha: commit.sha, message: "Files pushed successfully" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     if (action === "transfer-repo") {
