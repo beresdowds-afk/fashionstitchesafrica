@@ -12,7 +12,7 @@ import { motion } from "framer-motion";
 import {
   Crown, Clock, Users, CheckCircle2, TrendingUp, Search, Download, ExternalLink,
   AlertTriangle, Eye, MessageCircle, FileText, ChevronLeft, ChevronRight, Rocket,
-  Star, ArrowUpDown, Github, Loader2,
+  ArrowUpDown, Github,
 } from "lucide-react";
 import { format } from "date-fns";
 
