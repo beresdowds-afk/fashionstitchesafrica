@@ -37,17 +37,24 @@ serve(async (req) => {
       .replace(/^-|-$/g, "");
 
     if (action === "create-repo") {
-      // Check if repo exists
-      const checkRes = await fetch(`https://api.github.com/repos/${GITHUB_ORG}/${sanitizedRepo}`, { headers });
-
-      if (checkRes.status === 200) {
-        return new Response(JSON.stringify({ success: true, repo_url: `https://github.com/${GITHUB_ORG}/${sanitizedRepo}`, message: "Repository already exists" }), {
+      // Check if repo exists under personal account
+      const checkPersonal = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${sanitizedRepo}`, { headers });
+      if (checkPersonal.status === 200) {
+        return new Response(JSON.stringify({ success: true, repo_url: `https://github.com/${GITHUB_USER}/${sanitizedRepo}`, message: "Repository already exists under personal account" }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      // Create repo under org
-      const createRes = await fetch(`https://api.github.com/orgs/${GITHUB_ORG}/repos`, {
+      // Check if repo exists under org
+      const checkOrg = await fetch(`https://api.github.com/repos/${GITHUB_ORG}/${sanitizedRepo}`, { headers });
+      if (checkOrg.status === 200) {
+        return new Response(JSON.stringify({ success: true, repo_url: `https://github.com/${GITHUB_ORG}/${sanitizedRepo}`, message: "Repository already exists under organization" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Try creating under org first
+      let createRes = await fetch(`https://api.github.com/orgs/${GITHUB_ORG}/repos`, {
         method: "POST",
         headers,
         body: JSON.stringify({
@@ -57,6 +64,21 @@ serve(async (req) => {
           auto_init: true,
         }),
       });
+
+      // If org fails (403), fall back to personal account
+      if (!createRes.ok) {
+        console.log(`Org repo creation failed (${createRes.status}), falling back to personal account ${GITHUB_USER}`);
+        createRes = await fetch(`https://api.github.com/user/repos`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            name: sanitizedRepo,
+            description: description || `FSA native website for ${org_name}`,
+            private: false,
+            auto_init: true,
+          }),
+        });
+      }
 
       if (!createRes.ok) {
         const err = await createRes.json();
