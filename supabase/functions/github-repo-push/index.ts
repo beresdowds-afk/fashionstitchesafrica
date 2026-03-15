@@ -5,6 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const GITHUB_USER = "beresdowds-afk";
 const GITHUB_ORG = "East-forte-fabrications-and-equipments";
 
 serve(async (req) => {
