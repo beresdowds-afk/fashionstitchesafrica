@@ -23,10 +23,18 @@ const EmbedConfigPanel = ({ orgId }: { orgId: string }) => {
   const [newDomain, setNewDomain] = useState("");
   const [saving, setSaving] = useState(false);
 
+  const [embedMode, setEmbedMode] = useState<"widget" | "inline" | "iframe">("widget");
+
   const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
-  const embedSnippet = config
-    ? `<script src="https://${projectId}.supabase.co/functions/v1/embed-widget?key=${config.widget_key}" defer></script>`
-    : "";
+  const baseUrl = `https://${projectId}.supabase.co/functions/v1/embed-widget`;
+
+  const embedSnippets: Record<string, string> = config ? {
+    widget: `<script src="${baseUrl}?key=${config.widget_key}" defer></script>`,
+    inline: `<!-- Place this div where you want FSA to appear -->\n<div id="fsa-embed" data-page="catalogue" data-height="700"></div>\n<script src="${baseUrl}?key=${config.widget_key}" defer></script>`,
+    iframe: `<iframe src="${baseUrl}?key=${config.widget_key}&format=iframe" style="width:100%;min-height:700px;border:none;border-radius:12px;" allow="camera;microphone;geolocation" loading="lazy"></iframe>`,
+  } : { widget: "", inline: "", iframe: "" };
+
+  const currentSnippet = embedSnippets[embedMode];
 
   const handleToggleEnabled = async () => {
     setSaving(true);
