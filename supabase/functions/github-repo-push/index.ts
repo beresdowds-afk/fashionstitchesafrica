@@ -65,9 +65,10 @@ serve(async (req) => {
         }),
       });
 
-      // If org fails (403), fall back to personal account
+      // If org fails, fall back to personal account
       if (!createRes.ok) {
-        console.log(`Org repo creation failed (${createRes.status}), falling back to personal account ${GITHUB_USER}`);
+        const orgErr = await createRes.text();
+        console.log(`Org repo creation failed (${createRes.status}): ${orgErr}, falling back to personal account ${GITHUB_USER}`);
         createRes = await fetch(`https://api.github.com/user/repos`, {
           method: "POST",
           headers,
