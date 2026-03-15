@@ -115,16 +115,41 @@ const EmbedConfigPanel = ({ orgId }: { orgId: string }) => {
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Embed Mode Selector */}
+          <div>
+            <Label className="text-sm font-medium mb-2 block">Embed Mode</Label>
+            <div className="flex gap-2 mb-3">
+              {([
+                { key: "widget" as const, label: "Floating Widget", desc: "Button in corner" },
+                { key: "inline" as const, label: "Inline Embed", desc: "Embedded in page" },
+                { key: "iframe" as const, label: "Full iFrame", desc: "Full page embed" },
+              ]).map(mode => (
+                <button
+                  key={mode.key}
+                  className={`flex-1 p-3 rounded-lg border text-left transition-colors ${embedMode === mode.key ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/30"}`}
+                  onClick={() => setEmbedMode(mode.key)}
+                >
+                  <p className="text-xs font-semibold">{mode.label}</p>
+                  <p className="text-[10px] text-muted-foreground">{mode.desc}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Embed Code */}
           <div>
             <Label className="text-sm font-medium mb-2 block">Embed Code</Label>
             <div className="flex gap-2">
-              <code className="flex-1 p-3 bg-muted rounded-lg text-xs break-all font-mono">{embedSnippet}</code>
-              <Button variant="outline" size="sm" onClick={() => copyToClipboard(embedSnippet)}>
+              <code className="flex-1 p-3 bg-muted rounded-lg text-xs break-all font-mono whitespace-pre-wrap">{currentSnippet}</code>
+              <Button variant="outline" size="sm" onClick={() => copyToClipboard(currentSnippet)}>
                 <Copy size={14} />
               </Button>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Paste this before the closing &lt;/body&gt; tag on any website.</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {embedMode === "widget" && "Paste this before the closing </body> tag. Shows a floating button."}
+              {embedMode === "inline" && "Place the <div> where you want FSA to appear. Change data-page to: catalogue, book, or tryon."}
+              {embedMode === "iframe" && "Paste this iframe anywhere in your HTML. Fully self-contained."}
+            </p>
           </div>
 
           {/* Widget Key */}
