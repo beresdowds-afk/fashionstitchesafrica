@@ -92,10 +92,15 @@ serve(async (req) => {
     }
 
     if (action === "push-files") {
-      // Push website files to repo using the Git Trees API
+      // Determine which account owns the repo
+      let repoOwner = GITHUB_USER;
+      const checkOwner = await fetch(`https://api.github.com/repos/${GITHUB_ORG}/${sanitizedRepo}`, { headers });
+      if (checkOwner.status === 200) {
+        repoOwner = GITHUB_ORG;
+      }
+
       const files = website_content || [];
       if (files.length === 0) {
-        // Push a default README + index.html
         const defaultFiles = [
           {
             path: "README.md",
@@ -115,50 +120,35 @@ serve(async (req) => {
           },
         ];
 
-        // Get default branch ref
-        const refRes = await fetch(`https://api.github.com/repos/${GITHUB_ORG}/${sanitizedRepo}/git/ref/heads/main`, { headers });
-        if (!refRes.ok) {
-          throw new Error(`Failed to get ref: ${refRes.status}`);
-        }
+        const refRes = await fetch(`https://api.github.com/repos/${repoOwner}/${sanitizedRepo}/git/ref/heads/main`, { headers });
+        if (!refRes.ok) throw new Error(`Failed to get ref: ${refRes.status}`);
         const refData = await refRes.json();
         const latestCommitSha = refData.object.sha;
 
-        // Create blobs
         const blobShas = [];
         for (const file of defaultFiles) {
-          const blobRes = await fetch(`https://api.github.com/repos/${GITHUB_ORG}/${sanitizedRepo}/git/blobs`, {
-            method: "POST",
-            headers,
+          const blobRes = await fetch(`https://api.github.com/repos/${repoOwner}/${sanitizedRepo}/git/blobs`, {
+            method: "POST", headers,
             body: JSON.stringify({ content: file.content, encoding: "utf-8" }),
           });
           const blob = await blobRes.json();
           blobShas.push({ path: file.path, mode: "100644", type: "blob", sha: blob.sha });
         }
 
-        // Create tree
-        const treeRes = await fetch(`https://api.github.com/repos/${GITHUB_ORG}/${sanitizedRepo}/git/trees`, {
-          method: "POST",
-          headers,
+        const treeRes = await fetch(`https://api.github.com/repos/${repoOwner}/${sanitizedRepo}/git/trees`, {
+          method: "POST", headers,
           body: JSON.stringify({ base_tree: latestCommitSha, tree: blobShas }),
         });
         const tree = await treeRes.json();
 
-        // Create commit
-        const commitRes = await fetch(`https://api.github.com/repos/${GITHUB_ORG}/${sanitizedRepo}/git/commits`, {
-          method: "POST",
-          headers,
-          body: JSON.stringify({
-            message: `Initial website deployment for ${org_name}`,
-            tree: tree.sha,
-            parents: [latestCommitSha],
-          }),
+        const commitRes = await fetch(`https://api.github.com/repos/${repoOwner}/${sanitizedRepo}/git/commits`, {
+          method: "POST", headers,
+          body: JSON.stringify({ message: `Initial website deployment for ${org_name}`, tree: tree.sha, parents: [latestCommitSha] }),
         });
         const commit = await commitRes.json();
 
-        // Update ref
-        await fetch(`https://api.github.com/repos/${GITHUB_ORG}/${sanitizedRepo}/git/refs/heads/main`, {
-          method: "PATCH",
-          headers,
+        await fetch(`https://api.github.com/repos/${repoOwner}/${sanitizedRepo}/git/refs/heads/main`, {
+          method: "PATCH", headers,
           body: JSON.stringify({ sha: commit.sha }),
         });
 
@@ -169,10 +159,15 @@ serve(async (req) => {
     }
 
     if (action === "list-repos") {
-      const listRes = await fetch(`https://api.github.com/orgs/${GITHUB_ORG}/repos?per_page=100&sort=updated`, { headers });
-      if (!listRes.ok) throw new Error(`GitHub list repos failed [${listRes.status}]`);
-      const repos = await listRes.json();
-      return new Response(JSON.stringify({ success: true, repos: repos.map((r: any) => ({ name: r.name, url: r.html_url, updated: r.updated_at })) }), {
+      // List from both personal and org
+      const [personalRes, orgRes] = await Promise.all([
+        fetch(`https://api.github.com/users/${GITHUB_USER}/repos?per_page=100&sort=updated`, { headers }),
+        fetch(`https://api.github.com/orgs/${GITHUB_ORG}/repos?per_page=100&sort=updated`, { headers }),
+      ]);
+      const personalRepos = personalRes.ok ? await personalRes.json() : [];
+      const orgRepos = orgRes.ok ? await orgRes.json() : [];
+      const allRepos = [...personalRepos, ...orgRepos];
+      return new Response(JSON.stringify({ success: true, repos: allRepos.map((r: any) => ({ name: r.name, url: r.html_url, updated: r.updated_at, owner: r.owner?.login })) }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
