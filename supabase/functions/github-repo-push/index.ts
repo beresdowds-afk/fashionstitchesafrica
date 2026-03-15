@@ -159,6 +159,24 @@ serve(async (req) => {
       }
     }
 
+    if (action === "transfer-repo") {
+      const { new_owner } = await req.json().catch(() => ({}));
+      const targetOwner = new_owner || GITHUB_ORG;
+      const transferRes = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${sanitizedRepo}/transfer`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ new_owner: targetOwner }),
+      });
+      if (!transferRes.ok) {
+        const err = await transferRes.text();
+        throw new Error(`Transfer failed [${transferRes.status}]: ${err}`);
+      }
+      const result = await transferRes.json();
+      return new Response(JSON.stringify({ success: true, new_url: result.html_url, message: `Repository transferred to ${targetOwner}` }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     if (action === "list-repos") {
       // List from both personal and org
       const [personalRes, orgRes] = await Promise.all([
