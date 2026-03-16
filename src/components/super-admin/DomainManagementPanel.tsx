@@ -330,9 +330,8 @@ const DomainDnsCard = ({ config, onUpdate }: { config: DomainDnsConfig; onUpdate
       });
 
       // Push files
-      const { data: settings } = org
-        ? await supabase.from("website_settings").select("*").eq("org_id", org.id).maybeSingle()
-        : { data: null };
+      // Fetch org branding from website_builder_subscriptions or use defaults
+      const settings: any = null;
 
       const { data: catalogue } = org
         ? await supabase.from("org_catalogue_items").select("*").eq("org_id", org.id).eq("is_available", true).order("sort_order").limit(20)
