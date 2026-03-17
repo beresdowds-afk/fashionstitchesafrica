@@ -955,7 +955,7 @@ const NonNativeEvaluationPanel = () => {
 
 // ── Native Website Publishing Approval Panel ──────────────────────────────────
 const NativeWebsitePublishingPanel = () => {
-  const [publishing, setPublishing] = useState<string | null>(null);
+  const [_publishing, _setPublishing] = useState<string | null>(null);
   const [approving, setApproving] = useState<string | null>(null);
   const qc = useQueryClient();
 
