@@ -7,6 +7,10 @@ const ALLOWED_EMBED_ORIGINS = [
   "http://www.eastforte.org.ng",
   "https://fs-africa.org.ng",
   "https://www.fs-africa.org.ng",
+  "https://gabulkfashionstudio.org.ng",
+  "https://www.gabulkfashionstudio.org.ng",
+  "http://gabulkfashionstudio.org.ng",
+  "http://www.gabulkfashionstudio.org.ng",
   "https://fashionstitchesafrica.lovable.app",
 ];
 
