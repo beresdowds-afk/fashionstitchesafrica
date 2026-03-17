@@ -953,6 +953,244 @@ const NonNativeEvaluationPanel = () => {
   );
 };
 
+// ── Native Website Publishing Approval Panel ──────────────────────────────────
+const NativeWebsitePublishingPanel = () => {
+  const [_publishing, _setPublishing] = useState<string | null>(null);
+  const [approving, setApproving] = useState<string | null>(null);
+  const qc = useQueryClient();
+
+  const { data: allSubscriptions, isLoading: loadingSubs } = useQuery({
+    queryKey: ["native-website-subs"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("website_builder_subscriptions")
+        .select("*, organizations:org_id(id, name, slug)")
+        .order("created_at", { ascending: false });
+      return data || [];
+    },
+  });
+
+  const { data: allRequests } = useQuery({
+    queryKey: ["native-website-requests"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("website_builder_requests")
+        .select("*, organizations:org_id(id, name, slug)")
+        .order("created_at", { ascending: false });
+      return data || [];
+    },
+  });
+
+  const { data: orgWebsites } = useQuery({
+    queryKey: ["org-websites-all"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("org_websites")
+        .select("*, organizations:org_id(id, name, slug)");
+      return data || [];
+    },
+  });
+
+  // Combine all native websites from subscriptions
+  const nativeWebsites = (allSubscriptions || []).map((sub: any) => {
+    const org = sub.organizations;
+    const request = (allRequests || []).find((r: any) => r.org_id === sub.org_id);
+    const website = (orgWebsites || []).find((w: any) => w.org_id === sub.org_id);
+    const planLabel = sub.plan === "pro" ? "Pro" : sub.plan === "pro-lite" ? "Pro-Lite" : "Lite";
+    const isPublished = request?.launched_at || request?.status === "completed";
+
+    return {
+      id: sub.id,
+      orgId: sub.org_id,
+      orgName: org?.name || "Unknown Organization",
+      slug: org?.slug || "",
+      plan: planLabel,
+      status: sub.status,
+      isPublished,
+      websiteUrl: request?.website_url || (org?.slug ? `https://${org.slug}.fs-africa.org.ng` : null),
+      hasWebsiteConfig: !!website,
+      requestId: request?.id,
+      requestStatus: request?.status,
+      launchedAt: request?.launched_at,
+      monthlyFee: sub.monthly_fee,
+    };
+  });
+
+  const handleApprovePublish = async (site: any) => {
+    setApproving(site.id);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { toast({ title: "Not authenticated", variant: "destructive" }); return; }
+
+      const repoName = site.slug || site.orgName.toLowerCase().replace(/[^a-z0-9]/g, "-");
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+
+      // Fetch org branding
+      const { data: websiteConfig } = await supabase
+        .from("org_websites")
+        .select("*")
+        .eq("org_id", site.orgId)
+        .maybeSingle();
+
+      // Fetch catalogue
+      const { data: catalogue } = await supabase
+        .from("org_catalogue_items")
+        .select("*")
+        .eq("org_id", site.orgId)
+        .eq("is_available", true)
+        .order("sort_order")
+        .limit(20);
+
+      const domainConfig: DomainDnsConfig = {
+        domain: site.websiteUrl?.replace("https://", "").replace("http://", "") || `${repoName}.fs-africa.org.ng`,
+        label: site.orgName,
+        plan: site.plan,
+        badgeColor: site.plan === "Pro" ? "bg-accent/10 text-accent" : site.plan === "Pro-Lite" ? "bg-blue-500/10 text-blue-600" : "bg-primary/10 text-primary",
+        hosting: [], email: [], emails: [],
+      };
+
+      // Create repo
+      await fetch(`https://${projectId}.supabase.co/functions/v1/github-repo-push`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ action: "create-repo", org_name: site.orgName, repo_name: repoName, description: `${site.orgName} — Powered by Fashion Stitches Africa` }),
+      });
+
+      // Push files
+      await fetch(`https://${projectId}.supabase.co/functions/v1/github-repo-push`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ action: "push-files", repo_name: repoName, org_name: site.orgName, website_content: buildWebsiteContent(domainConfig, websiteConfig, catalogue || []) }),
+      });
+
+      // Update request status
+      if (site.requestId) {
+        await supabase.from("website_builder_requests").update({
+          status: "completed",
+          launched_at: new Date().toISOString(),
+          review_status: "approved",
+          reviewed_at: new Date().toISOString(),
+        }).eq("id", site.requestId);
+      }
+
+      qc.invalidateQueries({ queryKey: ["native-website-requests"] });
+      toast({ title: "Website approved & published!", description: `${site.orgName} is now live.` });
+    } catch (err: any) {
+      toast({ title: "Publishing failed", description: err.message, variant: "destructive" });
+    } finally {
+      setApproving(null);
+    }
+  };
+
+  const planColors: Record<string, string> = {
+    Lite: "bg-primary/10 text-primary",
+    Pro: "bg-accent/10 text-accent-foreground",
+    "Pro-Lite": "bg-blue-500/10 text-blue-600",
+  };
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h3 className="font-heading font-semibold text-lg flex items-center gap-2">
+          <Rocket size={18} /> Native Website Publishing Approval
+        </h3>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          Manually approve and trigger auto-publishing for natively generated websites across Lite, Pro-Lite, and Pro plans.
+        </p>
+      </div>
+
+      {loadingSubs ? (
+        <div className="flex justify-center py-12"><Loader2 className="animate-spin" /></div>
+      ) : nativeWebsites.length === 0 ? (
+        <Card className="p-8 text-center">
+          <Globe size={32} className="mx-auto text-muted-foreground mb-2" />
+          <p className="text-sm text-muted-foreground">No native website subscriptions found.</p>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {nativeWebsites.map((site: any) => (
+            <Card key={site.id} className="p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <h4 className="font-semibold text-sm">{site.orgName}</h4>
+                    <Badge className={`text-[10px] ${planColors[site.plan] || "bg-muted"}`}>{site.plan}</Badge>
+                    <Badge className={`text-[10px] ${
+                      site.status === "active" || site.status === "special" ? "bg-emerald-500/10 text-emerald-600" :
+                      site.status === "trial" ? "bg-amber-500/10 text-amber-600" :
+                      "bg-muted text-muted-foreground"
+                    }`}>{site.status}</Badge>
+                    {site.isPublished && (
+                      <Badge className="text-[10px] bg-green-500/10 text-green-600">
+                        <CheckCircle2 size={8} className="mr-0.5" /> Published
+                      </Badge>
+                    )}
+                    {site.monthlyFee === 0 && (
+                      <Badge variant="outline" className="text-[10px]">Fee Waived</Badge>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground mt-1 flex-wrap">
+                    {site.websiteUrl && <span className="flex items-center gap-1"><ExternalLink size={10} /> {site.websiteUrl}</span>}
+                    {site.launchedAt && <span>Launched: {new Date(site.launchedAt).toLocaleDateString()}</span>}
+                    <span>Monthly: ${site.monthlyFee}</span>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 shrink-0">
+                  {site.isPublished ? (
+                    <Button size="sm" variant="outline" className="h-7 text-xs gap-1"
+                      onClick={() => handleApprovePublish(site)}
+                      disabled={approving === site.id}>
+                      {approving === site.id ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
+                      Re-publish
+                    </Button>
+                  ) : (
+                    <Button size="sm" className="h-7 text-xs gap-1 bg-primary hover:bg-primary/90"
+                      onClick={() => handleApprovePublish(site)}
+                      disabled={approving === site.id}>
+                      {approving === site.id ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={12} />}
+                      Approve & Publish
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <Card className="p-5 mt-4">
+        <div className="flex items-center gap-2 mb-4">
+          <Wifi size={18} className="text-primary" />
+          <h3 className="font-semibold text-base">Native Subdomain Configuration</h3>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">
+          Native domains use a wildcard DNS A record pointed to the FSA platform. Subdomains are created instantly upon payment confirmation.
+        </p>
+        <div className="p-4 rounded-lg bg-muted/50 border border-border">
+          <p className="text-sm font-medium mb-1">Wildcard Configuration</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+            <div>
+              <Label className="text-xs">Platform Base Domain</Label>
+              <Input placeholder="fashionstitchesafrica.com" className="mt-1" defaultValue="fashionstitchesafrica.lovable.app" />
+            </div>
+            <div>
+              <Label className="text-xs">DNS Record Type</Label>
+              <Select defaultValue="a">
+                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="a">A Record (*.domain → IP)</SelectItem>
+                  <SelectItem value="cname">CNAME (*.domain → platform)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
+};
+
 // ── Main Panel ────────────────────────────────────────────────────────────────
 const DomainManagementPanel = () => {
   const qc = useQueryClient();
@@ -1199,35 +1437,7 @@ const DomainManagementPanel = () => {
         </TabsContent>
 
         <TabsContent value="native">
-          <Card className="p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <Wifi size={18} className="text-primary" />
-              <h3 className="font-semibold text-base">Native Subdomain Creation</h3>
-            </div>
-            <p className="text-sm text-muted-foreground mb-4">
-              Native domains use a wildcard DNS A record (or CNAME) pointed to the FSA platform URL.
-              Subdomains are created instantly upon payment confirmation.
-            </p>
-            <div className="p-4 rounded-lg bg-muted/50 border border-border">
-              <p className="text-sm font-medium mb-1">Wildcard Configuration</p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
-                <div>
-                  <Label className="text-xs">Platform Base Domain</Label>
-                  <Input placeholder="fashionstitchesafrica.com" className="mt-1" defaultValue="fashionstitchesafrica.lovable.app" />
-                </div>
-                <div>
-                  <Label className="text-xs">DNS Record Type</Label>
-                  <Select defaultValue="a">
-                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="a">A Record (*.domain → IP)</SelectItem>
-                      <SelectItem value="cname">CNAME (*.domain → platform)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-          </Card>
+          <NativeWebsitePublishingPanel />
         </TabsContent>
       </Tabs>
     </motion.div>
