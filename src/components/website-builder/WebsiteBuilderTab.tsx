@@ -877,6 +877,7 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
           { id: "company" as const, icon: Building2, label: "Company Info" },
           { id: "catalogue" as const, icon: Package, label: "Catalogue" },
           { id: "integration" as const, icon: Link2, label: "Integration" },
+          { id: "guide" as const, icon: Book, label: "User Guide" },
         ].map((s) => (
           <button
             key={s.id}
