@@ -102,16 +102,16 @@ const WebsiteBuilderManual = ({ userRole, currentPlan, orgName }: ManualProps) =
               </div>
               <p>Native subdomain on {details.platformUrl}. Includes auto-generated branded website, product catalogue, appointment booking, mobile responsive design, SSL & hosting. 6-month free trial included.</p>
             </div>
-            <div className="rounded-lg border border-accent/30 bg-accent/5 p-3">
+          <div className="rounded-lg bg-accent/5 border border-accent/30 p-3">
               <div className="flex items-center gap-2 mb-1">
                 <Crown size={14} className="text-accent" />
                 <span className="font-semibold text-foreground">Pro Plan — $339 one-time + $7/month</span>
               </div>
               <p>Everything in Lite plus: custom domain support, full e-commerce module, SEO tools, analytics, priority 24/7 support, 20+ premium templates, dedicated setup by our team, social media integrations.</p>
             </div>
-            <div className="rounded-lg border border-blue-500/30 bg-blue-500/5 p-3">
+            <div className="rounded-lg border border-border p-3">
               <div className="flex items-center gap-2 mb-1">
-                <Link2 size={14} className="text-blue-500" />
+                <Link2 size={14} className="text-primary" />
                 <span className="font-semibold text-foreground">Pro-Lite Plan — $149 one-time + $5/month</span>
               </div>
               <p>Link your existing external website to {details.platformName}. We integrate AI Measurements, Virtual Try-On, Appointment Booking, and more. Includes platform evaluation and ongoing sync.</p>
