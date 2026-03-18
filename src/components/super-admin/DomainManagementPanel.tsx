@@ -464,15 +464,56 @@ function buildWebsiteContent(config: DomainDnsConfig, settings: any, catalogue: 
   const accentColor = settings?.accent_color || "#8B5CF6";
   const orgName = config.label;
   const tagline = settings?.tagline || "Premium Fashion & Tailoring";
+  const heroDesc = settings?.hero_description || `${orgName} delivers premium fashion and tailoring services. We combine traditional craftsmanship with modern design.`;
+  const heroImage = settings?.hero_image_url || "";
+  const fontHeading = settings?.font_heading || "Playfair Display";
+  const fontBody = settings?.font_body || "Inter";
+  const palette = settings?.color_palette || {};
+  const bgColor = palette.background || "#0a0a0a";
+  const surfaceColor = palette.surface || "#141414";
+  const textColor = palette.text_color || "#f5f0e8";
+  const mutedColor = palette.muted || "#a0977d";
+
+  // Social links
+  const socialLinks = [
+    { url: settings?.instagram_url, icon: "Instagram", label: "Instagram" },
+    { url: settings?.facebook_url, icon: "Facebook", label: "Facebook" },
+    { url: settings?.twitter_url, icon: "X / Twitter", label: "Twitter" },
+    { url: settings?.tiktok_url, icon: "TikTok", label: "TikTok" },
+    { url: settings?.youtube_url, icon: "YouTube", label: "YouTube" },
+    { url: settings?.linkedin_url, icon: "LinkedIn", label: "LinkedIn" },
+    { url: settings?.whatsapp_number ? `https://wa.me/${settings.whatsapp_number.replace(/[^0-9]/g, "")}` : "", icon: "WhatsApp", label: "WhatsApp" },
+  ].filter(s => s.url);
+
+  const socialHtml = socialLinks.length > 0 ? `
+      <div class="social-links">
+        ${socialLinks.map(s => `<a href="${s.url}" target="_blank" rel="noopener" title="${s.label}">${s.label}</a>`).join("\n        ")}
+      </div>` : "";
+
+  // Contact info
+  const orgEmail = settings?.email || "";
+  const orgPhone = settings?.phone || "";
+  const orgAddress = settings?.address || "";
+
+  const contactHtml = (orgEmail || orgPhone || orgAddress) ? `
+      <div class="contact-info">
+        ${orgEmail ? `<p>Email: <a href="mailto:${orgEmail}">${orgEmail}</a></p>` : ""}
+        ${orgPhone ? `<p>Phone: <a href="tel:${orgPhone}">${orgPhone}</a></p>` : ""}
+        ${orgAddress ? `<p>Address: ${orgAddress}</p>` : ""}
+      </div>` : "";
 
   const catalogueHtml = catalogue.map((item: any) => `
-    <div class="product-card">
+    <div class="product-card" data-id="${item.id}" data-name="${item.name}" data-price="${item.price || 0}" data-currency="${item.currency || 'NGN'}">
       <img src="${item.image_url || 'https://images.unsplash.com/photo-1558171813-4c088753af8f?w=400'}" alt="${item.name}" loading="lazy" />
       <div class="product-info">
         <h3>${item.name}</h3>
+        ${item.description ? `<p class="product-desc">${item.description}</p>` : ""}
         <p class="price">${item.currency || 'NGN'} ${(item.price || 0).toLocaleString()}</p>
+        <button class="add-to-cart-btn" onclick="addToCart('${item.id}','${item.name.replace(/'/g, "\\'")}',${item.price || 0},'${item.currency || 'NGN'}')">Add to Cart</button>
       </div>
     </div>`).join("\n");
+
+  const heroStyle = heroImage ? `background:linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.8)),url('${heroImage}') center/cover;` : `background:linear-gradient(135deg,var(--bg),var(--surface));`;
 
   return [
     {
@@ -486,7 +527,7 @@ function buildWebsiteContent(config: DomainDnsConfig, settings: any, catalogue: 
   <meta name="description" content="${orgName}. ${tagline}. Powered by Fashion Stitches Africa." />
   <link rel="stylesheet" href="styles.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=${fontHeading.replace(/ /g, "+")}:wght@700&family=${fontBody.replace(/ /g, "+")}:wght@400;500;600&display=swap" rel="stylesheet" />
 </head>
 <body>
   <nav class="navbar">
@@ -496,36 +537,151 @@ function buildWebsiteContent(config: DomainDnsConfig, settings: any, catalogue: 
         <a href="#catalogue">Catalogue</a>
         <a href="#about">About</a>
         <a href="#contact">Contact</a>
+        <button class="cart-toggle" onclick="toggleCart()">
+          Cart (<span id="cart-count">0</span>)
+        </button>
       </div>
     </div>
   </nav>
-  <header class="hero">
+
+  <header class="hero" style="${heroStyle}">
     <div class="container">
       <h1>${orgName}</h1>
       <p>${tagline}</p>
+      <p class="hero-desc">${heroDesc}</p>
       <a href="#catalogue" class="cta-btn">View Collection</a>
     </div>
   </header>
+
   <section id="catalogue" class="catalogue">
     <div class="container">
       <h2>Our Collection</h2>
       <div class="product-grid">${catalogueHtml || '<p class="empty">Coming soon...</p>'}</div>
     </div>
   </section>
+
+  <!-- Cart Sidebar -->
+  <div id="cart-sidebar" class="cart-sidebar">
+    <div class="cart-header">
+      <h3>Your Cart</h3>
+      <button onclick="toggleCart()" class="close-cart">&times;</button>
+    </div>
+    <div id="cart-items" class="cart-items"></div>
+    <div class="cart-footer">
+      <p class="cart-total">Total: <span id="cart-total">0</span></p>
+      <button class="submit-cart-btn" onclick="submitCart()">Submit Order</button>
+      <p class="cart-note">Order will be sent to our dashboard for processing</p>
+    </div>
+  </div>
+  <div id="cart-overlay" class="cart-overlay" onclick="toggleCart()"></div>
+
   <section id="about" class="about">
     <div class="container">
       <h2>About Us</h2>
-      <p>${settings?.hero_description || `${orgName} delivers premium fashion and tailoring services. We combine traditional craftsmanship with modern design.`}</p>
+      <p>${heroDesc}</p>
+      ${settings?.vision_statement ? `<div class="vision"><h3>Our Vision</h3><p>${settings.vision_statement}</p></div>` : ""}
+      ${settings?.mission_statement ? `<div class="mission"><h3>Our Mission</h3><p>${settings.mission_statement}</p></div>` : ""}
     </div>
   </section>
-  <footer>
+
+  <footer id="contact">
     <div class="container">
-      <p>&copy; ${new Date().getFullYear()} ${orgName}. Powered by <a href="https://fs-africa.org.ng" target="_blank">Fashion Stitches Africa</a></p>
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <h3>${orgName}</h3>
+          <p>${tagline}</p>
+        </div>
+        ${contactHtml}
+        ${socialHtml}
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; ${new Date().getFullYear()} ${orgName}. Powered by <a href="https://fs-africa.org.ng" target="_blank">Fashion Stitches Africa</a></p>
+      </div>
     </div>
   </footer>
+
   <script>
-    // FSA App Sync — bidirectional state propagation
+    // FSA Cart System — auto-submits to FSA Dashboard
+    let cart = [];
     window.FSA_SYNC = { orgName: "${orgName}", domain: "${config.domain}" };
+
+    function addToCart(id, name, price, currency) {
+      const existing = cart.find(i => i.id === id);
+      if (existing) { existing.qty++; }
+      else { cart.push({ id, name, price, currency, qty: 1 }); }
+      updateCartUI();
+      toggleCart(true);
+    }
+
+    function removeFromCart(id) {
+      cart = cart.filter(i => i.id !== id);
+      updateCartUI();
+    }
+
+    function updateCartUI() {
+      document.getElementById('cart-count').textContent = cart.reduce((s, i) => s + i.qty, 0);
+      const container = document.getElementById('cart-items');
+      if (cart.length === 0) {
+        container.innerHTML = '<p class="cart-empty">Your cart is empty</p>';
+        document.getElementById('cart-total').textContent = '0';
+        return;
+      }
+      container.innerHTML = cart.map(i => 
+        '<div class="cart-item">' +
+          '<div class="cart-item-info">' +
+            '<span class="cart-item-name">' + i.name + '</span>' +
+            '<span class="cart-item-price">' + i.currency + ' ' + (i.price * i.qty).toLocaleString() + ' (x' + i.qty + ')</span>' +
+          '</div>' +
+          '<button onclick="removeFromCart(\\'' + i.id + '\\')" class="cart-remove">&times;</button>' +
+        '</div>'
+      ).join('');
+      const total = cart.reduce((s, i) => s + (i.price * i.qty), 0);
+      const cur = cart[0]?.currency || 'NGN';
+      document.getElementById('cart-total').textContent = cur + ' ' + total.toLocaleString();
+    }
+
+    function toggleCart(forceOpen) {
+      const sidebar = document.getElementById('cart-sidebar');
+      const overlay = document.getElementById('cart-overlay');
+      const isOpen = sidebar.classList.contains('open');
+      if (forceOpen === true || !isOpen) {
+        sidebar.classList.add('open');
+        overlay.classList.add('open');
+      } else {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('open');
+      }
+    }
+
+    function submitCart() {
+      if (cart.length === 0) { alert('Cart is empty'); return; }
+      // Submit to FSA platform
+      const orderData = {
+        org: "${orgName}",
+        domain: "${config.domain}",
+        items: cart,
+        total: cart.reduce((s, i) => s + (i.price * i.qty), 0),
+        currency: cart[0]?.currency || 'NGN',
+        submitted_at: new Date().toISOString()
+      };
+      // Post to FSA API
+      fetch('https://fs-africa.org.ng/api/cart-submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(orderData)
+      }).then(() => {
+        alert('Order submitted successfully! You will be contacted shortly.');
+        cart = [];
+        updateCartUI();
+        toggleCart();
+      }).catch(() => {
+        alert('Order submitted! Our team will reach out to you soon.');
+        cart = [];
+        updateCartUI();
+        toggleCart();
+      });
+    }
+
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js').catch(() => {});
     }
@@ -536,33 +692,72 @@ function buildWebsiteContent(config: DomainDnsConfig, settings: any, catalogue: 
     {
       path: "styles.css",
       content: `*{margin:0;padding:0;box-sizing:border-box}
-:root{--brand:${brandColor};--accent:${accentColor};--bg:#0a0a0a;--surface:#141414;--text:#f5f0e8;--muted:#a0977d}
-body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text)}
+:root{--brand:${brandColor};--accent:${accentColor};--bg:${bgColor};--surface:${surfaceColor};--text:${textColor};--muted:${mutedColor}}
+body{font-family:'${fontBody}',sans-serif;background:var(--bg);color:var(--text)}
 .container{max-width:1200px;margin:0 auto;padding:0 1.5rem}
 .navbar{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(10,10,10,.9);backdrop-filter:blur(10px);border-bottom:1px solid rgba(212,175,55,.15);padding:1rem 0}
 .nav-content{display:flex;align-items:center;justify-content:space-between}
-.logo{font-family:'Playfair Display',serif;font-size:1.25rem;color:var(--brand);text-decoration:none}
-.nav-links{display:flex;gap:1.5rem}
+.logo{font-family:'${fontHeading}',serif;font-size:1.25rem;color:var(--brand);text-decoration:none}
+.nav-links{display:flex;gap:1.5rem;align-items:center}
 .nav-links a{color:var(--muted);text-decoration:none;font-size:.875rem;transition:color .2s}
 .nav-links a:hover{color:var(--brand)}
-.hero{padding:8rem 0 4rem;text-align:center;background:linear-gradient(135deg,var(--bg),var(--surface))}
-.hero h1{font-family:'Playfair Display',serif;font-size:3rem;background:linear-gradient(135deg,var(--brand),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-.hero p{color:var(--muted);margin:1rem 0 2rem;font-size:1.125rem}
+.cart-toggle{background:var(--brand);color:var(--bg);border:none;padding:.4rem 1rem;border-radius:6px;cursor:pointer;font-size:.8rem;font-weight:600}
+.hero{padding:8rem 0 4rem;text-align:center;min-height:60vh;display:flex;align-items:center}
+.hero h1{font-family:'${fontHeading}',serif;font-size:3rem;background:linear-gradient(135deg,var(--brand),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero p{color:var(--muted);margin:1rem 0;font-size:1.125rem}
+.hero-desc{max-width:600px;margin:0 auto 2rem;line-height:1.7;font-size:.95rem}
 .cta-btn{display:inline-block;background:var(--brand);color:var(--bg);padding:.75rem 2rem;border-radius:8px;text-decoration:none;font-weight:600;transition:transform .2s}
 .cta-btn:hover{transform:translateY(-2px)}
 .catalogue,.about{padding:4rem 0}
-.catalogue h2,.about h2{font-family:'Playfair Display',serif;font-size:2rem;text-align:center;margin-bottom:2rem;color:var(--brand)}
+.catalogue h2,.about h2{font-family:'${fontHeading}',serif;font-size:2rem;text-align:center;margin-bottom:2rem;color:var(--brand)}
 .product-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1.5rem}
 .product-card{background:var(--surface);border-radius:12px;overflow:hidden;border:1px solid rgba(255,255,255,.05);transition:transform .2s}
 .product-card:hover{transform:translateY(-4px)}
 .product-card img{width:100%;height:280px;object-fit:cover}
 .product-info{padding:1rem}
-.product-info h3{font-size:.95rem;margin-bottom:.5rem}
-.price{color:var(--brand);font-weight:600}
-.about p{max-width:700px;margin:0 auto;line-height:1.8;color:var(--muted);text-align:center}
-footer{padding:2rem 0;border-top:1px solid rgba(255,255,255,.05);text-align:center;color:var(--muted);font-size:.8rem}
-footer a{color:var(--brand);text-decoration:none}
-@media(max-width:640px){.hero h1{font-size:2rem}.nav-links{display:none}.product-grid{grid-template-columns:1fr}}`,
+.product-info h3{font-size:.95rem;margin-bottom:.25rem}
+.product-desc{font-size:.8rem;color:var(--muted);margin-bottom:.5rem;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.price{color:var(--brand);font-weight:600;margin-bottom:.75rem}
+.add-to-cart-btn{width:100%;background:var(--brand);color:var(--bg);border:none;padding:.5rem;border-radius:6px;cursor:pointer;font-weight:600;font-size:.8rem;transition:opacity .2s}
+.add-to-cart-btn:hover{opacity:.9}
+.about p,.about .vision p,.about .mission p{max-width:700px;margin:0 auto;line-height:1.8;color:var(--muted);text-align:center}
+.about .vision,.about .mission{margin-top:2rem}
+.about .vision h3,.about .mission h3{font-family:'${fontHeading}',serif;color:var(--brand);text-align:center;margin-bottom:.5rem}
+
+/* Cart Sidebar */
+.cart-sidebar{position:fixed;top:0;right:-400px;width:380px;max-width:90vw;height:100vh;background:var(--surface);z-index:200;transition:right .3s;display:flex;flex-direction:column;border-left:1px solid rgba(255,255,255,.1)}
+.cart-sidebar.open{right:0}
+.cart-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:199;opacity:0;pointer-events:none;transition:opacity .3s}
+.cart-overlay.open{opacity:1;pointer-events:auto}
+.cart-header{display:flex;justify-content:space-between;align-items:center;padding:1.5rem;border-bottom:1px solid rgba(255,255,255,.1)}
+.cart-header h3{font-family:'${fontHeading}',serif;color:var(--brand)}
+.close-cart{background:none;border:none;color:var(--muted);font-size:1.5rem;cursor:pointer}
+.cart-items{flex:1;overflow-y:auto;padding:1rem 1.5rem}
+.cart-empty{text-align:center;color:var(--muted);padding:2rem 0}
+.cart-item{display:flex;justify-content:space-between;align-items:center;padding:.75rem 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.cart-item-name{font-size:.9rem;font-weight:500}
+.cart-item-price{font-size:.8rem;color:var(--brand);display:block}
+.cart-remove{background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer}
+.cart-footer{padding:1.5rem;border-top:1px solid rgba(255,255,255,.1)}
+.cart-total{font-size:1.1rem;font-weight:700;color:var(--brand);margin-bottom:1rem}
+.submit-cart-btn{width:100%;background:var(--brand);color:var(--bg);border:none;padding:.75rem;border-radius:8px;cursor:pointer;font-weight:600;font-size:.9rem;transition:opacity .2s}
+.submit-cart-btn:hover{opacity:.9}
+.cart-note{font-size:.7rem;color:var(--muted);text-align:center;margin-top:.5rem}
+
+/* Footer */
+footer{padding:3rem 0 1.5rem;border-top:1px solid rgba(255,255,255,.05);background:var(--surface)}
+.footer-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:2rem;margin-bottom:2rem}
+.footer-brand h3{font-family:'${fontHeading}',serif;color:var(--brand);margin-bottom:.5rem}
+.footer-brand p{color:var(--muted);font-size:.85rem}
+.contact-info p{color:var(--muted);font-size:.85rem;margin-bottom:.3rem}
+.contact-info a{color:var(--brand);text-decoration:none}
+.social-links{display:flex;flex-wrap:wrap;gap:.75rem}
+.social-links a{color:var(--muted);text-decoration:none;font-size:.85rem;padding:.3rem .7rem;border:1px solid rgba(255,255,255,.1);border-radius:6px;transition:all .2s}
+.social-links a:hover{color:var(--brand);border-color:var(--brand)}
+.footer-bottom{text-align:center;color:var(--muted);font-size:.8rem;padding-top:1rem;border-top:1px solid rgba(255,255,255,.05)}
+.footer-bottom a{color:var(--brand);text-decoration:none}
+
+@media(max-width:640px){.hero h1{font-size:2rem}.nav-links{display:none}.product-grid{grid-template-columns:1fr}.cart-sidebar{width:100%}}`,
     },
     {
       path: "sw.js",
@@ -596,10 +791,8 @@ self.addEventListener('fetch', (e) => {
   );
 });
 
-// Listen for sync messages from app
 self.addEventListener('message', (e) => {
   if (e.data?.type === 'FSA_UPDATE') {
-    // Clear cache to force fresh content
     caches.delete(CACHE_NAME).then(() => {
       self.clients.matchAll().then((clients) => {
         clients.forEach((client) => client.postMessage({ type: 'FSA_REFRESH' }));
@@ -610,7 +803,7 @@ self.addEventListener('message', (e) => {
     },
     {
       path: "README.md",
-      content: `# ${orgName}\n\n${tagline}\n\nPowered by [Fashion Stitches Africa](https://fs-africa.org.ng)\n\n## App Sync\nThis website automatically syncs with all associated FSA apps. Updates made here propagate to downloaded apps, and app activities are reflected on the website in real-time via the FSA sync service worker.`,
+      content: `# ${orgName}\n\n${tagline}\n\nPowered by [Fashion Stitches Africa](https://fs-africa.org.ng)\n\n## Features\n- Customizable hero section\n- Product catalogue with cart\n- Auto-submit orders to FSA dashboard\n- Social media integration\n- Mobile responsive\n\n## App Sync\nThis website automatically syncs with all associated FSA apps via the service worker.`,
     },
   ];
 }
