@@ -6,11 +6,12 @@ import { motion } from "framer-motion";
 import {
   Globe, Zap, Link2, Eye, Plus, Trash2, Edit2, Save, X, Package,
   ExternalLink, Copy, Key, Crown, Clock, CheckCircle2, AlertCircle,
-  ArrowRight, Sparkles, Star, Lock, Palette, Building2
+  ArrowRight, Sparkles, Star, Lock, Palette, Building2, Book
 } from "lucide-react";
 import OrgBrandingPanel from "./OrgBrandingPanel";
 import SocialSyncPanel from "@/components/catalogue/SocialSyncPanel";
 import CompanyOfficersPanel from "./CompanyOfficersPanel";
+import WebsiteBuilderManual from "./WebsiteBuilderManual";
 import type { AppRole } from "@/hooks/useOrganization";
 import { getTierFeatures, getTierLimits, checkFeatureAccess, calculateUpgradeCost, isActiveStatus } from "./tierConfig";
 
