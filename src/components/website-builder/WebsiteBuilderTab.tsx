@@ -6,11 +6,12 @@ import { motion } from "framer-motion";
 import {
   Globe, Zap, Link2, Eye, Plus, Trash2, Edit2, Save, X, Package,
   ExternalLink, Copy, Key, Crown, Clock, CheckCircle2, AlertCircle,
-  ArrowRight, Sparkles, Star, Lock, Palette, Building2
+  ArrowRight, Sparkles, Star, Lock, Palette, Building2, Book
 } from "lucide-react";
 import OrgBrandingPanel from "./OrgBrandingPanel";
 import SocialSyncPanel from "@/components/catalogue/SocialSyncPanel";
 import CompanyOfficersPanel from "./CompanyOfficersPanel";
+import WebsiteBuilderManual from "./WebsiteBuilderManual";
 import type { AppRole } from "@/hooks/useOrganization";
 import { getTierFeatures, getTierLimits, checkFeatureAccess, calculateUpgradeCost, isActiveStatus } from "./tierConfig";
 
@@ -388,6 +389,18 @@ const PricingSection = ({
             payment_gateway: "exemption",
             gateway_reference: `EXEMPT-${org.id.substring(0, 8)}`,
           }, { onConflict: "org_id" });
+          // Also create a website_builder_requests entry for admin tracking
+          await supabase.from("website_builder_requests").insert({
+            org_id: org.id,
+            plan: "lite",
+            status: "pending",
+            one_time_fee: 0,
+            platform_fee: 0,
+            monthly_maintenance: 0,
+            payment_gateway: "exemption",
+            gateway_reference: `EXEMPT-${org.id.substring(0, 8)}`,
+            payment_status: "paid",
+          } as any);
         } else {
           await supabase.from("website_builder_requests").insert({
             org_id: org.id,
@@ -401,7 +414,7 @@ const PricingSection = ({
             payment_status: "paid",
           });
         }
-        toast({ title: "Website Builder activated!", description: "Your organization has complimentary access." });
+        toast({ title: "Website Builder activated!", description: "Your organization has complimentary access. Activation request submitted." });
         onPaymentStarted();
         return;
       }
@@ -688,7 +701,7 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
   const [proRequest, setProRequest] = useState<WebsiteRequest | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeSection, setActiveSection] = useState<"plans" | "general" | "branding" | "company" | "catalogue" | "integration">("plans");
+  const [activeSection, setActiveSection] = useState<"plans" | "general" | "branding" | "company" | "catalogue" | "integration" | "guide">("plans");
   const [orgDetails, setOrgDetails] = useState<{ description?: string | null; email?: string | null; phone?: string | null; address?: string | null; logo_url?: string | null }>({});
   const [editingItem, setEditingItem] = useState<CatalogueItem | null>(null);
   const [addingItem, setAddingItem] = useState(false);
@@ -876,6 +889,7 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
           { id: "company" as const, icon: Building2, label: "Company Info" },
           { id: "catalogue" as const, icon: Package, label: "Catalogue" },
           { id: "integration" as const, icon: Link2, label: "Integration" },
+          { id: "guide" as const, icon: Book, label: "User Guide" },
         ].map((s) => (
           <button
             key={s.id}
@@ -1350,6 +1364,15 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── User Guide ───────────────────────────────────────── */}
+      {activeSection === "guide" && (
+        <WebsiteBuilderManual
+          userRole={role || "org_admin"}
+          currentPlan={currentTier as "lite" | "pro" | "pro-lite" | "none"}
+          orgName={org.name}
+        />
       )}
     </motion.div>
   );
