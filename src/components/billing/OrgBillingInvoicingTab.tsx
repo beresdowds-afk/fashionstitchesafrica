@@ -103,8 +103,9 @@ interface OrgBillingInvoicingTabProps {
 const OrgBillingInvoicingTab = ({ orgId, orgName, currency, role }: OrgBillingInvoicingTabProps) => {
   const { toast } = useToast();
   const { surchargePercent, adminPercent, calculate } = useDynamicPlatformFees();
-  const [activeView, setActiveView] = useState<"products" | "invoices" | "payments" | "fees">("products");
+  const [activeView, setActiveView] = useState<"products" | "invoices" | "payments" | "fees" | "subscriptions">("products");
   const [loading, setLoading] = useState(true);
+  const [subInvoices, setSubInvoices] = useState<any[]>([]);
 
   // Data
   const [products, setProducts] = useState<CatalogueItem[]>([]);
