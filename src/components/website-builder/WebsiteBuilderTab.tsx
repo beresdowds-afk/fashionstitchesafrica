@@ -860,7 +860,11 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
 
     setSaving(false);
     if (error) toast({ title: "Error saving", description: error.message, variant: "destructive" });
-    else { toast({ title: "Website settings saved!" }); load(); }
+    else {
+      toast({ title: "Website settings saved!" });
+      broadcastSync("settings_updated");
+      load();
+    }
   };
 
   const handleDeleteItem = async (id: string) => {
