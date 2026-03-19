@@ -173,7 +173,7 @@ Deno.serve(async (req) => {
     } catch (_) { /* ignore */ }
 
     return new Response(
-      JSON.stringify({ error: err.message }),
+      JSON.stringify({ error: "An internal error occurred while sending WhatsApp message" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

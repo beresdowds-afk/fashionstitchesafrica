@@ -152,7 +152,7 @@ Deno.serve(async (req) => {
     } catch (_) { /* ignore logging errors */ }
 
     return new Response(
-      JSON.stringify({ error: err.message }),
+      JSON.stringify({ error: "An internal error occurred while sending SMS" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
