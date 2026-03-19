@@ -2,7 +2,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Rocket, Loader2, CheckCircle2, ExternalLink } from "lucide-react";
+import { Rocket, Loader2, CheckCircle2 } from "lucide-react";
 
 interface PublishWebsiteButtonProps {
   org: { id: string; name: string; slug: string };
