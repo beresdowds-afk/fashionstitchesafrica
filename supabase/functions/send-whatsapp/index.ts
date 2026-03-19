@@ -95,7 +95,10 @@ async function sendViaTwilio(to: string, message: string, templateSid?: string, 
     body: new URLSearchParams(bodyParams).toString(),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(JSON.stringify(data));
+  if (!res.ok) {
+    console.error("Twilio WhatsApp error:", JSON.stringify(data));
+    throw new Error("WhatsApp provider delivery failed");
+  }
   return { provider: "twilio", id: data.sid };
 }
 

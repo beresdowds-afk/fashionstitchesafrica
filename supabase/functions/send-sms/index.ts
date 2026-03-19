@@ -79,7 +79,10 @@ async function sendViaTwilio(to: string, message: string) {
     body: new URLSearchParams({ To: to, From: from, Body: message }).toString(),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(JSON.stringify(data));
+  if (!res.ok) {
+    console.error("Twilio SMS error:", JSON.stringify(data));
+    throw new Error("SMS provider delivery failed");
+  }
   return { provider: "twilio", id: data.sid };
 }
 
