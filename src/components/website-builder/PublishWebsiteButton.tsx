@@ -18,6 +18,7 @@ const PublishWebsiteButton = ({ org, disabled }: PublishWebsiteButtonProps) => {
   const { toast } = useToast();
   const [publishing, setPublishing] = useState(false);
   const [lastPublished, setLastPublished] = useState<string | null>(null);
+  const { broadcastSync } = useOrgSync(org.id);
 
   const handlePublish = async () => {
     setPublishing(true);
