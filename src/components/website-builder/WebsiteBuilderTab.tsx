@@ -744,6 +744,13 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
   const [editingItem, setEditingItem] = useState<CatalogueItem | null>(null);
   const [addingItem, setAddingItem] = useState(false);
 
+  // Bidirectional sync — auto-reload dashboard data when apps/websites push changes
+  const { broadcastSync } = useOrgSync(org.id, (action) => {
+    console.log(`[Dashboard] Sync event received: ${action}, reloading data...`);
+    load();
+    toast({ title: "Data synced", description: `${action.replace(/_/g, " ")} synced from connected app/website.` });
+  });
+
   const canEdit = role === "org_admin" || role === "manager" || role === "super_admin";
   const websiteUrl = `${window.location.origin}/site/${org.slug}`;
 
