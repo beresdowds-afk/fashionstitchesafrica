@@ -498,7 +498,43 @@ const OrgBillingInvoicingTab = ({ orgId, orgName, currency, role }: OrgBillingIn
         </div>
       )}
 
-      {/* ═══ FEE LEDGER ═══ */}
+      {/* ═══ SERVICE INVOICES (Subscriptions, Website Builder, etc.) ═══ */}
+      {activeView === "subscriptions" && (
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <div className="grid grid-cols-[1fr_1fr_120px_100px_100px_80px] gap-3 px-5 py-3 bg-muted/30 border-b border-border text-xs font-semibold text-muted-foreground uppercase">
+            <span>Invoice #</span>
+            <span>Description</span>
+            <span>Amount</span>
+            <span>Status</span>
+            <span>Type</span>
+            <span>Date</span>
+          </div>
+          {subInvoices.length === 0 ? (
+            <div className="p-8 text-center text-muted-foreground text-sm">No service invoices found.</div>
+          ) : (
+            subInvoices.map((inv: any) => (
+              <div key={inv.id} className="grid grid-cols-[1fr_1fr_120px_100px_100px_80px] gap-3 px-5 py-3 border-b border-border/50 items-center hover:bg-muted/30 transition-colors">
+                <p className="text-sm font-medium">{inv.invoice_number}</p>
+                <p className="text-sm text-muted-foreground truncate">{inv.description}</p>
+                <span className="font-heading font-semibold text-sm">
+                  <CurrencyDisplay amount={Number(inv.amount)} currency={inv.currency || currency} />
+                </span>
+                <Badge
+                  variant={inv.status === "paid" || inv.status === "waived" ? "default" : inv.status === "overdue" ? "destructive" : "secondary"}
+                  className="text-[10px] capitalize"
+                >
+                  {inv.status === "waived" ? "Waived" : inv.status === "paid" ? <><CheckCircle2 size={10} className="mr-1" />Paid</> : inv.status}
+                </Badge>
+                <span className="text-xs text-muted-foreground capitalize">{inv.invoice_type?.replace("_", " ")}</span>
+                <span className="text-xs text-muted-foreground">
+                  {format(new Date(inv.created_at), "MMM d")}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+      )}
+
       {activeView === "fees" && (
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
