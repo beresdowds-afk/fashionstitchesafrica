@@ -57,7 +57,10 @@ async function sendViaTermii(to: string, message: string, countryCode: string, s
     }),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(JSON.stringify(data));
+  if (!res.ok) {
+    console.error("Termii SMS error:", JSON.stringify(data));
+    throw new Error("SMS provider delivery failed");
+  }
   return { provider: "termii", id: data.message_id };
 }
 
@@ -76,7 +79,10 @@ async function sendViaTwilio(to: string, message: string) {
     body: new URLSearchParams({ To: to, From: from, Body: message }).toString(),
   });
   const data = await res.json();
-  if (!res.ok) throw new Error(JSON.stringify(data));
+  if (!res.ok) {
+    console.error("Twilio SMS error:", JSON.stringify(data));
+    throw new Error("SMS provider delivery failed");
+  }
   return { provider: "twilio", id: data.sid };
 }
 
@@ -152,7 +158,7 @@ Deno.serve(async (req) => {
     } catch (_) { /* ignore logging errors */ }
 
     return new Response(
-      JSON.stringify({ error: err.message }),
+      JSON.stringify({ error: "An internal error occurred while sending SMS" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
