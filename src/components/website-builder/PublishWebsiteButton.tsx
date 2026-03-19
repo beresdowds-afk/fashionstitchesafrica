@@ -2,6 +2,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useOrgSync } from "@/hooks/useOrgSync";
 import { Rocket, Loader2, CheckCircle2 } from "lucide-react";
 
 interface PublishWebsiteButtonProps {
@@ -17,6 +18,7 @@ const PublishWebsiteButton = ({ org, disabled }: PublishWebsiteButtonProps) => {
   const { toast } = useToast();
   const [publishing, setPublishing] = useState(false);
   const [lastPublished, setLastPublished] = useState<string | null>(null);
+  const { broadcastSync } = useOrgSync(org.id);
 
   const handlePublish = async () => {
     setPublishing(true);
@@ -324,9 +326,10 @@ const PublishWebsiteButton = ({ org, disabled }: PublishWebsiteButtonProps) => {
       }
 
       setLastPublished(new Date().toLocaleTimeString());
+      broadcastSync("website_published");
       toast({
         title: "Website published! 🎉",
-        description: "Your changes have been pushed to GitHub. It may take 1-2 minutes for GitHub Pages to update.",
+        description: "Your changes have been pushed to GitHub and synced to all connected apps.",
       });
     } catch (err: any) {
       console.error("Publish error:", err);

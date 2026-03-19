@@ -16,6 +16,7 @@ import PublishWebsiteButton from "./PublishWebsiteButton";
 import { PaymentFlowTracker } from "@/components/payments/PaymentFlowTracker";
 import { usePaymentFlow } from "@/hooks/usePaymentFlow";
 import type { AppRole } from "@/hooks/useOrganization";
+import { useOrgSync } from "@/hooks/useOrgSync";
 import { getTierFeatures, getTierLimits, checkFeatureAccess, calculateUpgradeCost, isActiveStatus } from "./tierConfig";
 
 
@@ -743,6 +744,13 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
   const [editingItem, setEditingItem] = useState<CatalogueItem | null>(null);
   const [addingItem, setAddingItem] = useState(false);
 
+  // Bidirectional sync — auto-reload dashboard data when apps/websites push changes
+  const { broadcastSync } = useOrgSync(org.id, (action) => {
+    console.log(`[Dashboard] Sync event received: ${action}, reloading data...`);
+    load();
+    toast({ title: "Data synced", description: `${action.replace(/_/g, " ")} synced from connected app/website.` });
+  });
+
   const canEdit = role === "org_admin" || role === "manager" || role === "super_admin";
   const websiteUrl = `${window.location.origin}/site/${org.slug}`;
 
@@ -852,12 +860,17 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
 
     setSaving(false);
     if (error) toast({ title: "Error saving", description: error.message, variant: "destructive" });
-    else { toast({ title: "Website settings saved!" }); load(); }
+    else {
+      toast({ title: "Website settings saved!" });
+      broadcastSync("settings_updated");
+      load();
+    }
   };
 
   const handleDeleteItem = async (id: string) => {
     await supabase.from("org_catalogue_items").delete().eq("id", id);
     toast({ title: "Item deleted" });
+    broadcastSync("catalogue_updated");
     load();
   };
 
