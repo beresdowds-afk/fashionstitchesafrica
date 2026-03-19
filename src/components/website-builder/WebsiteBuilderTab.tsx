@@ -716,6 +716,15 @@ const PricingSection = ({
           </span>
         </div>
       )}
+
+      {/* Payment Flow Tracker — shows progress during payment lifecycle */}
+      <PaymentFlowTracker
+        step={paymentFlow.step}
+        invoiceNumber={paymentFlow.invoiceNumber}
+        activated={paymentFlow.activated}
+        error={paymentFlow.error}
+        className="mt-4"
+      />
     </div>
   );
 };
