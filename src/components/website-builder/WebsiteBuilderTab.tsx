@@ -862,7 +862,8 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
           <p className="text-muted-foreground text-sm mt-0.5">Create your public website or connect your own.</p>
         </div>
         {hasActivePlan && (
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <PublishWebsiteButton org={org} disabled={!canEdit} />
             <a href={websiteUrl} target="_blank" rel="noopener noreferrer">
               <Button variant="outline" size="sm">
                 <Eye size={14} className="mr-1.5" /> Preview
