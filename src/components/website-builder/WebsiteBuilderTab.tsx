@@ -870,6 +870,7 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
   const handleDeleteItem = async (id: string) => {
     await supabase.from("org_catalogue_items").delete().eq("id", id);
     toast({ title: "Item deleted" });
+    broadcastSync("catalogue_updated");
     load();
   };
 

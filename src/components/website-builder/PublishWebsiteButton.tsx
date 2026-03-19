@@ -2,6 +2,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useOrgSync } from "@/hooks/useOrgSync";
 import { Rocket, Loader2, CheckCircle2 } from "lucide-react";
 
 interface PublishWebsiteButtonProps {
