@@ -656,6 +656,43 @@ const AdminInvoicingPaymentsPanel = () => {
           </div>
         </div>
       )}
+
+      {/* ═══ SERVICE INVOICES ═══ */}
+      {activeView === "service_invoices" && (
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <div className="grid grid-cols-[1fr_1fr_1fr_120px_100px_100px_100px] gap-3 px-5 py-3 bg-muted/30 border-b border-border text-xs font-semibold text-muted-foreground uppercase">
+            <span>Invoice #</span>
+            <span>Organization</span>
+            <span>Description</span>
+            <span>Amount</span>
+            <span>Status</span>
+            <span>Type</span>
+            <span>Date</span>
+          </div>
+          {serviceInvoices.length === 0 ? (
+            <div className="p-8 text-center text-muted-foreground text-sm">No service invoices yet.</div>
+          ) : (
+            serviceInvoices.map((inv: any) => (
+              <div key={inv.id} className="grid grid-cols-[1fr_1fr_1fr_120px_100px_100px_100px] gap-3 px-5 py-3 border-b border-border/50 items-center hover:bg-muted/30 transition-colors">
+                <p className="text-sm font-medium">{inv.invoice_number}</p>
+                <p className="text-sm truncate">{inv.org_name}</p>
+                <p className="text-sm text-muted-foreground truncate">{inv.description}</p>
+                <span className="font-heading font-semibold text-sm">${Number(inv.amount).toLocaleString()}</span>
+                <Badge
+                  variant={inv.status === "paid" || inv.status === "waived" ? "default" : inv.status === "overdue" ? "destructive" : "secondary"}
+                  className="text-[10px] capitalize"
+                >
+                  {inv.status}
+                </Badge>
+                <span className="text-xs text-muted-foreground capitalize">{inv.invoice_type?.replace("_", " ")}</span>
+                <span className="text-xs text-muted-foreground">
+                  {format(new Date(inv.created_at), "MMM d, yyyy")}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+      )}
     </motion.div>
   );
 };
