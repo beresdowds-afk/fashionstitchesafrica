@@ -12,6 +12,7 @@ import OrgBrandingPanel from "./OrgBrandingPanel";
 import SocialSyncPanel from "@/components/catalogue/SocialSyncPanel";
 import CompanyOfficersPanel from "./CompanyOfficersPanel";
 import WebsiteBuilderManual from "./WebsiteBuilderManual";
+import PublishWebsiteButton from "./PublishWebsiteButton";
 import type { AppRole } from "@/hooks/useOrganization";
 import { getTierFeatures, getTierLimits, checkFeatureAccess, calculateUpgradeCost, isActiveStatus } from "./tierConfig";
 
@@ -861,7 +862,8 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
           <p className="text-muted-foreground text-sm mt-0.5">Create your public website or connect your own.</p>
         </div>
         {hasActivePlan && (
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <PublishWebsiteButton org={org} disabled={!canEdit} />
             <a href={websiteUrl} target="_blank" rel="noopener noreferrer">
               <Button variant="outline" size="sm">
                 <Eye size={14} className="mr-1.5" /> Preview
