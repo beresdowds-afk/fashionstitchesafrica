@@ -8,27 +8,126 @@ const corsHeaders = {
 const GITHUB_USER = "beresdowds-afk";
 const GITHUB_ORG = "East-forte-fabrications-and-equipments";
 
+// --- GitHub App JWT & Token helpers ---
+
+function base64urlEncode(data: Uint8Array): string {
+  let binary = "";
+  for (const byte of data) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function pemToArrayBuffer(pem: string): ArrayBuffer {
+  const lines = pem
+    .replace(/-----BEGIN RSA PRIVATE KEY-----/, "")
+    .replace(/-----END RSA PRIVATE KEY-----/, "")
+    .replace(/-----BEGIN PRIVATE KEY-----/, "")
+    .replace(/-----END PRIVATE KEY-----/, "")
+    .replace(/\s/g, "");
+  const binary = atob(lines);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes.buffer;
+}
+
+async function createGitHubAppJWT(appId: string, privateKeyPem: string): Promise<string> {
+  const now = Math.floor(Date.now() / 1000);
+  const header = { alg: "RS256", typ: "JWT" };
+  const payload = { iat: now - 60, exp: now + 600, iss: appId };
+
+  const enc = new TextEncoder();
+  const headerB64 = base64urlEncode(enc.encode(JSON.stringify(header)));
+  const payloadB64 = base64urlEncode(enc.encode(JSON.stringify(payload)));
+  const signingInput = `${headerB64}.${payloadB64}`;
+
+  const keyData = pemToArrayBuffer(privateKeyPem);
+
+  // Try PKCS#8 first, fall back to PKCS#1
+  let cryptoKey: CryptoKey;
+  try {
+    cryptoKey = await crypto.subtle.importKey(
+      "pkcs8",
+      keyData,
+      { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+      false,
+      ["sign"]
+    );
+  } catch {
+    // If PKCS#8 fails, wrap PKCS#1 key in PKCS#8 envelope
+    throw new Error("Private key import failed. Ensure the key is in PKCS#8 PEM format (BEGIN PRIVATE KEY). If it starts with BEGIN RSA PRIVATE KEY, convert it using: openssl pkcs8 -topk8 -inform PEM -outform PEM -nocrypt -in key.pem -out key-pkcs8.pem");
+  }
+
+  const signature = await crypto.subtle.sign(
+    "RSASSA-PKCS1-v1_5",
+    cryptoKey,
+    enc.encode(signingInput)
+  );
+
+  return `${signingInput}.${base64urlEncode(new Uint8Array(signature))}`;
+}
+
+async function getInstallationToken(appJwt: string, installationId: string): Promise<string> {
+  const res = await fetch(
+    `https://api.github.com/app/installations/${installationId}/access_tokens`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${appJwt}`,
+        Accept: "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+    }
+  );
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Failed to get installation token [${res.status}]: ${err}`);
+  }
+  const data = await res.json();
+  return data.token;
+}
+
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const appId = Deno.env.get("GITHUB_APP_ID");
+  const privateKey = Deno.env.get("GITHUB_APP_PRIVATE_KEY");
+  const installationId = Deno.env.get("GITHUB_APP_INSTALLATION_ID");
+
+  if (!appId || !privateKey || !installationId) {
+    // Fallback to PAT if app credentials not set
+    const pat = Deno.env.get("GITHUB_PAT");
+    if (!pat) {
+      throw new Error("Neither GitHub App credentials nor GITHUB_PAT are configured");
+    }
+    console.log("Using GITHUB_PAT fallback");
+    return {
+      Authorization: `Bearer ${pat}`,
+      Accept: "application/vnd.github+json",
+      "Content-Type": "application/json",
+      "X-GitHub-Api-Version": "2022-11-28",
+    };
+  }
+
+  console.log("Generating GitHub App installation token...");
+  const jwt = await createGitHubAppJWT(appId, privateKey);
+  const token = await getInstallationToken(jwt, installationId);
+  console.log("Installation token obtained successfully");
+
+  return {
+    Authorization: `token ${token}`,
+    Accept: "application/vnd.github+json",
+    "Content-Type": "application/json",
+    "X-GitHub-Api-Version": "2022-11-28",
+  };
+}
+
+// --- Main handler ---
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const GITHUB_PAT = Deno.env.get("GITHUB_PAT");
-  if (!GITHUB_PAT) {
-    return new Response(JSON.stringify({ error: "GITHUB_PAT not configured" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
-  }
-
   try {
+    const headers = await getAuthHeaders();
     const { action, org_name, repo_name, website_content, description } = await req.json();
-    const headers = {
-      Authorization: `Bearer ${GITHUB_PAT}`,
-      Accept: "application/vnd.github+json",
-      "Content-Type": "application/json",
-      "X-GitHub-Api-Version": "2022-11-28",
-    };
 
     const sanitizedRepo = (repo_name || org_name || "website")
       .toLowerCase()
@@ -104,19 +203,11 @@ serve(async (req) => {
       const filesToPush = files.length > 0 ? files : [
         {
           path: "README.md",
-          content: `# ${org_name} - Fashion Stitches Africa\n\nNatively generated website powered by Fashion Stitches Africa platform.\n\n## Deployment\nThis website is auto-deployed and managed by the FSA platform.\n`,
+          content: `# ${org_name} - Fashion Stitches Africa\n\nNatively generated website powered by Fashion Stitches Africa platform.\n`,
         },
         {
           path: "index.html",
-          content: `<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>${org_name} | Fashion Stitches Africa</title>\n  <link rel="stylesheet" href="styles.css">\n</head>\n<body>\n  <header>\n    <h1>${org_name}</h1>\n    <p>Powered by Fashion Stitches Africa</p>\n  </header>\n  <main>\n    <section id="catalogue"></section>\n    <section id="measurements"></section>\n    <section id="contact"></section>\n  </main>\n  <script src="app.js"></script>\n</body>\n</html>\n`,
-        },
-        {
-          path: "styles.css",
-          content: `/* ${org_name} - FSA Generated Website */\n:root {\n  --primary: #C9A84C;\n  --bg: #1A1A2E;\n  --text: #F5F0E8;\n}\nbody { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; }\nheader { padding: 2rem; text-align: center; border-bottom: 2px solid var(--primary); }\nh1 { color: var(--primary); }\n`,
-        },
-        {
-          path: "app.js",
-          content: `// ${org_name} - FSA Platform Integration\nconsole.log("${org_name} website loaded - powered by Fashion Stitches Africa");\n`,
+          content: `<!DOCTYPE html>\n<html lang="en">\n<head>\n  <meta charset="UTF-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n  <title>${org_name} | Fashion Stitches Africa</title>\n</head>\n<body>\n  <h1>${org_name}</h1>\n  <p>Powered by Fashion Stitches Africa</p>\n</body>\n</html>\n`,
         },
       ];
 
@@ -177,8 +268,7 @@ serve(async (req) => {
       const { new_owner } = await req.json().catch(() => ({}));
       const targetOwner = new_owner || GITHUB_ORG;
       const transferRes = await fetch(`https://api.github.com/repos/${GITHUB_USER}/${sanitizedRepo}/transfer`, {
-        method: "POST",
-        headers,
+        method: "POST", headers,
         body: JSON.stringify({ new_owner: targetOwner }),
       });
       if (!transferRes.ok) {
@@ -192,7 +282,6 @@ serve(async (req) => {
     }
 
     if (action === "list-repos") {
-      // List from both personal and org
       const [personalRes, orgRes] = await Promise.all([
         fetch(`https://api.github.com/users/${GITHUB_USER}/repos?per_page=100&sort=updated`, { headers }),
         fetch(`https://api.github.com/orgs/${GITHUB_ORG}/repos?per_page=100&sort=updated`, { headers }),
@@ -210,15 +299,12 @@ serve(async (req) => {
       const checkOwner = await fetch(`https://api.github.com/repos/${GITHUB_ORG}/${sanitizedRepo}`, { headers });
       if (checkOwner.status === 200) repoOwner = GITHUB_ORG;
 
-      // Enable GitHub Pages from main branch root
       const pagesRes = await fetch(`https://api.github.com/repos/${repoOwner}/${sanitizedRepo}/pages`, {
-        method: "POST",
-        headers,
+        method: "POST", headers,
         body: JSON.stringify({ source: { branch: "main", path: "/" } }),
       });
 
       if (pagesRes.status === 409) {
-        // Pages already enabled, get current config
         const existingPages = await fetch(`https://api.github.com/repos/${repoOwner}/${sanitizedRepo}/pages`, { headers });
         const pagesData = await existingPages.json();
         return new Response(JSON.stringify({ success: true, pages_url: pagesData.html_url, message: "GitHub Pages already enabled" }), {
