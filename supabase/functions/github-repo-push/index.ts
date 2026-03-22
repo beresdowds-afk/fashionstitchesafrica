@@ -115,17 +115,38 @@ async function createGitHubAppJWT(appId: string, privateKeyPem: string): Promise
 }
 
 async function getInstallationToken(appJwt: string, installationId: string): Promise<string> {
-  const res = await fetch(
-    `https://api.github.com/app/installations/${installationId}/access_tokens`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${appJwt}`,
-        Accept: "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28",
-      },
-    }
-  );
+  // First verify the JWT works by calling /app
+  const verifyRes = await fetch("https://api.github.com/app", {
+    headers: {
+      Authorization: `Bearer ${appJwt}`,
+      Accept: "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+    },
+  });
+  const verifyData = await verifyRes.text();
+  console.log(`JWT verification: status=${verifyRes.status}, body=${verifyData.substring(0, 200)}`);
+
+  // List installations to find the correct one
+  const listRes = await fetch("https://api.github.com/app/installations", {
+    headers: {
+      Authorization: `Bearer ${appJwt}`,
+      Accept: "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+    },
+  });
+  const listData = await listRes.text();
+  console.log(`Installations list: status=${listRes.status}, body=${listData.substring(0, 500)}`);
+
+  const url = `https://api.github.com/app/installations/${installationId}/access_tokens`;
+  console.log(`Requesting installation token from: ${url}`);
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${appJwt}`,
+      Accept: "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+    },
+  });
   if (!res.ok) {
     const err = await res.text();
     throw new Error(`Failed to get installation token [${res.status}]: ${err}`);
