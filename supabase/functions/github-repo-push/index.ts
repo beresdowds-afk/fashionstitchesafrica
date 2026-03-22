@@ -154,7 +154,7 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
     };
   }
 
-  console.log("Generating GitHub App installation token...");
+  console.log(`Generating GitHub App installation token... AppID=${appId}, InstallationID=${installationId}`);
   const jwt = await createGitHubAppJWT(appId, privateKey);
   const token = await getInstallationToken(jwt, installationId);
   console.log("Installation token obtained successfully");
