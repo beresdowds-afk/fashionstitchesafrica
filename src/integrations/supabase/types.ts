@@ -4669,6 +4669,7 @@ export type Database = {
           mission: string | null
           platform_name: string
           platform_short_name: string
+          sentinel_mcp_url: string | null
           social_links: Json | null
           tagline: string | null
           updated_at: string
@@ -4689,6 +4690,7 @@ export type Database = {
           mission?: string | null
           platform_name?: string
           platform_short_name?: string
+          sentinel_mcp_url?: string | null
           social_links?: Json | null
           tagline?: string | null
           updated_at?: string
@@ -4709,6 +4711,7 @@ export type Database = {
           mission?: string | null
           platform_name?: string
           platform_short_name?: string
+          sentinel_mcp_url?: string | null
           social_links?: Json | null
           tagline?: string | null
           updated_at?: string
