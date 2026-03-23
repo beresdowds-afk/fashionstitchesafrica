@@ -39,6 +39,7 @@ const DEFAULTS: PlatformSettings = {
   social_links: {},
   meta_keywords: "",
   copyright_text: "© 2024 Fashion Stitches Africa. All rights reserved.",
+  sentinel_mcp_url: "",
   updated_at: "",
 };
 
