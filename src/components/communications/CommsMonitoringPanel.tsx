@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useCommsProviderStatus } from "@/hooks/useCommsArchitecture";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   RefreshCw, Wifi, WifiOff, AlertTriangle, Activity, DollarSign,
-  BarChart3, Route, Phone, MessageSquare, Mail, Send
+  BarChart3, Route, Phone, MessageSquare, Send
 } from "lucide-react";
 
 const statusConfig: Record<string, { icon: typeof Wifi; color: string; bg: string }> = {

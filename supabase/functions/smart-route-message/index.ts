@@ -155,7 +155,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    const supabaseAdmin = createClient(
+    // supabaseAdmin available for future analytics tracking
+    const _supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
@@ -228,9 +229,6 @@ Deno.serve(async (req) => {
     // If primary failed and we have a fallback, try it
     if (!primaryResp.ok && route.fallback_channel && route.fallback_provider) {
       usedFallback = true;
-      const fallbackRoute = determineRoute({
-        message, to, has_media: !!media_url, priority, process_type,
-      });
       // Simple fallback: try the other channel
       let fallbackFn: string;
       const fallbackBody = { ...body };

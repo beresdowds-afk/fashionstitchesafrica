@@ -5,13 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
-  MessageSquare, Send, Image, Share2, Instagram, Facebook,
-  Twitter, Youtube, Linkedin, Loader2, CheckCircle, Key, Eye, EyeOff,
+  MessageSquare, Send, Share2, Instagram, Facebook,
+  Twitter, Youtube, Linkedin, Loader2, Key, Eye, EyeOff,
   Save, Plus, Trash2, Link2, ExternalLink, Globe
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
