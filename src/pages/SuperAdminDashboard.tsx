@@ -23,6 +23,7 @@ import PlatformPhoneNumbersPanel from "@/components/super-admin/PlatformPhoneNum
 import CommsOversightPanel from "@/components/super-admin/CommsOversightPanel";
 import VideoBillingPanel from "@/components/super-admin/VideoBillingPanel";
 import DomainManagementPanel from "@/components/super-admin/DomainManagementPanel";
+import VerificationProvidersPanel from "@/components/super-admin/VerificationProvidersPanel";
 import { useUserGlobalRole } from "@/hooks/useOrganization";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -73,7 +74,7 @@ import {
 
 import { cn } from "@/lib/utils";
 
-type TabId = "overview" | "platform_settings" | "organizations" | "users" | "accounts" | "revenue" | "invoicing" | "sub_rates" | "tax_compliance" | "regional_management" | "featured" | "keys" | "rates" | "websites" | "pricing" | "unified_pricing" | "backups" | "features" | "mobile" | "audit" | "support_requests" | "bank_accounts" | "message_center" | "phone_numbers" | "comms_oversight" | "video_billing" | "domain_management";
+type TabId = "overview" | "platform_settings" | "organizations" | "users" | "accounts" | "revenue" | "invoicing" | "sub_rates" | "tax_compliance" | "regional_management" | "featured" | "keys" | "rates" | "websites" | "pricing" | "unified_pricing" | "backups" | "features" | "mobile" | "audit" | "support_requests" | "bank_accounts" | "message_center" | "phone_numbers" | "comms_oversight" | "video_billing" | "domain_management" | "identity_verification";
 
 interface SidebarItem {
   id: TabId;
@@ -196,6 +197,7 @@ const SuperAdminDashboard = () => {
         { id: "backups", icon: Activity, label: "Backups" },
         { id: "features", icon: Shield, label: "Feature Flags" },
         { id: "mobile", icon: Smartphone, label: "Mobile App" },
+        { id: "identity_verification", icon: Shield, label: "Identity Verification" },
         { id: "audit", icon: ScrollText, label: "Audit Logs" },
       ],
     },
@@ -302,6 +304,7 @@ const SuperAdminDashboard = () => {
             {activeTab === "phone_numbers" && <PlatformPhoneNumbersPanel />}
             {activeTab === "video_billing" && <VideoBillingPanel />}
             {activeTab === "domain_management" && <DomainManagementPanel />}
+            {activeTab === "identity_verification" && <VerificationProvidersPanel />}
           </main>
         </div>
       </div>
