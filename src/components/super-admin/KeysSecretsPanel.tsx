@@ -51,6 +51,10 @@ const PROVIDERS = [
   { value: "whatchimp", label: "WhatChimp" },
   { value: "termii", label: "Termii" },
   { value: "twilio", label: "Twilio" },
+  { value: "smile_id", label: "Smile ID (KYC)" },
+  { value: "youverify", label: "YouVerify (KYC)" },
+  { value: "identitypass", label: "IdentityPass (KYC)" },
+  { value: "persona", label: "Persona (KYC)" },
   { value: "other", label: "Other" },
 ];
 
@@ -61,6 +65,10 @@ const KEY_NAMES: Record<string, string[]> = {
   whatchimp: ["api_key", "whatsapp_number", "webhook_secret"],
   termii: ["api_key", "sender_id", "whatsapp_number"],
   twilio: ["account_sid", "auth_token", "phone_number"],
+  smile_id: ["partner_id", "api_key"],
+  youverify: ["api_key"],
+  identitypass: ["api_key"],
+  persona: ["api_key"],
   other: ["api_key"],
 };
 
