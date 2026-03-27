@@ -2196,6 +2196,66 @@ export type Database = {
           },
         ]
       }
+      identity_verification_attempts: {
+        Row: {
+          biometrics_used: string[] | null
+          confidence_score: number | null
+          cost_usd: number | null
+          country: string | null
+          created_at: string
+          entity_id: string
+          entity_type: string
+          error_message: string | null
+          id: string
+          id_number_masked: string | null
+          id_type: string | null
+          provider: string
+          provider_reference: string | null
+          provider_response: Json | null
+          status: string
+          updated_at: string
+          verification_type: string
+        }
+        Insert: {
+          biometrics_used?: string[] | null
+          confidence_score?: number | null
+          cost_usd?: number | null
+          country?: string | null
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          error_message?: string | null
+          id?: string
+          id_number_masked?: string | null
+          id_type?: string | null
+          provider: string
+          provider_reference?: string | null
+          provider_response?: Json | null
+          status?: string
+          updated_at?: string
+          verification_type: string
+        }
+        Update: {
+          biometrics_used?: string[] | null
+          confidence_score?: number | null
+          cost_usd?: number | null
+          country?: string | null
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          error_message?: string | null
+          id?: string
+          id_number_masked?: string | null
+          id_type?: string | null
+          provider?: string
+          provider_reference?: string | null
+          provider_response?: Json | null
+          status?: string
+          updated_at?: string
+          verification_type?: string
+        }
+        Relationships: []
+      }
       inbound_messages: {
         Row: {
           body: string | null
@@ -6446,6 +6506,57 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      verification_provider_config: {
+        Row: {
+          config: Json | null
+          cost_per_verification: number | null
+          created_at: string
+          display_name: string
+          id: string
+          is_active: boolean | null
+          monthly_limit: number | null
+          monthly_used: number | null
+          priority: number | null
+          provider: string
+          supported_countries: string[] | null
+          supported_entity_types: string[] | null
+          supported_id_types: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          config?: Json | null
+          cost_per_verification?: number | null
+          created_at?: string
+          display_name: string
+          id?: string
+          is_active?: boolean | null
+          monthly_limit?: number | null
+          monthly_used?: number | null
+          priority?: number | null
+          provider: string
+          supported_countries?: string[] | null
+          supported_entity_types?: string[] | null
+          supported_id_types?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          config?: Json | null
+          cost_per_verification?: number | null
+          created_at?: string
+          display_name?: string
+          id?: string
+          is_active?: boolean | null
+          monthly_limit?: number | null
+          monthly_used?: number | null
+          priority?: number | null
+          provider?: string
+          supported_countries?: string[] | null
+          supported_entity_types?: string[] | null
+          supported_id_types?: string[] | null
+          updated_at?: string
         }
         Relationships: []
       }
