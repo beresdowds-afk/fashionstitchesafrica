@@ -295,6 +295,7 @@ const SuperAdminDashboard = () => {
             {activeTab === "accounts" && <AccountManagementPanel />}
             {activeTab === "revenue" && <PlatformRevenuePanel />}
             {activeTab === "invoicing" && <AdminInvoicingPaymentsPanel />}
+            {activeTab === "invoice_manager" && <InvoiceManagerPanel isSuperAdmin currency="USD" />}
             {activeTab === "sub_rates" && isSuperAdmin && <SubscriptionRatesPanel />}
             {activeTab === "tax_compliance" && isSuperAdmin && <TaxCompliancePanel />}
             {activeTab === "regional_management" && isSuperAdmin && <RegionalManagementPanel />}
