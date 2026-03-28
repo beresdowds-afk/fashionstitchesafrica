@@ -1,15 +1,13 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Settings, History, UserCog, Inbox, Route, Phone, Wallet, MessageSquare, Megaphone, Activity, Share2 } from "lucide-react";
+import { Settings, History, UserCog, Inbox, Phone, Wallet, MessageSquare, Megaphone } from "lucide-react";
 import NotificationSettingsPanel from "./NotificationSettingsPanel";
 import MessageLogViewer from "./MessageLogViewer";
 import UserNotificationPreferences from "./UserNotificationPreferences";
 import MessageInbox from "./MessageInbox";
-import RoutingRulesPanel from "./RoutingRulesPanel";
 import CallHistoryPanel from "./CallHistoryPanel";
 import VoipBillingPanel from "./VoipBillingPanel";
 import WhatChimpPanel from "./WhatChimpPanel";
 import TermiiServicesPanel from "./TermiiServicesPanel";
-import CommsMonitoringPanel from "./CommsMonitoringPanel";
 
 interface CommunicationsTabProps {
   orgId: string;
@@ -31,16 +29,11 @@ const CommunicationsTab = ({ orgId, role }: CommunicationsTabProps) => {
             <MessageSquare size={14} /> WhatsApp & Social
           </TabsTrigger>
           <TabsTrigger value="termii" className="gap-2">
-            <Megaphone size={14} /> Termii Services
+            <Megaphone size={14} /> Send SMS
           </TabsTrigger>
           {isAdmin && (
             <TabsTrigger value="settings" className="gap-2">
               <Settings size={14} /> Org Settings
-            </TabsTrigger>
-          )}
-          {isAdmin && (
-            <TabsTrigger value="routing" className="gap-2">
-              <Route size={14} /> Routing Rules
             </TabsTrigger>
           )}
           <TabsTrigger value="preferences" className="gap-2">
@@ -52,11 +45,6 @@ const CommunicationsTab = ({ orgId, role }: CommunicationsTabProps) => {
           <TabsTrigger value="voip-billing" className="gap-2">
             <Wallet size={14} /> VoIP Billing
           </TabsTrigger>
-          {isAdmin && (
-            <TabsTrigger value="monitoring" className="gap-2">
-              <Activity size={14} /> Monitoring
-            </TabsTrigger>
-          )}
           <TabsTrigger value="logs" className="gap-2">
             <History size={14} /> Message Log
           </TabsTrigger>
@@ -76,11 +64,6 @@ const CommunicationsTab = ({ orgId, role }: CommunicationsTabProps) => {
             <NotificationSettingsPanel orgId={orgId} isAdmin={isAdmin} />
           </TabsContent>
         )}
-        {isAdmin && (
-          <TabsContent value="routing">
-            <RoutingRulesPanel orgId={orgId} />
-          </TabsContent>
-        )}
         <TabsContent value="preferences">
           <UserNotificationPreferences orgId={orgId} />
         </TabsContent>
@@ -90,11 +73,6 @@ const CommunicationsTab = ({ orgId, role }: CommunicationsTabProps) => {
         <TabsContent value="voip-billing">
           <VoipBillingPanel orgId={orgId} role={role} />
         </TabsContent>
-        {isAdmin && (
-          <TabsContent value="monitoring">
-            <CommsMonitoringPanel />
-          </TabsContent>
-        )}
         <TabsContent value="logs">
           <MessageLogViewer orgId={orgId} />
         </TabsContent>
