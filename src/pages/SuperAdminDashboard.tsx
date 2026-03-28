@@ -988,5 +988,52 @@ const UsersPanel = () => {
   );
 };
 
+/* ───────────── Registrations Panel (with org selector) ───────────── */
+const RegistrationsPanel = ({ orgs }: { orgs: OrgRow[] }) => {
+  const [selectedOrgId, setSelectedOrgId] = useState(orgs[0]?.id || "");
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="font-heading font-bold text-2xl">Customer Registrations</h2>
+        <Select value={selectedOrgId} onValueChange={setSelectedOrgId}>
+          <SelectTrigger className="w-56">
+            <SelectValue placeholder="Select organization" />
+          </SelectTrigger>
+          <SelectContent>
+            {orgs.map((o) => (
+              <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      {selectedOrgId && <CustomerRegistrationsTab orgId={selectedOrgId} />}
+    </motion.div>
+  );
+};
+
+/* ───────────── Disputes Panel (with org selector) ───────────── */
+const DisputesPanel = ({ orgs }: { orgs: OrgRow[] }) => {
+  const [selectedOrgId, setSelectedOrgId] = useState(orgs[0]?.id || "");
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="font-heading font-bold text-2xl">Disputes Management</h2>
+        <Select value={selectedOrgId} onValueChange={setSelectedOrgId}>
+          <SelectTrigger className="w-56">
+            <SelectValue placeholder="Select organization" />
+          </SelectTrigger>
+          <SelectContent>
+            {orgs.map((o) => (
+              <SelectItem key={o.id} value={o.id}>{o.name}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      {selectedOrgId && <DisputesTab orgId={selectedOrgId} role="super_admin" />}
+    </motion.div>
+  );
+};
 
 export default SuperAdminDashboard;
