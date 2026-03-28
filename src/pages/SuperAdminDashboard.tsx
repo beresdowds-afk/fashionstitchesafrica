@@ -78,7 +78,7 @@ import {
 
 import { cn } from "@/lib/utils";
 
-type TabId = "overview" | "platform_settings" | "carriers" | "organizations" | "users" | "accounts" | "revenue" | "invoicing" | "sub_rates" | "tax_compliance" | "regional_management" | "featured" | "keys" | "rates" | "websites" | "pricing" | "unified_pricing" | "backups" | "features" | "mobile" | "audit" | "support_requests" | "bank_accounts" | "message_center" | "phone_numbers" | "comms_oversight" | "video_billing" | "domain_management" | "identity_verification" | "communications" | "registrations" | "disputes";
+type TabId = "overview" | "platform_settings" | "carriers" | "organizations" | "users" | "accounts" | "revenue" | "invoicing" | "invoice_manager" | "sub_rates" | "tax_compliance" | "regional_management" | "featured" | "keys" | "rates" | "websites" | "pricing" | "unified_pricing" | "backups" | "features" | "mobile" | "audit" | "support_requests" | "bank_accounts" | "message_center" | "phone_numbers" | "comms_oversight" | "video_billing" | "domain_management" | "identity_verification" | "communications" | "registrations" | "disputes";
 
 interface SidebarItem {
   id: TabId;
