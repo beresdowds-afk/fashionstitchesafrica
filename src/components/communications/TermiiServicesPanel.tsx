@@ -155,6 +155,7 @@ const TermiiServicesPanel = ({ orgId, role }: TermiiServicesPanelProps) => {
             )}
           </Card>
         </TabsContent>
+        )}
 
         {/* Campaigns Tab */}
         <TabsContent value="campaigns">
