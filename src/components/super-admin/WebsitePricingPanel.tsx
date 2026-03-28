@@ -430,10 +430,11 @@ const WebsitePricingPanel = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {[
           { label: "Active Lite Subscriptions", value: stats.activeLite, icon: Globe, color: "text-primary", bg: "bg-primary/10" },
           { label: "Active Pro Sites", value: stats.activePro, icon: Crown, color: "text-secondary", bg: "bg-secondary/10" },
+          { label: "Fee Exemptions", value: stats.exempted, icon: Zap, color: "text-accent", bg: "bg-accent/10" },
           { label: "Monthly Recurring Revenue", value: `$${stats.mrr}`, icon: TrendingUp, color: "text-primary", bg: "bg-primary/10" },
           { label: "Platform Fees Collected", value: `$${stats.totalPlatformFees}`, icon: DollarSign, color: "text-secondary", bg: "bg-secondary/10" },
         ].map((stat) => (
