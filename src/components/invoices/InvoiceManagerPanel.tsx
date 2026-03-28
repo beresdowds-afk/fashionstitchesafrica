@@ -8,7 +8,7 @@ import InvoiceCreatorDialog, { type InvoiceFormData } from "./InvoiceCreatorDial
 import { motion } from "framer-motion";
 import {
   FileText, Plus, Search, Download, RefreshCw, Edit3, Eye,
-  Clock, CheckCircle2, Send, XCircle, Trash2, Forward,
+  Clock, CheckCircle2, Send, XCircle, Trash2, Forward, Share2,
 } from "lucide-react";
 import ForwardInvoiceDialog from "./ForwardInvoiceDialog";
 import { format } from "date-fns";
@@ -71,6 +71,7 @@ const InvoiceManagerPanel = ({ orgId, orgName, currency = "NGN", isSuperAdmin = 
   const [showCreate, setShowCreate] = useState(false);
   const [editInvoice, setEditInvoice] = useState<InvoiceFormData | null>(null);
   const [orgMap, setOrgMap] = useState<Record<string, string>>({});
+  const [forwardInvoice, setForwardInvoice] = useState<CustomInvoice | null>(null);
 
   const loadInvoices = useCallback(async () => {
     setLoading(true);
