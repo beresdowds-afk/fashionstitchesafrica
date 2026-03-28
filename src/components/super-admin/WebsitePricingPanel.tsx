@@ -101,7 +101,8 @@ const WebsitePricingPanel = () => {
   const { user } = useAuth();
   const [config, setConfig] = useState<PricingConfig>(DEFAULT_CONFIG);
   const savedConfigRef = useRef<PricingConfig>(DEFAULT_CONFIG);
-  const [stats, setStats] = useState({ activeLite: 0, activePro: 0, mrr: 0, totalPlatformFees: 0 });
+  const [stats, setStats] = useState({ activeLite: 0, activePro: 0, exempted: 0, mrr: 0, totalPlatformFees: 0 });
+  const [exemptions, setExemptions] = useState<{ id: string; org_id: string; org_name: string; exemption_type: string; reason: string | null; expires_at: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
   const [publishing, setPublishing] = useState(false);
   const [unsavedChanges, setUnsavedChanges] = useState(false);
@@ -148,15 +149,36 @@ const WebsitePricingPanel = () => {
 
   // ─── Load stats ───
   const loadStats = useCallback(async () => {
-    const [subsResult, reqsResult] = await Promise.all([
+    const [subsResult, reqsResult, exemptResult] = await Promise.all([
       supabase.from("website_builder_subscriptions").select("*"),
       supabase.from("website_builder_requests").select("*"),
+      supabase.from("org_fee_exemptions").select("*, organizations!org_fee_exemptions_org_id_fkey(name)").like("exemption_type", "website_builder%").eq("is_active", true),
     ]);
     const subs = subsResult.data || [];
     const reqs = reqsResult.data || [];
+    const exemptData = (exemptResult.data || []) as any[];
+
+    // Deduplicate exemptions by org_id (one org may have multiple exemption types)
+    const orgMap = new Map<string, { id: string; org_id: string; org_name: string; exemption_type: string; reason: string | null; expires_at: string | null }>();
+    for (const e of exemptData) {
+      const existing = orgMap.get(e.org_id);
+      // Prefer pro over generic
+      if (!existing || e.exemption_type === "website_builder_pro") {
+        orgMap.set(e.org_id, {
+          id: e.id,
+          org_id: e.org_id,
+          org_name: (e.organizations as any)?.name || "Unknown",
+          exemption_type: e.exemption_type,
+          reason: e.reason,
+          expires_at: e.expires_at,
+        });
+      }
+    }
+    setExemptions(Array.from(orgMap.values()));
 
     const activeLite = subs.filter((s: any) => s.status === "trial" || s.status === "active").length;
     const activePro = reqs.filter((r: any) => r.status === "completed").length;
+    const exempted = orgMap.size;
     const mrr = subs
       .filter((s: any) => s.status === "active" || s.status === "trial")
       .reduce((sum: number, s: any) => sum + (s.monthly_fee || 0), 0);
@@ -164,7 +186,7 @@ const WebsitePricingPanel = () => {
       subs.reduce((sum: number, s: any) => sum + (s.platform_fee || 0), 0) +
       reqs.filter((r: any) => r.payment_status === "paid").reduce((sum: number, r: any) => sum + (r.platform_fee || 0), 0);
 
-    setStats({ activeLite, activePro, mrr, totalPlatformFees });
+    setStats({ activeLite, activePro, exempted, mrr, totalPlatformFees });
   }, []);
 
   // ─── Load history ───
@@ -408,10 +430,11 @@ const WebsitePricingPanel = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {[
           { label: "Active Lite Subscriptions", value: stats.activeLite, icon: Globe, color: "text-primary", bg: "bg-primary/10" },
           { label: "Active Pro Sites", value: stats.activePro, icon: Crown, color: "text-secondary", bg: "bg-secondary/10" },
+          { label: "Fee Exemptions", value: stats.exempted, icon: Zap, color: "text-accent", bg: "bg-accent/10" },
           { label: "Monthly Recurring Revenue", value: `$${stats.mrr}`, icon: TrendingUp, color: "text-primary", bg: "bg-primary/10" },
           { label: "Platform Fees Collected", value: `$${stats.totalPlatformFees}`, icon: DollarSign, color: "text-secondary", bg: "bg-secondary/10" },
         ].map((stat) => (
@@ -481,6 +504,59 @@ const WebsitePricingPanel = () => {
             Create Plan
           </Button>
         </div>
+      </div>
+
+      {/* Fee Exemptions Table */}
+      <div className="rounded-xl bg-card border border-border overflow-hidden">
+        <div className="px-5 py-3 border-b border-border flex items-center justify-between">
+          <h3 className="font-heading font-semibold text-sm flex items-center gap-2">
+            <Zap size={16} className="text-accent" />
+            Website Builder Fee Exemptions
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-accent/10 text-accent font-medium">{exemptions.length}</span>
+          </h3>
+        </div>
+        {exemptions.length === 0 ? (
+          <div className="p-8 text-center text-muted-foreground text-sm">No fee exemptions granted yet.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-muted/50">
+                  <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Organization</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Exemption Type</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Reason</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Expires</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {exemptions.map((ex) => (
+                  <tr key={ex.id} className="border-t border-border hover:bg-muted/30">
+                    <td className="px-4 py-3 text-sm font-medium">{ex.org_name}</td>
+                    <td className="px-4 py-3">
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                        ex.exemption_type === "website_builder_pro"
+                          ? "bg-accent/10 text-accent"
+                          : "bg-primary/10 text-primary"
+                      }`}>
+                        {ex.exemption_type === "website_builder_pro" ? "Pro" : "Lite"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">{ex.reason || "—"}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">
+                      {ex.expires_at ? new Date(ex.expires_at).toLocaleDateString() : "Never"}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-green-500/10 text-green-600">
+                        Active
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Price Change History */}
