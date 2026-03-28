@@ -7,9 +7,10 @@ import { useToast } from "@/hooks/use-toast";
 import InvoiceCreatorDialog, { type InvoiceFormData } from "./InvoiceCreatorDialog";
 import { motion } from "framer-motion";
 import {
-  FileText, Plus, Search, Download, RefreshCw, Edit3, Eye,
-  Clock, CheckCircle2, Send, XCircle, Trash2,
+  FileText, Plus, Search, Download, RefreshCw, Edit3,
+  Clock, CheckCircle2, Send, XCircle, Trash2, Forward,
 } from "lucide-react";
+import ForwardInvoiceDialog from "./ForwardInvoiceDialog";
 import { format } from "date-fns";
 import jsPDF from "jspdf";
 
@@ -70,6 +71,7 @@ const InvoiceManagerPanel = ({ orgId, orgName, currency = "NGN", isSuperAdmin = 
   const [showCreate, setShowCreate] = useState(false);
   const [editInvoice, setEditInvoice] = useState<InvoiceFormData | null>(null);
   const [orgMap, setOrgMap] = useState<Record<string, string>>({});
+  const [forwardInvoice, setForwardInvoice] = useState<CustomInvoice | null>(null);
 
   const loadInvoices = useCallback(async () => {
     setLoading(true);
@@ -447,6 +449,9 @@ const InvoiceManagerPanel = ({ orgId, orgName, currency = "NGN", isSuperAdmin = 
                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => generatePDF(inv)} title="Download PDF">
                             <Download size={13} />
                           </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setForwardInvoice(inv)} title="Forward to Customer">
+                            <Forward size={13} className="text-primary" />
+                          </Button>
                           {inv.status === "draft" && (
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(inv)} title="Edit">
                               <Edit3 size={13} />
@@ -486,6 +491,13 @@ const InvoiceManagerPanel = ({ orgId, orgName, currency = "NGN", isSuperAdmin = 
         editInvoice={editInvoice}
         onSaved={loadInvoices}
         isSuperAdmin={isSuperAdmin}
+      />
+
+      <ForwardInvoiceDialog
+        open={!!forwardInvoice}
+        onOpenChange={(open) => { if (!open) setForwardInvoice(null); }}
+        invoice={forwardInvoice}
+        issuerName={isSuperAdmin ? "Fashion Stitches Africa" : (orgName || "Invoice")}
       />
     </motion.div>
   );
