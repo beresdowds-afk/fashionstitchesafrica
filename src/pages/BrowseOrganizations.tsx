@@ -22,7 +22,6 @@ interface OrgCard {
   region: string | null;
   currency: string | null;
   phone: string | null;
-  invite_code: string | null;
   logo_url: string | null;
   specialties: string[] | null;
   created_at: string;
@@ -57,11 +56,17 @@ const BrowseOrganizations = () => {
 
   useEffect(() => {
     const fetchOrgs = async () => {
-      const { data } = await supabase
-        .from("organizations")
-        .select("id, name, slug, country, region, currency, phone, invite_code, logo_url, specialties, created_at")
-        .eq("is_active", true)
-        .order("name");
+      // Use public view for authenticated users, summary view for unauthenticated
+      const { data } = user
+        ? await supabase
+            .from("organizations_public" as any)
+            .select("id, name, slug, country, region, currency, phone, logo_url, specialties, created_at")
+            .eq("is_active", true)
+            .order("name")
+        : await supabase
+            .from("organizations_summary" as any)
+            .select("id, name, slug, logo_url, country, region")
+            .order("name");
       
       const orgIds = (data || []).map(o => o.id);
       let catalogueCounts: Record<string, number> = {};

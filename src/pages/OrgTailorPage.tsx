@@ -59,7 +59,7 @@ const OrgTailorPage = () => {
       if (!slug || !tailorId) return;
 
       const { data: orgData } = await supabase
-        .from("organizations")
+        .from("organizations_public" as any)
         .select("id, name, slug, logo_url, currency")
         .eq("slug", slug)
         .single();
