@@ -506,6 +506,59 @@ const WebsitePricingPanel = () => {
         </div>
       </div>
 
+      {/* Fee Exemptions Table */}
+      <div className="rounded-xl bg-card border border-border overflow-hidden">
+        <div className="px-5 py-3 border-b border-border flex items-center justify-between">
+          <h3 className="font-heading font-semibold text-sm flex items-center gap-2">
+            <Zap size={16} className="text-accent" />
+            Website Builder Fee Exemptions
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-accent/10 text-accent font-medium">{exemptions.length}</span>
+          </h3>
+        </div>
+        {exemptions.length === 0 ? (
+          <div className="p-8 text-center text-muted-foreground text-sm">No fee exemptions granted yet.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="bg-muted/50">
+                  <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Organization</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Exemption Type</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Reason</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Expires</th>
+                  <th className="text-left text-xs font-medium text-muted-foreground px-4 py-3">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {exemptions.map((ex) => (
+                  <tr key={ex.id} className="border-t border-border hover:bg-muted/30">
+                    <td className="px-4 py-3 text-sm font-medium">{ex.org_name}</td>
+                    <td className="px-4 py-3">
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${
+                        ex.exemption_type === "website_builder_pro"
+                          ? "bg-accent/10 text-accent"
+                          : "bg-primary/10 text-primary"
+                      }`}>
+                        {ex.exemption_type === "website_builder_pro" ? "Pro" : "Lite"}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">{ex.reason || "—"}</td>
+                    <td className="px-4 py-3 text-sm text-muted-foreground">
+                      {ex.expires_at ? new Date(ex.expires_at).toLocaleDateString() : "Never"}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-medium bg-green-500/10 text-green-600">
+                        Active
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
       {/* Price Change History */}
       {showHistory && (
         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} className="rounded-xl bg-card border border-border overflow-hidden">
