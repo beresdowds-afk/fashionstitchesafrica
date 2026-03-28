@@ -35,7 +35,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DollarSign, Smartphone, ScrollText, HelpCircle, UserX, Search, Trash2, Star, ShoppingBag, Download, Settings, LifeBuoy, Banknote, MapPin, MessageSquare, Menu, Video, ClipboardList, Scale } from "lucide-react";
+import { DollarSign, Smartphone, ScrollText, HelpCircle, UserX, Search, Trash2, Star, ShoppingBag, Download, Settings, LifeBuoy, Banknote, MapPin, MessageSquare, Menu, Video, ClipboardList, Scale, Truck } from "lucide-react";
 import LocationMapFooter from "@/components/shared/LocationMapFooter";
 import TourGuide from "@/components/shared/TourGuide";
 import { useTourGuide } from "@/hooks/useTourGuide";
@@ -152,7 +152,7 @@ const SuperAdminDashboard = () => {
       items: [
         { id: "overview", icon: BarChart3, label: "Overview" },
         { id: "platform_settings", icon: Settings, label: "Platform Settings" },
-        { id: "carriers", icon: Globe, label: "Carriers" },
+        { id: "carriers", icon: Truck, label: "Carriers" },
       ],
     },
     {
