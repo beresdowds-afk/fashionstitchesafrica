@@ -147,140 +147,101 @@ const Dashboard = () => {
   if (!currentOrg) return null;
 
   return (
-    <div className="min-h-screen bg-background">
-      <TourGuide {...tour} />
-      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-brand" />
-
-      {/* Header */}
-      <header className="border-b border-border bg-card">
-        <div className="container mx-auto px-4 lg:px-8 flex items-center justify-between h-16">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-gradient-brand flex items-center justify-center">
-              <span className="font-heading font-bold text-primary-foreground text-sm">FS</span>
-            </div>
-            <div>
-              <span className="font-heading font-bold text-sm">{currentOrg.name}</span>
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-background">
+        <TourGuide {...tour} />
+        <div className="hidden md:block">
+          <OrgDashboardSidebar activeTab={activeTab} onTabChange={setActiveTab} />
+        </div>
+        <div className="flex-1 flex flex-col min-w-0">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-brand z-10" />
+          <header className="border-b border-border bg-card">
+            <div className="px-4 lg:px-8 flex items-center justify-between h-16">
+              <div className="flex items-center gap-3">
+                <SidebarTrigger className="hidden md:flex mr-2" />
+                <div className="w-8 h-8 rounded-full bg-gradient-brand flex items-center justify-center">
+                  <span className="font-heading font-bold text-primary-foreground text-sm">FS</span>
+                </div>
+                <div>
+                  <span className="font-heading font-bold text-sm">{currentOrg.name}</span>
+                  <div className="flex items-center gap-2">
+                    {role && (
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${roleColors[role]}`}>
+                        {roleLabels[role]}
+                      </span>
+                    )}
+                    {hasPlatformAccess && (
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${roleColors[isSuperAdmin ? 'super_admin' : 'super_assistant']}`}>
+                        {isSuperAdmin ? "Super Admin" : "Super Assistant"}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
               <div className="flex items-center gap-2">
-                {role && (
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${roleColors[role]}`}>
-                    {roleLabels[role]}
-                  </span>
-                )}
                 {hasPlatformAccess && (
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${roleColors[isSuperAdmin ? 'super_admin' : 'super_assistant']}`}>
-                    {isSuperAdmin ? "Super Admin" : "Super Assistant"}
-                  </span>
+                  <Button variant="ghost" size="sm" onClick={() => navigate("/super-admin")} className="text-xs">
+                    <Shield size={14} className="mr-1" /> Admin Panel
+                  </Button>
                 )}
+                <Button variant="ghost" size="icon" onClick={tour.restart} title="Restart tour guide" className="text-muted-foreground">
+                  <HelpCircle size={16} />
+                </Button>
+                <NotificationBell />
+                <Button variant="ghost" size="sm" onClick={() => navigate("/install")} title="Install FSA App" className="text-primary">
+                  <Download size={16} className="mr-1" /> <span className="hidden sm:inline text-xs">Install App</span>
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => navigate("/payments")} title="Payments & Billing" className="text-primary">
+                  <CreditCard size={16} className="mr-1" /> <span className="hidden sm:inline text-xs">Payments</span>
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => navigate("/platform-catalogue")} title="Platform Catalogue" className="text-primary">
+                  <ShoppingBag size={16} className="mr-1" /> <span className="hidden sm:inline text-xs">Catalogue</span>
+                </Button>
+                <span className="text-sm text-muted-foreground hidden sm:block">
+                  {profile?.display_name || user.email}
+                </span>
+                <Button variant="ghost" size="sm" onClick={handleSignOut}>
+                  <LogOut size={16} />
+                </Button>
               </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {hasPlatformAccess && (
-              <Button variant="ghost" size="sm" onClick={() => navigate("/super-admin")} className="text-xs">
-                <Shield size={14} className="mr-1" /> Admin Panel
-              </Button>
-            )}
-            <Button variant="ghost" size="icon" onClick={tour.restart} title="Restart tour guide" className="text-muted-foreground">
-              <HelpCircle size={16} />
-            </Button>
-            <NotificationBell />
-            <Button variant="ghost" size="sm" onClick={() => navigate("/install")} title="Install FSA App" className="text-primary">
-              <Download size={16} className="mr-1" /> <span className="hidden sm:inline text-xs">Install App</span>
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => navigate("/payments")} title="Payments & Billing" className="text-primary">
-              <CreditCard size={16} className="mr-1" /> <span className="hidden sm:inline text-xs">Payments</span>
-            </Button>
-            <Button variant="ghost" size="sm" onClick={() => navigate("/platform-catalogue")} title="Platform Catalogue" className="text-primary">
-              <ShoppingBag size={16} className="mr-1" /> <span className="hidden sm:inline text-xs">Catalogue</span>
-            </Button>
-            <span className="text-sm text-muted-foreground hidden sm:block">
-              {profile?.display_name || user.email}
-            </span>
-            <Button variant="ghost" size="sm" onClick={handleSignOut}>
-              <LogOut size={16} />
-            </Button>
-          </div>
+          </header>
+          <main className="flex-1 px-4 lg:px-8 py-6">
+            <div className="flex md:hidden gap-2 mb-6 overflow-x-auto">
+              {(["overview", "orders", "customers", "bookings", "premium", "featured", "logistics", "contracts", "members", "billing", "invoicing", "wallet", "website", "settings"] as OrgTabId[]).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                    activeTab === tab ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                  }`}
+                >
+                  {tab === "billing" ? "FSA Subscription" : tab.charAt(0).toUpperCase() + tab.slice(1)}
+                </button>
+              ))}
+            </div>
+            {activeTab === "overview" && role === "tailor" ? (
+              <TailorWorkQueue orgId={currentOrg.id} userId={user.id} currency={currentOrg.currency || "NGN"} />
+            ) : activeTab === "overview" ? (
+              <OverviewTab org={currentOrg} role={role} />
+            ) : null}
+            {activeTab === "orders" && <OrdersTab orgId={currentOrg.id} currency={currentOrg.currency || "NGN"} role={role} orgName={currentOrg.name} orgSettings={currentOrg} />}
+            {activeTab === "customers" && <CustomersTab orgId={currentOrg.id} currency={currentOrg.currency || "NGN"} />}
+            {activeTab === "bookings" && <MeasurementBookingsTab orgId={currentOrg.id} isAdmin={role === "org_admin" || role === "manager" || role === "super_admin"} />}
+            {activeTab === "premium" && <FeatureGate featureKey="basic_measurement" showLocked><PremiumFeaturesTab orgId={currentOrg.id} role={role} /></FeatureGate>}
+            {activeTab === "featured" && <FeaturedProductsPanel orgId={currentOrg.id} userRole={role === "designer" ? "designer" : "org_admin"} />}
+            {activeTab === "logistics" && <FeatureGate featureKey="local_logistics" showLocked><LogisticsTab orgId={currentOrg.id} role={role} currency={currentOrg.currency || "NGN"} /></FeatureGate>}
+            {activeTab === "contracts" && <ContractsTab orgId={currentOrg.id} role={role} />}
+            {activeTab === "members" && <MembersTab orgId={currentOrg.id} role={role} />}
+            {activeTab === "billing" && <SubscriptionTab orgId={currentOrg.id} role={role} />}
+            {activeTab === "invoicing" && <OrgBillingInvoicingTab orgId={currentOrg.id} orgName={currentOrg.name} currency={currentOrg.currency || "NGN"} role={role} />}
+            {activeTab === "wallet" && <WalletManagementTab orgId={currentOrg.id} />}
+            {activeTab === "website" && <FeatureGate featureKey="website_builder_pro" fallback={<WebsiteBuilderTab org={currentOrg} role={role} />}><WebsiteBuilderTab org={currentOrg} role={role} /></FeatureGate>}
+            {activeTab === "settings" && <SettingsTab org={currentOrg} role={role} />}
+          </main>
         </div>
-      </header>
-
-      {/* Sidebar + Content */}
-      <div className="container mx-auto px-4 lg:px-8 py-6 flex gap-6">
-        {/* Sidebar */}
-        <nav className="hidden md:flex flex-col w-56 shrink-0 gap-1">
-          {[
-            { id: "overview" as const, icon: BarChart3, label: "Overview" },
-            { id: "orders" as const, icon: Package, label: "Orders" },
-            { id: "customers" as const, icon: UserCheck, label: "Customers" },
-            
-            { id: "bookings" as const, icon: Video, label: "AI Measurements" },
-            { id: "premium" as const, icon: Sparkles, label: "Premium" },
-            { id: "featured" as const, icon: Star, label: "Featured Products" },
-            { id: "logistics" as const, icon: Truck, label: "Logistics" },
-            
-            { id: "contracts" as const, icon: FileText, label: "Contracts" },
-            { id: "members" as const, icon: Users, label: "Team Members" },
-            { id: "billing" as const, icon: CreditCard, label: "Subscription" },
-            { id: "invoicing" as const, icon: Receipt, label: "Billing & Invoicing" },
-            { id: "wallet" as const, icon: Wallet, label: "Wallet" },
-            { id: "website" as const, icon: Globe, label: "Website" },
-            { id: "settings" as const, icon: Settings, label: "Settings" },
-          ].map((item) => (
-            <button
-              key={item.id}
-              data-tour={`nav-${item.id}`}
-              onClick={() => setActiveTab(item.id)}
-              className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors text-left ${
-                activeTab === item.id
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-muted"
-              }`}
-            >
-              <item.icon size={18} />
-              {item.label}
-            </button>
-          ))}
-        </nav>
-
-        {/* Main content */}
-        <main className="flex-1 min-w-0">
-          {/* Mobile tabs */}
-          <div className="flex md:hidden gap-2 mb-6 overflow-x-auto">
-            {["overview", "orders", "customers", "bookings", "premium", "featured", "logistics", "contracts", "members", "billing", "invoicing", "wallet", "website", "settings"].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab as typeof activeTab)}
-                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                  activeTab === tab ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                }`}
-              >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
-              </button>
-            ))}
-          </div>
-
-          {activeTab === "overview" && role === "tailor" ? (
-            <TailorWorkQueue orgId={currentOrg.id} userId={user.id} currency={currentOrg.currency || "NGN"} />
-          ) : activeTab === "overview" ? (
-            <OverviewTab org={currentOrg} role={role} />
-          ) : null}
-          {activeTab === "orders" && <OrdersTab orgId={currentOrg.id} currency={currentOrg.currency || "NGN"} role={role} orgName={currentOrg.name} orgSettings={currentOrg} />}
-          {activeTab === "customers" && <CustomersTab orgId={currentOrg.id} currency={currentOrg.currency || "NGN"} />}
-          
-          {activeTab === "bookings" && <MeasurementBookingsTab orgId={currentOrg.id} isAdmin={role === "org_admin" || role === "manager" || role === "super_admin"} />}
-          {activeTab === "premium" && <FeatureGate featureKey="basic_measurement" showLocked><PremiumFeaturesTab orgId={currentOrg.id} role={role} /></FeatureGate>}
-          {activeTab === "featured" && <FeaturedProductsPanel orgId={currentOrg.id} userRole={role === "designer" ? "designer" : "org_admin"} />}
-          {activeTab === "logistics" && <FeatureGate featureKey="local_logistics" showLocked><LogisticsTab orgId={currentOrg.id} role={role} currency={currentOrg.currency || "NGN"} /></FeatureGate>}
-          
-          {activeTab === "contracts" && <ContractsTab orgId={currentOrg.id} role={role} />}
-          {activeTab === "members" && <MembersTab orgId={currentOrg.id} role={role} />}
-          {activeTab === "billing" && <SubscriptionTab orgId={currentOrg.id} role={role} />}
-          {activeTab === "invoicing" && <OrgBillingInvoicingTab orgId={currentOrg.id} orgName={currentOrg.name} currency={currentOrg.currency || "NGN"} role={role} />}
-          {activeTab === "wallet" && <WalletManagementTab orgId={currentOrg.id} />}
-          {activeTab === "website" && <FeatureGate featureKey="website_builder_pro" fallback={<WebsiteBuilderTab org={currentOrg} role={role} />}><WebsiteBuilderTab org={currentOrg} role={role} /></FeatureGate>}
-          {activeTab === "settings" && <SettingsTab org={currentOrg} role={role} />}
-        </main>
       </div>
-    </div>
+    </SidebarProvider>
   );
 };
 
