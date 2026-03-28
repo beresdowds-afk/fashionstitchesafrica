@@ -12,6 +12,7 @@ import FeaturedProductsPanel from "@/components/catalogue/FeaturedProductsPanel"
 
 import SubscriptionTab from "@/components/billing/SubscriptionTab";
 import OrgBillingInvoicingTab from "@/components/billing/OrgBillingInvoicingTab";
+import InvoiceManagerPanel from "@/components/invoices/InvoiceManagerPanel";
 import { useOrgSubscription } from "@/hooks/useSubscription";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import OrdersTab from "@/components/orders/OrdersTab";
