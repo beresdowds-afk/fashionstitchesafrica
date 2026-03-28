@@ -449,6 +449,9 @@ const InvoiceManagerPanel = ({ orgId, orgName, currency = "NGN", isSuperAdmin = 
                           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => generatePDF(inv)} title="Download PDF">
                             <Download size={13} />
                           </Button>
+                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setForwardInvoice(inv)} title="Forward to Customer">
+                            <Forward size={13} className="text-primary" />
+                          </Button>
                           {inv.status === "draft" && (
                             <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleEdit(inv)} title="Edit">
                               <Edit3 size={13} />
