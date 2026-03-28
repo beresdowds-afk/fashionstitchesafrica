@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { LogOut, User, Users, Settings, BarChart3, ShoppingBag, Palette, Plus, Trash2, Shield, Package, Clock, UserCheck, CreditCard, Crown, MessageCircle, ClipboardList, Video, Globe, Sparkles, Truck, Scale, FileText, Download, Receipt, Star } from "lucide-react";
 import FeaturedProductsPanel from "@/components/catalogue/FeaturedProductsPanel";
-import CommunicationsTab from "@/components/communications/CommunicationsTab";
+
 import SubscriptionTab from "@/components/billing/SubscriptionTab";
 import OrgBillingInvoicingTab from "@/components/billing/OrgBillingInvoicingTab";
 import { useOrgSubscription } from "@/hooks/useSubscription";
@@ -64,7 +64,7 @@ const Dashboard = () => {
   const hasPlatformAccess = isSuperAdmin || isSuperAssistant;
   const navigate = useNavigate();
   const [profile, setProfile] = useState<{ display_name: string | null } | null>(null);
-  const [activeTab, setActiveTab] = useState<"overview" | "orders" | "customers" | "registrations" | "bookings" | "premium" | "featured" | "logistics" | "disputes" | "contracts" | "members" | "communications" | "billing" | "invoicing" | "website" | "settings">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "orders" | "customers" | "registrations" | "bookings" | "premium" | "featured" | "logistics" | "disputes" | "contracts" | "members" | "billing" | "invoicing" | "website" | "settings">("overview");
 
   const tourSteps = role === "tailor" ? tailorTourSteps : orgAdminTourSteps;
   const tourId = role === "tailor" ? "tailor-dashboard" : "org-admin-dashboard";
@@ -216,7 +216,6 @@ const Dashboard = () => {
             { id: "disputes" as const, icon: Scale, label: "Disputes" },
             { id: "contracts" as const, icon: FileText, label: "Contracts" },
             { id: "members" as const, icon: Users, label: "Team Members" },
-            { id: "communications" as const, icon: MessageCircle, label: "Communications" },
             { id: "billing" as const, icon: CreditCard, label: "Subscription" },
             { id: "invoicing" as const, icon: Receipt, label: "Billing & Invoicing" },
             { id: "website" as const, icon: Globe, label: "Website" },
@@ -242,7 +241,7 @@ const Dashboard = () => {
         <main className="flex-1 min-w-0">
           {/* Mobile tabs */}
           <div className="flex md:hidden gap-2 mb-6 overflow-x-auto">
-            {["overview", "orders", "customers", "registrations", "bookings", "premium", "featured", "logistics", "disputes", "contracts", "members", "communications", "billing", "invoicing", "website", "settings"].map((tab) => (
+            {["overview", "orders", "customers", "registrations", "bookings", "premium", "featured", "logistics", "disputes", "contracts", "members", "billing", "invoicing", "website", "settings"].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab as typeof activeTab)}
@@ -270,7 +269,6 @@ const Dashboard = () => {
           {activeTab === "disputes" && <FeatureGate featureKey="ai_disputes" showLocked><DisputesTab orgId={currentOrg.id} role={role} /></FeatureGate>}
           {activeTab === "contracts" && <ContractsTab orgId={currentOrg.id} role={role} />}
           {activeTab === "members" && <MembersTab orgId={currentOrg.id} role={role} />}
-          {activeTab === "communications" && <CommunicationsTab orgId={currentOrg.id} role={role} />}
           {activeTab === "billing" && <SubscriptionTab orgId={currentOrg.id} role={role} />}
           {activeTab === "invoicing" && <OrgBillingInvoicingTab orgId={currentOrg.id} orgName={currentOrg.name} currency={currentOrg.currency || "NGN"} role={role} />}
           {activeTab === "website" && <FeatureGate featureKey="website_builder_pro" fallback={<WebsiteBuilderTab org={currentOrg} role={role} />}><WebsiteBuilderTab org={currentOrg} role={role} /></FeatureGate>}
