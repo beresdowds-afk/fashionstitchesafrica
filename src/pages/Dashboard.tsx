@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { LogOut, User, Users, Settings, BarChart3, ShoppingBag, Palette, Plus, Trash2, Shield, Package, Clock, UserCheck, CreditCard, Crown, MessageCircle, ClipboardList, Video, Globe, Sparkles, Truck, Scale, FileText, Download, Receipt, Star } from "lucide-react";
+import { LogOut, User, Users, Settings, BarChart3, ShoppingBag, Palette, Plus, Trash2, Shield, Package, Clock, UserCheck, CreditCard, Crown, MessageCircle, ClipboardList, Video, Globe, Sparkles, Truck, Scale, FileText, Download, Receipt, Star, Wallet } from "lucide-react";
 import FeaturedProductsPanel from "@/components/catalogue/FeaturedProductsPanel";
 
 import SubscriptionTab from "@/components/billing/SubscriptionTab";
@@ -25,6 +25,7 @@ import { useUserGlobalRole } from "@/hooks/useOrganization";
 import RevenueAnalysisCard from "@/components/dashboard/RevenueAnalysisCard";
 import WebsiteBuilderTab from "@/components/website-builder/WebsiteBuilderTab";
 import PremiumFeaturesTab from "@/components/premium/PremiumFeaturesTab";
+import WalletManagementTab from "@/components/wallet/WalletManagementTab";
 import LogisticsTab from "@/components/logistics/LogisticsTab";
 import DisputesTab from "@/components/disputes/DisputesTab";
 import FeatureGate from "@/components/shared/FeatureGate";
@@ -64,7 +65,7 @@ const Dashboard = () => {
   const hasPlatformAccess = isSuperAdmin || isSuperAssistant;
   const navigate = useNavigate();
   const [profile, setProfile] = useState<{ display_name: string | null } | null>(null);
-  const [activeTab, setActiveTab] = useState<"overview" | "orders" | "customers" | "registrations" | "bookings" | "premium" | "featured" | "logistics" | "disputes" | "contracts" | "members" | "billing" | "invoicing" | "website" | "settings">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "orders" | "customers" | "registrations" | "bookings" | "premium" | "featured" | "logistics" | "disputes" | "contracts" | "members" | "billing" | "invoicing" | "wallet" | "website" | "settings">("overview");
 
   const tourSteps = role === "tailor" ? tailorTourSteps : orgAdminTourSteps;
   const tourId = role === "tailor" ? "tailor-dashboard" : "org-admin-dashboard";
@@ -218,6 +219,7 @@ const Dashboard = () => {
             { id: "members" as const, icon: Users, label: "Team Members" },
             { id: "billing" as const, icon: CreditCard, label: "Subscription" },
             { id: "invoicing" as const, icon: Receipt, label: "Billing & Invoicing" },
+            { id: "wallet" as const, icon: Wallet, label: "Wallet" },
             { id: "website" as const, icon: Globe, label: "Website" },
             { id: "settings" as const, icon: Settings, label: "Settings" },
           ].map((item) => (
@@ -241,7 +243,7 @@ const Dashboard = () => {
         <main className="flex-1 min-w-0">
           {/* Mobile tabs */}
           <div className="flex md:hidden gap-2 mb-6 overflow-x-auto">
-            {["overview", "orders", "customers", "registrations", "bookings", "premium", "featured", "logistics", "disputes", "contracts", "members", "billing", "invoicing", "website", "settings"].map((tab) => (
+            {["overview", "orders", "customers", "registrations", "bookings", "premium", "featured", "logistics", "disputes", "contracts", "members", "billing", "invoicing", "wallet", "website", "settings"].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab as typeof activeTab)}
@@ -271,6 +273,7 @@ const Dashboard = () => {
           {activeTab === "members" && <MembersTab orgId={currentOrg.id} role={role} />}
           {activeTab === "billing" && <SubscriptionTab orgId={currentOrg.id} role={role} />}
           {activeTab === "invoicing" && <OrgBillingInvoicingTab orgId={currentOrg.id} orgName={currentOrg.name} currency={currentOrg.currency || "NGN"} role={role} />}
+          {activeTab === "wallet" && <WalletManagementTab orgId={currentOrg.id} />}
           {activeTab === "website" && <FeatureGate featureKey="website_builder_pro" fallback={<WebsiteBuilderTab org={currentOrg} role={role} />}><WebsiteBuilderTab org={currentOrg} role={role} /></FeatureGate>}
           {activeTab === "settings" && <SettingsTab org={currentOrg} role={role} />}
         </main>
