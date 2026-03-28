@@ -8,8 +8,9 @@ import InvoiceCreatorDialog, { type InvoiceFormData } from "./InvoiceCreatorDial
 import { motion } from "framer-motion";
 import {
   FileText, Plus, Search, Download, RefreshCw, Edit3, Eye,
-  Clock, CheckCircle2, Send, XCircle, Trash2,
+  Clock, CheckCircle2, Send, XCircle, Trash2, Forward,
 } from "lucide-react";
+import ForwardInvoiceDialog from "./ForwardInvoiceDialog";
 import { format } from "date-fns";
 import jsPDF from "jspdf";
 
