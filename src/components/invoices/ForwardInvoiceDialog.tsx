@@ -185,9 +185,38 @@ const ForwardInvoiceDialog = ({ open, onOpenChange, invoice, issuerName }: Forwa
     return doc;
   };
 
+  const pdfToJpgBlob = async (doc: jsPDF): Promise<Blob> => {
+    // Render the PDF page onto a canvas using an SVG intermediary
+    const pdfDataUri = doc.output("datauristring");
+    const pw = doc.internal.pageSize.getWidth();
+    const ph = doc.internal.pageSize.getHeight();
+    const scale = 3; // high-res
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(pw * scale);
+    canvas.height = Math.round(ph * scale);
+    const ctx = canvas.getContext("2d")!;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    return new Promise<Blob>((resolve, reject) => {
+      const img = new window.Image();
+      img.onload = () => {
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob(
+          (blob) => blob ? resolve(blob) : reject(new Error("Canvas toBlob failed")),
+          "image/jpeg",
+          0.92
+        );
+      };
+      img.onerror = () => reject(new Error("Failed to render invoice as image"));
+      img.src = pdfDataUri;
+    });
+  };
+
   const generateAndUpload = async (): Promise<string> => {
     const doc = await buildPdfDoc();
-    const fileName = `invoices/${invoice.id}/${invoice.invoice_number}.${exportFormat}`;
+    const ext = exportFormat === "jpg" ? "jpg" : "pdf";
+    const fileName = `invoices/${invoice.id}/${invoice.invoice_number}.${ext}`;
 
     if (exportFormat === "pdf") {
       const pdfBlob = doc.output("blob");
@@ -196,57 +225,11 @@ const ForwardInvoiceDialog = ({ open, onOpenChange, invoice, issuerName }: Forwa
         .upload(fileName, pdfBlob, { contentType: "application/pdf", upsert: true });
       if (error) throw error;
     } else {
-      // Convert first page of PDF to JPG via canvas
-      const pdfData = doc.output("datauristring");
-      const canvas = document.createElement("canvas");
-      const scale = 2;
-      canvas.width = 595 * scale;
-      canvas.height = 842 * scale;
-      const ctx = canvas.getContext("2d")!;
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // Use jsPDF's built-in canvas output
-      const imgData = doc.output("datauristring");
-      const img = new window.Image();
-      await new Promise<void>((resolve, reject) => {
-        img.onload = () => resolve();
-        img.onerror = () => reject(new Error("Failed to render invoice image"));
-        img.src = imgData;
-      }).catch(() => {
-        // Fallback: just save the PDF as-is and rename
-      });
-
-      // Simpler approach: render PDF pages as images using jsPDF's internal canvas
-      const pdfBlob = doc.output("blob");
-      const jpgFileName = fileName.replace(".jpg", ".pdf");
+      const jpgBlob = await pdfToJpgBlob(doc);
       const { error } = await supabase.storage
         .from("org-assets")
-        .upload(jpgFileName, pdfBlob, { contentType: "application/pdf", upsert: true });
+        .upload(fileName, jpgBlob, { contentType: "image/jpeg", upsert: true });
       if (error) throw error;
-
-      // For JPG, we also upload the PDF and generate a canvas snapshot
-      const canvasBlob = await new Promise<Blob>((resolve) => {
-        // Use jsPDF internal rendering
-        const svgStr = doc.output("datauristring");
-        // Create an image from the PDF data URI
-        const tempCanvas = document.createElement("canvas");
-        tempCanvas.width = 1190;
-        tempCanvas.height = 1684;
-        const tCtx = tempCanvas.getContext("2d")!;
-        tCtx.fillStyle = "#ffffff";
-        tCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-
-        // Draw all text content onto canvas manually (simplified approach)
-        // Since we can't easily render PDF to canvas in browser without pdf.js,
-        // we'll use a different approach: generate a high-quality image from jsPDF
-        tempCanvas.toBlob((blob) => resolve(blob!), "image/jpeg", 0.92);
-      });
-
-      const { error: jpgError } = await supabase.storage
-        .from("org-assets")
-        .upload(fileName, canvasBlob, { contentType: "image/jpeg", upsert: true });
-      if (jpgError) throw jpgError;
     }
 
     const { data: urlData } = supabase.storage.from("org-assets").getPublicUrl(fileName);
@@ -279,9 +262,13 @@ const ForwardInvoiceDialog = ({ open, onOpenChange, invoice, issuerName }: Forwa
       if (exportFormat === "pdf") {
         doc.save(`${invoice.invoice_number}.pdf`);
       } else {
-        // For JPG download, we'll use pdf.js-like approach or just download PDF
-        doc.save(`${invoice.invoice_number}.pdf`);
-        toast({ description: "PDF downloaded. Use a PDF viewer to export as image if needed." });
+        const jpgBlob = await pdfToJpgBlob(doc);
+        const url = URL.createObjectURL(jpgBlob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${invoice.invoice_number}.jpg`;
+        a.click();
+        URL.revokeObjectURL(url);
       }
     } catch (err: any) {
       toast({ title: "Download failed", description: err.message, variant: "destructive" });
@@ -292,23 +279,27 @@ const ForwardInvoiceDialog = ({ open, onOpenChange, invoice, issuerName }: Forwa
   const handleEmailForward = () => {
     const email = customerEmail || invoice.recipient_email || "";
     const subject = encodeURIComponent(`Invoice ${invoice.invoice_number} from ${issuerName}`);
-    const bodyText = message
-      ? encodeURIComponent(`${message}\n\nInvoice: ${invoice.invoice_number}\nAmount: ${invoice.currency} ${Number(invoice.total_amount).toLocaleString()}${shareUrl ? `\n\nView/Download Invoice: ${shareUrl}` : ""}`)
-      : encodeURIComponent(`Please find your invoice ${invoice.invoice_number} from ${issuerName}.\n\nAmount Due: ${invoice.currency} ${Number(invoice.total_amount).toLocaleString()}${invoice.due_date ? `\nDue Date: ${format(new Date(invoice.due_date), "MMM d, yyyy")}` : ""}${shareUrl ? `\n\nView/Download Invoice: ${shareUrl}` : ""}\n\nThank you for your business.`);
-
+    const bodyText = encodeURIComponent(
+      `${message ? message + "\n\n" : ""}Invoice: ${invoice.invoice_number}\nAmount Due: ${invoice.currency} ${Number(invoice.total_amount).toLocaleString()}${invoice.due_date ? `\nDue Date: ${format(new Date(invoice.due_date), "MMM d, yyyy")}` : ""}${shareUrl ? `\n\nView/Download Invoice: ${shareUrl}` : ""}\n\nThank you for your business.\n${issuerName}`
+    );
     window.open(`mailto:${email}?subject=${subject}&body=${bodyText}`, "_blank");
   };
 
   const handleWhatsAppForward = () => {
-    const phone = "";
     const text = encodeURIComponent(
-      `${message ? message + "\n\n" : ""}Invoice ${invoice.invoice_number} from ${issuerName}\nAmount: ${invoice.currency} ${Number(invoice.total_amount).toLocaleString()}${invoice.due_date ? `\nDue: ${format(new Date(invoice.due_date), "MMM d, yyyy")}` : ""}${shareUrl ? `\n\nView/Download: ${shareUrl}` : ""}`
+      `${message ? message + "\n\n" : ""}📄 Invoice ${invoice.invoice_number} from ${issuerName}\n💰 Amount: ${invoice.currency} ${Number(invoice.total_amount).toLocaleString()}${invoice.due_date ? `\n📅 Due: ${format(new Date(invoice.due_date), "MMM d, yyyy")}` : ""}${shareUrl ? `\n\n🔗 View/Download: ${shareUrl}` : ""}`
     );
-    window.open(`https://wa.me/${phone}?text=${text}`, "_blank");
+    window.open(`https://wa.me/?text=${text}`, "_blank");
+  };
+
+  const resetState = () => {
+    setShareUrl(null);
+    setCustomerEmail("");
+    setMessage("");
   };
 
   return (
-    <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) { setShareUrl(null); setCustomerEmail(""); setMessage(""); } }}>
+    <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) resetState(); }}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -342,7 +333,7 @@ const ForwardInvoiceDialog = ({ open, onOpenChange, invoice, issuerName }: Forwa
           {/* Format */}
           <div>
             <Label>Export Format</Label>
-            <Select value={exportFormat} onValueChange={(v) => setExportFormat(v as "pdf" | "jpg")}>
+            <Select value={exportFormat} onValueChange={(v) => { setExportFormat(v as "pdf" | "jpg"); setShareUrl(null); }}>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -388,7 +379,7 @@ const ForwardInvoiceDialog = ({ open, onOpenChange, invoice, issuerName }: Forwa
               disabled={generating}
             >
               {generating ? <Loader2 size={14} className="mr-2 animate-spin" /> : <Link2 size={14} className="mr-2" />}
-              Generate Shareable Link
+              Generate Shareable Link ({exportFormat.toUpperCase()})
             </Button>
 
             {shareUrl && (
@@ -404,7 +395,7 @@ const ForwardInvoiceDialog = ({ open, onOpenChange, invoice, issuerName }: Forwa
 
         <DialogFooter className="flex-col sm:flex-row gap-2 pt-2">
           <Button variant="outline" size="sm" onClick={handleDownload} disabled={generating}>
-            <Download size={14} className="mr-1" /> Download
+            <Download size={14} className="mr-1" /> Download {exportFormat.toUpperCase()}
           </Button>
           <Button variant="outline" size="sm" onClick={handleWhatsAppForward}>
             <MessageCircle size={14} className="mr-1" /> WhatsApp
