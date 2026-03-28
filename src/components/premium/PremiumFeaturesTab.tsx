@@ -1,11 +1,9 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Sparkles, Camera, Ruler, BarChart3, ShirtIcon, Wallet, Zap, Layers } from "lucide-react";
+import { Sparkles, Camera, Ruler, ShirtIcon, Zap, Layers } from "lucide-react";
 import VirtualTryOnPanel from "./VirtualTryOnPanel";
-import PremiumUsagePanel from "./PremiumUsagePanel";
 import EnhancedMeasurementsPanel from "./EnhancedMeasurementsPanel";
 import TieredMeasurementPanel from "./TieredMeasurementPanel";
 import GarmentCatalogPanel from "./GarmentCatalogPanel";
-import CreditWalletPanel from "./CreditWalletPanel";
 import JobQueuePanel from "./JobQueuePanel";
 import FeatureGate from "@/components/shared/FeatureGate";
 
@@ -41,18 +39,8 @@ const PremiumFeaturesTab = ({ orgId, role }: PremiumFeaturesTabProps) => {
             </TabsTrigger>
           )}
           {isAdmin && (
-            <TabsTrigger value="credits" className="gap-2">
-              <Wallet size={14} /> Credits
-            </TabsTrigger>
-          )}
-          {isAdmin && (
             <TabsTrigger value="queue" className="gap-2">
               <Zap size={14} /> Job Queue
-            </TabsTrigger>
-          )}
-          {isAdmin && (
-            <TabsTrigger value="usage" className="gap-2">
-              <BarChart3 size={14} /> Usage & Billing
             </TabsTrigger>
           )}
         </TabsList>
@@ -78,18 +66,8 @@ const PremiumFeaturesTab = ({ orgId, role }: PremiumFeaturesTabProps) => {
           </TabsContent>
         )}
         {isAdmin && (
-          <TabsContent value="credits">
-            <CreditWalletPanel orgId={orgId} />
-          </TabsContent>
-        )}
-        {isAdmin && (
           <TabsContent value="queue">
             <JobQueuePanel orgId={orgId} />
-          </TabsContent>
-        )}
-        {isAdmin && (
-          <TabsContent value="usage">
-            <PremiumUsagePanel orgId={orgId} />
           </TabsContent>
         )}
       </Tabs>
