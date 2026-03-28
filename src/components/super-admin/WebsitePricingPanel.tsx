@@ -149,15 +149,36 @@ const WebsitePricingPanel = () => {
 
   // ─── Load stats ───
   const loadStats = useCallback(async () => {
-    const [subsResult, reqsResult] = await Promise.all([
+    const [subsResult, reqsResult, exemptResult] = await Promise.all([
       supabase.from("website_builder_subscriptions").select("*"),
       supabase.from("website_builder_requests").select("*"),
+      supabase.from("org_fee_exemptions").select("*, organizations!org_fee_exemptions_org_id_fkey(name)").like("exemption_type", "website_builder%").eq("is_active", true),
     ]);
     const subs = subsResult.data || [];
     const reqs = reqsResult.data || [];
+    const exemptData = (exemptResult.data || []) as any[];
+
+    // Deduplicate exemptions by org_id (one org may have multiple exemption types)
+    const orgMap = new Map<string, { id: string; org_id: string; org_name: string; exemption_type: string; reason: string | null; expires_at: string | null }>();
+    for (const e of exemptData) {
+      const existing = orgMap.get(e.org_id);
+      // Prefer pro over generic
+      if (!existing || e.exemption_type === "website_builder_pro") {
+        orgMap.set(e.org_id, {
+          id: e.id,
+          org_id: e.org_id,
+          org_name: (e.organizations as any)?.name || "Unknown",
+          exemption_type: e.exemption_type,
+          reason: e.reason,
+          expires_at: e.expires_at,
+        });
+      }
+    }
+    setExemptions(Array.from(orgMap.values()));
 
     const activeLite = subs.filter((s: any) => s.status === "trial" || s.status === "active").length;
     const activePro = reqs.filter((r: any) => r.status === "completed").length;
+    const exempted = orgMap.size;
     const mrr = subs
       .filter((s: any) => s.status === "active" || s.status === "trial")
       .reduce((sum: number, s: any) => sum + (s.monthly_fee || 0), 0);
@@ -165,7 +186,7 @@ const WebsitePricingPanel = () => {
       subs.reduce((sum: number, s: any) => sum + (s.platform_fee || 0), 0) +
       reqs.filter((r: any) => r.payment_status === "paid").reduce((sum: number, r: any) => sum + (r.platform_fee || 0), 0);
 
-    setStats({ activeLite, activePro, mrr, totalPlatformFees });
+    setStats({ activeLite, activePro, exempted, mrr, totalPlatformFees });
   }, []);
 
   // ─── Load history ───
