@@ -102,9 +102,11 @@ const TermiiServicesPanel = ({ orgId, role }: TermiiServicesPanelProps) => {
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="otp">
+      <Tabs defaultValue={role === "super_admin" ? "otp" : "campaigns"}>
         <TabsList className="flex-wrap">
-          <TabsTrigger value="otp" className="gap-1.5"><Key size={14} /> OTP</TabsTrigger>
+          {role === "super_admin" && (
+            <TabsTrigger value="otp" className="gap-1.5"><Key size={14} /> OTP</TabsTrigger>
+          )}
           <TabsTrigger value="campaigns" className="gap-1.5"><Megaphone size={14} /> Campaigns</TabsTrigger>
           <TabsTrigger value="phonebooks" className="gap-1.5"><BookOpen size={14} /> Phonebooks</TabsTrigger>
           <TabsTrigger value="sender-ids" className="gap-1.5"><Send size={14} /> Sender IDs</TabsTrigger>
@@ -113,8 +115,8 @@ const TermiiServicesPanel = ({ orgId, role }: TermiiServicesPanelProps) => {
           )}
         </TabsList>
 
-        {/* OTP Tab */}
-        <TabsContent value="otp">
+        {/* OTP Tab — super admin only */}
+        {role === "super_admin" && (
           <Card className="p-6">
             <h3 className="font-heading font-semibold text-lg mb-4">OTP Service</h3>
             <p className="text-xs text-muted-foreground mb-4">Send and verify one-time passwords via Termii.</p>
