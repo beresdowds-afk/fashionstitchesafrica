@@ -262,11 +262,32 @@ const OrgCustomerInstall = () => {
     return () => window.removeEventListener("beforeinstallprompt", handler);
   }, []);
 
+  // Record download to database
+  const recordDownload = useCallback(async (method: string) => {
+    if (!org) return;
+    const ua = navigator.userAgent.toLowerCase();
+    const platform = /iphone|ipad|ipod/.test(ua) ? "ios" : /android/.test(ua) ? "android" : "desktop";
+    try {
+      await supabase.from("org_app_downloads" as any).insert({
+        org_id: org.id,
+        user_id: user?.id || null,
+        platform,
+        install_method: method,
+        user_agent: navigator.userAgent.slice(0, 500),
+      } as any);
+    } catch (e) {
+      console.error("Failed to record download:", e);
+    }
+  }, [org, user]);
+
   const handleInstall = async () => {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === "accepted") setInstalled(true);
+    if (outcome === "accepted") {
+      setInstalled(true);
+      recordDownload("browser_prompt");
+    }
     setDeferredPrompt(null);
   };
 
