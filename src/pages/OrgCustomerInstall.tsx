@@ -262,11 +262,32 @@ const OrgCustomerInstall = () => {
     return () => window.removeEventListener("beforeinstallprompt", handler);
   }, []);
 
+  // Record download to database
+  const recordDownload = useCallback(async (method: string) => {
+    if (!org) return;
+    const ua = navigator.userAgent.toLowerCase();
+    const platform = /iphone|ipad|ipod/.test(ua) ? "ios" : /android/.test(ua) ? "android" : "desktop";
+    try {
+      await supabase.from("org_app_downloads" as any).insert({
+        org_id: org.id,
+        user_id: user?.id || null,
+        platform,
+        install_method: method,
+        user_agent: navigator.userAgent.slice(0, 500),
+      } as any);
+    } catch (e) {
+      console.error("Failed to record download:", e);
+    }
+  }, [org, user]);
+
   const handleInstall = async () => {
     if (!deferredPrompt) return;
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === "accepted") setInstalled(true);
+    if (outcome === "accepted") {
+      setInstalled(true);
+      recordDownload("browser_prompt");
+    }
     setDeferredPrompt(null);
   };
 
@@ -511,14 +532,21 @@ const OrgCustomerInstall = () => {
 
             {/* Bottom CTAs */}
             <div className="text-center mt-8 space-y-2">
+              {!user && (
+                <Button
+                  onClick={() => navigate(`/auth?redirect=/site/${slug}/install`)}
+                  className="w-full max-w-xs text-white font-semibold"
+                  style={{ background: brandColor }}
+                >
+                  Sign In / Create FSA Account
+                </Button>
+              )}
               <Button variant="outline" onClick={() => navigate(`/site/${slug}`)} className="w-full max-w-xs border-white/10 text-white text-sm hover:bg-white/5">
                 Visit {org.name} Website
               </Button>
-              <div>
-                <Button variant="ghost" onClick={() => navigate("/auth")} className="text-gray-400 text-sm hover:text-white">
-                  Create FSA Account →
-                </Button>
-              </div>
+              {user && (
+                <p className="text-[11px] text-gray-500">Signed in as {user.email}</p>
+              )}
             </div>
           </>
         )}

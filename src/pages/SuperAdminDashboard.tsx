@@ -8,6 +8,7 @@ import DataBackupPanel from "@/components/super-admin/DataBackupPanel";
 import FeatureFlagsPanel from "@/components/super-admin/FeatureFlagsPanel";
 import WebsiteRequestsDashboard from "@/components/super-admin/WebsiteRequestsDashboard";
 import MobileAppManagementPanel from "@/components/super-admin/MobileAppManagementPanel";
+import AppDownloadsPanel from "@/components/super-admin/AppDownloadsPanel";
 import AuditLogsPanel from "@/components/super-admin/AuditLogsPanel";
 import AccountManagementPanel from "@/components/super-admin/AccountManagementPanel";
 import AdminInvoicingPaymentsPanel from "@/components/super-admin/AdminInvoicingPaymentsPanel";
@@ -79,7 +80,7 @@ import {
 
 import { cn } from "@/lib/utils";
 
-type TabId = "overview" | "platform_settings" | "carriers" | "organizations" | "users" | "accounts" | "revenue" | "invoicing" | "invoice_manager" | "sub_rates" | "tax_compliance" | "regional_management" | "featured" | "keys" | "rates" | "websites" | "pricing" | "unified_pricing" | "backups" | "features" | "mobile" | "audit" | "support_requests" | "bank_accounts" | "message_center" | "phone_numbers" | "comms_oversight" | "video_billing" | "domain_management" | "identity_verification" | "communications" | "registrations" | "disputes";
+type TabId = "overview" | "platform_settings" | "carriers" | "organizations" | "users" | "accounts" | "revenue" | "invoicing" | "invoice_manager" | "sub_rates" | "tax_compliance" | "regional_management" | "featured" | "keys" | "rates" | "websites" | "pricing" | "unified_pricing" | "backups" | "features" | "mobile" | "app_downloads" | "audit" | "support_requests" | "bank_accounts" | "message_center" | "phone_numbers" | "comms_oversight" | "video_billing" | "domain_management" | "identity_verification" | "communications" | "registrations" | "disputes";
 
 interface SidebarItem {
   id: TabId;
@@ -207,6 +208,7 @@ const SuperAdminDashboard = () => {
         { id: "backups", icon: Activity, label: "Backups" },
         { id: "features", icon: Shield, label: "Feature Flags" },
         { id: "mobile", icon: Smartphone, label: "Mobile App" },
+        { id: "app_downloads", icon: Download, label: "App Downloads" },
         { id: "identity_verification", icon: Shield, label: "Identity Verification" },
         { id: "audit", icon: ScrollText, label: "Audit Logs" },
       ],
@@ -308,6 +310,7 @@ const SuperAdminDashboard = () => {
             {activeTab === "backups" && <DataBackupPanel />}
             {activeTab === "features" && isSuperAdmin && <FeatureFlagsPanel />}
             {activeTab === "mobile" && <MobileAppManagementPanel />}
+            {activeTab === "app_downloads" && <AppDownloadsPanel />}
             {activeTab === "audit" && <AuditLogsPanel />}
             {activeTab === "support_requests" && <AdminSupportRequestsPanel />}
             {activeTab === "bank_accounts" && <BankAccountsPanel />}
