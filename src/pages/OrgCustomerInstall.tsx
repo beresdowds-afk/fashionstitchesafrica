@@ -547,8 +547,6 @@ const OrgCustomerInstall = () => {
               {user && (
                 <p className="text-[11px] text-gray-500">Signed in as {user.email}</p>
               )}
-                </Button>
-              </div>
             </div>
           </>
         )}
