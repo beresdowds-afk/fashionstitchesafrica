@@ -532,12 +532,21 @@ const OrgCustomerInstall = () => {
 
             {/* Bottom CTAs */}
             <div className="text-center mt-8 space-y-2">
+              {!user && (
+                <Button
+                  onClick={() => navigate(`/auth?redirect=/site/${slug}/install`)}
+                  className="w-full max-w-xs text-white font-semibold"
+                  style={{ background: brandColor }}
+                >
+                  Sign In / Create FSA Account
+                </Button>
+              )}
               <Button variant="outline" onClick={() => navigate(`/site/${slug}`)} className="w-full max-w-xs border-white/10 text-white text-sm hover:bg-white/5">
                 Visit {org.name} Website
               </Button>
-              <div>
-                <Button variant="ghost" onClick={() => navigate("/auth")} className="text-gray-400 text-sm hover:text-white">
-                  Create FSA Account →
+              {user && (
+                <p className="text-[11px] text-gray-500">Signed in as {user.email}</p>
+              )}
                 </Button>
               </div>
             </div>
