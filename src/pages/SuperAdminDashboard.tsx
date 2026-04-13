@@ -30,6 +30,7 @@ import CommunicationsFullPage from "@/components/communications/CommunicationsFu
 import CarrierSettingsPanel from "@/components/logistics/CarrierSettingsPanel";
 import CustomerRegistrationsTab from "@/components/customers/CustomerRegistrationsTab";
 import DisputesTab from "@/components/disputes/DisputesTab";
+import WebsiteTemplatePicker from "@/components/website-builder/WebsiteTemplatePicker";
 import { useUserGlobalRole } from "@/hooks/useOrganization";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
@@ -37,7 +38,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DollarSign, Smartphone, ScrollText, HelpCircle, UserX, Search, Trash2, Star, ShoppingBag, Download, Settings, LifeBuoy, Banknote, MapPin, MessageSquare, Menu, Video, ClipboardList, Scale, Truck } from "lucide-react";
+import { DollarSign, Smartphone, ScrollText, HelpCircle, UserX, Search, Trash2, Star, ShoppingBag, Download, Settings, LifeBuoy, Banknote, MapPin, MessageSquare, Menu, Video, ClipboardList, Scale, Truck, Palette } from "lucide-react";
 import LocationMapFooter from "@/components/shared/LocationMapFooter";
 import TourGuide from "@/components/shared/TourGuide";
 import { useTourGuide } from "@/hooks/useTourGuide";
