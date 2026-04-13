@@ -12,6 +12,7 @@ import OrgBrandingPanel from "./OrgBrandingPanel";
 import SocialSyncPanel from "@/components/catalogue/SocialSyncPanel";
 import CompanyOfficersPanel from "./CompanyOfficersPanel";
 import WebsiteBuilderManual from "./WebsiteBuilderManual";
+import WebsiteTemplatePicker from "./WebsiteTemplatePicker";
 import PublishWebsiteButton from "./PublishWebsiteButton";
 import { PaymentFlowTracker } from "@/components/payments/PaymentFlowTracker";
 import { usePaymentFlow } from "@/hooks/usePaymentFlow";
@@ -739,7 +740,7 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
   const [proRequest, setProRequest] = useState<WebsiteRequest | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeSection, setActiveSection] = useState<"plans" | "general" | "branding" | "company" | "catalogue" | "integration" | "guide">("plans");
+  const [activeSection, setActiveSection] = useState<"plans" | "general" | "branding" | "company" | "catalogue" | "integration" | "guide" | "templates">("plans");
   const [orgDetails, setOrgDetails] = useState<{ description?: string | null; email?: string | null; phone?: string | null; address?: string | null; logo_url?: string | null }>({});
   const [editingItem, setEditingItem] = useState<CatalogueItem | null>(null);
   const [addingItem, setAddingItem] = useState(false);
@@ -939,6 +940,7 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
           { id: "branding" as const, icon: Palette, label: "Branding" },
           { id: "company" as const, icon: Building2, label: "Company Info" },
           { id: "catalogue" as const, icon: Package, label: "Catalogue" },
+          { id: "templates" as const, icon: Sparkles, label: "Templates" },
           { id: "integration" as const, icon: Link2, label: "Integration" },
           { id: "guide" as const, icon: Book, label: "User Guide" },
         ].map((s) => (
@@ -1415,6 +1417,16 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── Templates ────────────────────────────────────────── */}
+      {activeSection === "templates" && (
+        <WebsiteTemplatePicker
+          selectedTemplateId={settings.theme === "light" ? "hertunba-luxe" : "dark-atelier"}
+          onSelect={(templateId) => {
+            toast({ title: "Template selected", description: `"${templateId}" will be applied when you save settings.` });
+          }}
+        />
       )}
 
       {/* ── User Guide ───────────────────────────────────────── */}
