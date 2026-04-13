@@ -80,7 +80,7 @@ import {
 
 import { cn } from "@/lib/utils";
 
-type TabId = "overview" | "platform_settings" | "carriers" | "organizations" | "users" | "accounts" | "revenue" | "invoicing" | "invoice_manager" | "sub_rates" | "tax_compliance" | "regional_management" | "featured" | "keys" | "rates" | "websites" | "pricing" | "unified_pricing" | "backups" | "features" | "mobile" | "app_downloads" | "audit" | "support_requests" | "bank_accounts" | "message_center" | "phone_numbers" | "comms_oversight" | "video_billing" | "domain_management" | "identity_verification" | "communications" | "registrations" | "disputes";
+type TabId = "overview" | "platform_settings" | "carriers" | "organizations" | "users" | "accounts" | "revenue" | "invoicing" | "invoice_manager" | "sub_rates" | "tax_compliance" | "regional_management" | "featured" | "keys" | "rates" | "websites" | "pricing" | "unified_pricing" | "backups" | "features" | "mobile" | "app_downloads" | "audit" | "support_requests" | "bank_accounts" | "message_center" | "phone_numbers" | "comms_oversight" | "video_billing" | "domain_management" | "identity_verification" | "communications" | "registrations" | "disputes" | "website_templates";
 
 interface SidebarItem {
   id: TabId;
@@ -201,6 +201,7 @@ const SuperAdminDashboard = () => {
       label: "System",
       items: [
         { id: "websites", icon: Crown, label: "Website Requests" },
+        { id: "website_templates", icon: Palette, label: "Website Templates" },
         { id: "domain_management", icon: Globe, label: "Domain Mgmt" },
         { id: "video_billing", icon: Video, label: "Video Billing" },
         { id: "keys", icon: Shield, label: "Keys & Secrets" },
@@ -323,6 +324,7 @@ const SuperAdminDashboard = () => {
             {activeTab === "communications" && <CommunicationsFullPage />}
             {activeTab === "registrations" && <RegistrationsPanel orgs={orgs} />}
             {activeTab === "disputes" && <DisputesPanel orgs={orgs} />}
+            {activeTab === "website_templates" && <WebsiteTemplatePicker readOnly />}
           </main>
         </div>
       </div>
