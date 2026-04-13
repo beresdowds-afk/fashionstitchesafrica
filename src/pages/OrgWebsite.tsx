@@ -6,8 +6,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Instagram, MessageCircle, Phone, Mail, MapPin, ExternalLink, Scissors, Calendar, BookOpen,
   Home, Menu, X, Sparkles, Lock, Facebook, Twitter, Linkedin, Youtube, Users, Download,
-  PhoneCall, MessageSquare, Send, Map, ChevronUp, Info, Globe, Heart, Search, ShoppingBag,
-  Star, Leaf, Eye
+  PhoneCall, MessageSquare, Send, Map, ChevronUp, Info, Globe, Heart, ShoppingBag,
+  Leaf, Eye
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getTemplate, isLightTemplate } from "@/config/websiteTemplates";
