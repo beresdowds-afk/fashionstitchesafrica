@@ -21,6 +21,7 @@ import LocationMapFooter from "@/components/shared/LocationMapFooter";
 import FeaturedProductsPanel from "@/components/catalogue/FeaturedProductsPanel";
 import PaymentGatewayPanel from "@/components/settings/PaymentGatewayPanel";
 import DashboardBillingPanel from "@/components/payments/DashboardBillingPanel";
+import { TrialBanner } from "@/components/TrialBanner";
 import {
   SidebarProvider, SidebarTrigger, Sidebar, SidebarContent,
   SidebarGroup, SidebarGroupLabel, SidebarGroupContent,
@@ -190,6 +191,7 @@ const TailorDashboard = () => {
 
           {/* Content */}
           <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+            <TrialBanner audience="Tailor" />
             {activeTab === "overview" && (
               <OverviewTab
                 orders={orders}
