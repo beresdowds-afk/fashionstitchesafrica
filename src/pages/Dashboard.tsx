@@ -100,6 +100,21 @@ const Dashboard = () => {
     }
   }, [authLoading, orgLoading, user, currentOrg, hasPlatformAccess, role, navigate]);
 
+  // Auto-claim promotional organization slot (first 5 organizations).
+  // Only org admins can claim. Idempotent — safe to call on every mount.
+  useEffect(() => {
+    if (!user || !currentOrg) return;
+    if (role !== "org_admin" && role !== "super_admin") return;
+    (async () => {
+      try {
+        await supabase.rpc("claim_promotional_grant", {
+          _grant_type: "organization",
+          _org_id: currentOrg.id,
+        });
+      } catch { /* ignore: cap reached or already claimed */ }
+    })();
+  }, [user, currentOrg, role]);
+
   const handleSignOut = async () => {
     await signOut();
     navigate("/");
