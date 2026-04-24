@@ -235,6 +235,11 @@ const DesignerPortal = () => {
               <img src={fsaLogo} alt="FSA" className="w-6 h-6 object-contain" />
               <span className="font-heading font-bold text-sm hidden sm:block">Designer Studio</span>
               <Badge className="bg-primary/15 text-primary text-[10px]">Designer</Badge>
+              {subscriptionActive ? (
+                <Badge className="bg-green-500/15 text-green-700 text-[10px]">Subscription Active</Badge>
+              ) : (
+                <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-500/40">Subscribe</Badge>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <NotificationBell />
@@ -255,6 +260,24 @@ const DesignerPortal = () => {
 
           {/* Content */}
           <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+            {!subscriptionActive && (
+              <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                <div className="flex-1">
+                  <p className="font-heading font-semibold text-sm">Designer subscription not active</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Activate your $15/month plan to unlock website hosting, featured slots, AI measurements, and virtual try-on.
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="hero"
+                  onClick={handleSubscribe}
+                  disabled={subscribing}
+                >
+                  {subscribing ? "Starting..." : "Activate $15/mo"}
+                </Button>
+              </div>
+            )}
             {activeTab === "overview" && (
               <OverviewTab
                 orders={orders}
@@ -277,7 +300,7 @@ const DesignerPortal = () => {
               </div>
             )}
             {activeTab === "featured" && user && (
-              <FeaturedProductsPanel orgId={contracts[0]?.org_id || ""} userRole="designer" />
+              <FeaturedProductsPanel orgId={contracts[0]?.org_id || personalOrgId || ""} userRole="designer" />
             )}
             {activeTab === "invoice_manager" && user && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
@@ -285,7 +308,15 @@ const DesignerPortal = () => {
               </motion.div>
             )}
             {activeTab === "website" && user && (
-              <WebsiteTab userId={user.id} profile={profile} contracts={contracts} />
+              <WebsiteTab
+                userId={user.id}
+                profile={profile}
+                contracts={contracts}
+                personalOrgId={personalOrgId}
+                subscriptionActive={subscriptionActive}
+                onSubscribe={handleSubscribe}
+                subscribing={subscribing}
+              />
             )}
             {activeTab === "billing" && user && (
               <DashboardBillingPanel roleLabel="Designer" />
