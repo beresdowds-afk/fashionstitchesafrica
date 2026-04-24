@@ -141,7 +141,7 @@ const TailorDashboard = () => {
       setLoading(false);
 
       // Auto-claim promotional tailor slot (first 100 tailors). Idempotent.
-      supabase.rpc("claim_promotional_grant", { _grant_type: "tailor", _org_id: null }).catch(() => null);
+      try { await supabase.rpc("claim_promotional_grant", { _grant_type: "tailor", _org_id: null }); } catch { /* ignore */ }
     };
     load();
   }, [user]);
