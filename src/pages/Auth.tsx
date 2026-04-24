@@ -14,6 +14,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Mail, Lock, User, Shield, Users, Scissors, Building2, Loader2, CheckCircle2, AlertCircle, Palette, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import DisclaimerDialog, { DisclaimerBanner } from "@/components/shared/DisclaimerDialog";
+import { prefetchPostLoginData, readPrefetchedData } from "@/lib/postLoginPrefetch";
 
 type AuthMode = "signin" | "signup" | "forgot";
 type UserRole = "customer" | "designer" | "tailor" | "organization";
@@ -266,17 +267,14 @@ const Auth = () => {
         return;
       }
 
-      const { data: memberships } = await supabase
-        .from("org_members")
-        .select("org_id, role, organizations(name)")
-        .eq("user_id", userId)
-        .eq("is_active", true);
+      // Use prefetched cache if available; otherwise fetch fresh.
+      let activeMemberships =
+        readPrefetchedData(userId)?.memberships ?? null;
 
-      const activeMemberships = (memberships || []).map((m: any) => ({
-        org_id: m.org_id,
-        org_name: m.organizations?.name || "Unknown",
-        role: m.role,
-      }));
+      if (!activeMemberships) {
+        const prefetched = await prefetchPostLoginData(userId);
+        activeMemberships = prefetched?.memberships ?? [];
+      }
 
       // Only tailor/designer roles
       const onlyTailorOrDesigner = activeMemberships.length > 0 && activeMemberships.every((m: any) => m.role === "tailor" || m.role === "designer");
