@@ -1,5 +1,5 @@
 /**
- * Fashion Stitches Africa — Future Platform Architecture Configuration
+ * FYSORA FASHN (Fashion Stitches Africa) — Future Platform Architecture Configuration
  *
  * This module defines the integration contracts for upcoming infrastructure:
  *

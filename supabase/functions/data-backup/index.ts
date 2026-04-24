@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
 
       const backupData = {
         version: "2.0.0",
-        platform: "Fashion Stitches Africa",
+        platform: "FYSORA FASHN (Fashion Stitches Africa)",
         created_at: new Date().toISOString(),
         tables_count: Object.keys(snapshot).length,
         total_rows: totalRows,
