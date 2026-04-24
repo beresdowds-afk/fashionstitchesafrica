@@ -6376,6 +6376,92 @@ export type Database = {
           },
         ]
       }
+      promotional_grant_caps: {
+        Row: {
+          cap: number
+          created_at: string
+          description: string | null
+          grant_type: string
+          is_active: boolean
+          updated_at: string
+        }
+        Insert: {
+          cap: number
+          created_at?: string
+          description?: string | null
+          grant_type: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Update: {
+          cap?: number
+          created_at?: string
+          description?: string | null
+          grant_type?: string
+          is_active?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      promotional_grants: {
+        Row: {
+          claimed_at: string
+          grant_type: string
+          id: string
+          notes: string | null
+          org_id: string | null
+          slot_number: number
+          user_id: string | null
+        }
+        Insert: {
+          claimed_at?: string
+          grant_type: string
+          id?: string
+          notes?: string | null
+          org_id?: string | null
+          slot_number: number
+          user_id?: string | null
+        }
+        Update: {
+          claimed_at?: string
+          grant_type?: string
+          id?: string
+          notes?: string | null
+          org_id?: string | null
+          slot_number?: number
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotional_grants_grant_type_fkey"
+            columns: ["grant_type"]
+            isOneToOne: false
+            referencedRelation: "promotional_grant_caps"
+            referencedColumns: ["grant_type"]
+          },
+          {
+            foreignKeyName: "promotional_grants_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotional_grants_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotional_grants_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_summary"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       provider_routing_config: {
         Row: {
           channel: string
@@ -8665,6 +8751,10 @@ export type Database = {
         Args: { _role: Database["public"]["Enums"]["app_role"] }
         Returns: undefined
       }
+      claim_promotional_grant: {
+        Args: { _grant_type: string; _org_id?: string }
+        Returns: Json
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -8677,6 +8767,10 @@ export type Database = {
       get_org_role: {
         Args: { _org_id: string; _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_promotional_grant: {
+        Args: { _grant_type: string; _user_id: string }
+        Returns: boolean
       }
       has_role: {
         Args: {
@@ -8709,6 +8803,10 @@ export type Database = {
           source_queue: string
         }
         Returns: number
+      }
+      org_has_promotional_grant: {
+        Args: { _grant_type: string; _org_id: string }
+        Returns: boolean
       }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
