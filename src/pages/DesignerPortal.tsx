@@ -169,10 +169,29 @@ const DesignerPortal = () => {
       const { data, error } = await supabase.functions.invoke("initialize-designer-subscription", {
         body: { callback_url: `${window.location.origin}/designer-portal?subscription=success` },
       });
-      if (error || !data?.checkout_url) {
+      if (error) {
         toast({
           title: "Couldn't start subscription",
-          description: error?.message || data?.error || "Please try again.",
+          description: error?.message || "Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+      // Promotional grant path — subscription was activated server-side.
+      if (data?.promotional || data?.status === "granted") {
+        toast({
+          title: "🎉 Free promotional access granted!",
+          description: `You're one of our first ${30} designers — your subscription is on us for the next year.`,
+        });
+        const { data: refreshed } = await supabase.from("customer_subscriptions")
+          .select("*").eq("user_id", user!.id).eq("plan_name", "designer_monthly").maybeSingle();
+        setSubscription(refreshed);
+        return;
+      }
+      if (!data?.checkout_url) {
+        toast({
+          title: "Couldn't start subscription",
+          description: data?.error || "Please try again.",
           variant: "destructive",
         });
         return;
