@@ -18,6 +18,14 @@ import DisclaimerDialog, { DisclaimerBanner } from "@/components/shared/Disclaim
 type AuthMode = "signin" | "signup" | "forgot";
 type UserRole = "customer" | "designer" | "tailor" | "organization";
 
+/** Map UserRole to the database `app_role` enum value used in user_roles. */
+const ROLE_TO_DB_ROLE: Record<UserRole, "customer" | "designer" | "tailor" | "org_admin"> = {
+  customer: "customer",
+  designer: "designer",
+  tailor: "tailor",
+  organization: "org_admin",
+};
+
 const ROLE_CONFIG: Record<UserRole, { label: string; icon: any; heading: string; sub: string; color: string }> = {
   customer: {
     label: "Customer",
@@ -88,6 +96,36 @@ const Auth = () => {
   const [showOrgPicker, setShowOrgPicker] = useState(false);
   const [managerOrgs, setManagerOrgs] = useState<{ org_id: string; org_name: string; role: string }[]>([]);
   const [selectingOrg, setSelectingOrg] = useState(false);
+
+  // Post-OAuth role picker (Google sign-ins that have no user_roles row yet)
+  const [showOAuthRolePicker, setShowOAuthRolePicker] = useState(false);
+  const [oauthRolePicking, setOauthRolePicking] = useState(false);
+  const [oauthSelectedRole, setOauthSelectedRole] = useState<UserRole>("customer");
+
+  // After Google OAuth returns, ensure the user has a user_roles row.
+  // If not, show the role-picker dialog.
+  useEffect(() => {
+    let cancelled = false;
+    const checkPostOAuth = async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      const u = userData?.user;
+      if (!u || cancelled) return;
+      // Only Google identities benefit from this — email/password signup runs assign_role inline.
+      const isOAuth = (u.identities || []).some(i => i.provider !== "email");
+      if (!isOAuth) return;
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", u.id)
+        .limit(1);
+      if (cancelled) return;
+      if (!roles || roles.length === 0) {
+        setShowOAuthRolePicker(true);
+      }
+    };
+    checkPostOAuth();
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     if (roleParam && ROLE_CONFIG[roleParam as UserRole]) {
@@ -187,6 +225,14 @@ const Auth = () => {
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else if (mode === "signup") {
+      // Persist the selected role into user_roles via the secure RPC.
+      // (After email signup, the session is already established so auth.uid() works.)
+      try {
+        await supabase.rpc("assign_role", { _role: ROLE_TO_DB_ROLE[selectedRole] });
+      } catch (e) {
+        console.error("assign_role failed:", e);
+      }
+
       // Save identity info to profile after signup
       if (requiresIdentity && identityType && identityNumber) {
         const { data: userData } = await supabase.auth.getUser();
@@ -601,6 +647,68 @@ const Auth = () => {
               </button>
             ))}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Post-OAuth role picker (shown when a Google sign-in has no user_roles row yet) */}
+      <Dialog open={showOAuthRolePicker} onOpenChange={() => {}}>
+        <DialogContent className="sm:max-w-md" onPointerDownOutside={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle>Choose your account type</DialogTitle>
+            <DialogDescription>
+              Pick the role that best describes how you'll use Fashion Stitches Africa. You can adjust this later.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-2 mt-2">
+            {(Object.keys(ROLE_CONFIG) as UserRole[]).map((r) => {
+              const config = ROLE_CONFIG[r];
+              const Icon = config.icon;
+              const isSelected = oauthSelectedRole === r;
+              return (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => setOauthSelectedRole(r)}
+                  className={`rounded-lg border p-3 text-center transition-all ${
+                    isSelected
+                      ? "border-primary bg-primary/5 ring-1 ring-primary/20"
+                      : "border-border bg-muted/30 hover:border-muted-foreground/30"
+                  }`}
+                >
+                  <Icon size={18} className={`mx-auto mb-1 ${isSelected ? "text-primary" : "text-muted-foreground"}`} />
+                  <span className={`block text-xs font-medium ${isSelected ? "text-foreground" : "text-muted-foreground"}`}>
+                    {config.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <Button
+            variant="hero"
+            disabled={oauthRolePicking}
+            onClick={async () => {
+              setOauthRolePicking(true);
+              try {
+                const dbRole = ROLE_TO_DB_ROLE[oauthSelectedRole];
+                const { error } = await supabase.rpc("assign_role", { _role: dbRole });
+                if (error) {
+                  toast({ title: "Couldn't save role", description: error.message, variant: "destructive" });
+                  setOauthRolePicking(false);
+                  return;
+                }
+                setShowOAuthRolePicker(false);
+                if (oauthSelectedRole === "designer") navigate("/designer-portal");
+                else if (oauthSelectedRole === "tailor") navigate("/tailor-dashboard");
+                else if (oauthSelectedRole === "organization") navigate("/create-organization");
+                else navigate("/portal");
+              } finally {
+                setOauthRolePicking(false);
+              }
+            }}
+          >
+            {oauthRolePicking ? <Loader2 size={14} className="animate-spin mr-2" /> : null}
+            Continue
+          </Button>
         </DialogContent>
       </Dialog>
     </div>

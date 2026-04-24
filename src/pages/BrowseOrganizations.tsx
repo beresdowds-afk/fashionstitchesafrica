@@ -13,6 +13,7 @@ import {
   Video, Ruler, CreditCard, Lock, CheckCircle2
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { joinOrganization } from "@/lib/joinOrganization";
 
 interface OrgCard {
   id: string;
@@ -110,14 +111,15 @@ const BrowseOrganizations = () => {
   const handleJoin = async (org: OrgCard) => {
     if (!user) { navigate("/auth?portal=1"); return; }
     setJoiningId(org.id);
-    const { error } = await supabase.from("org_members").insert({ org_id: org.id, user_id: user.id, role: "customer" });
-    if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
-    else {
+    const result = await joinOrganization(org.id, "customer");
+    if (!result.ok) {
+      toast({ title: "Error", description: result.error, variant: "destructive" });
+    } else if (result.paymentRequired && result.checkoutUrl) {
+      toast({ title: "Redirecting to payment", description: `Complete the registration fee for ${org.name}.` });
+      window.location.href = result.checkoutUrl;
+    } else {
       toast({ title: "Joined!", description: `You've been added to ${org.name}.` });
       setMyOrgIds(prev => new Set([...prev, org.id]));
-      supabase.functions.invoke("notify-admin-registration", {
-        body: { org_id: org.id, user_id: user.id, user_email: user.email, org_name: org.name },
-      }).catch(console.error);
     }
     setJoiningId(null);
   };

@@ -1,6 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -107,6 +107,10 @@ const DesignerPortal = () => {
   const [delegations, setDelegations] = useState<any[]>([]);
   const [earnings, setEarnings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [personalOrgId, setPersonalOrgId] = useState<string | null>(null);
+  const [subscription, setSubscription] = useState<any>(null);
+  const [subscribing, setSubscribing] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth?role=designer");
@@ -115,17 +119,24 @@ const DesignerPortal = () => {
   useEffect(() => {
     if (!user) return;
     const load = async () => {
-      const [profileRes, contractsRes, delegationsRes, earningsRes] = await Promise.all([
+      // Ensure designer has a personal org (idempotent SECURITY DEFINER RPC).
+      const { data: orgIdData } = await supabase.rpc("ensure_designer_personal_org");
+      const orgId = (orgIdData as string) || null;
+      setPersonalOrgId(orgId);
+
+      const [profileRes, contractsRes, delegationsRes, earningsRes, subRes] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", user.id).single(),
         supabase.from("tailor_contracts").select("*, organizations(name, slug, logo_url, currency)").eq("tailor_id", user.id).order("created_at", { ascending: false }),
         supabase.from("order_delegations").select("*, orders(title, order_number, status, total_amount, currency, due_date, customer_id)").eq("tailor_id", user.id).order("created_at", { ascending: false }),
         supabase.from("contract_payments").select("*").eq("tailor_id", user.id).order("created_at", { ascending: false }),
+        supabase.from("customer_subscriptions").select("*").eq("user_id", user.id).eq("plan_name", "designer_monthly").maybeSingle(),
       ]);
 
       setProfile(profileRes.data);
       setContracts(contractsRes.data || []);
       setDelegations(delegationsRes.data || []);
       setEarnings(earningsRes.data || []);
+      setSubscription(subRes.data);
 
       const orgIds = (contractsRes.data || []).map((c: any) => c.org_id);
       if (orgIds.length > 0) {
@@ -142,6 +153,58 @@ const DesignerPortal = () => {
     };
     load();
   }, [user]);
+
+  // Active subscription = status 'active' AND not yet expired.
+  const subscriptionActive = useMemo(() => {
+    if (!subscription) return false;
+    if (subscription.status !== "active") return false;
+    if (!subscription.current_period_end) return true;
+    return new Date(subscription.current_period_end) > new Date();
+  }, [subscription]);
+
+  const handleSubscribe = async () => {
+    setSubscribing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("initialize-designer-subscription", {
+        body: { callback_url: `${window.location.origin}/designer-portal?subscription=success` },
+      });
+      if (error || !data?.checkout_url) {
+        toast({
+          title: "Couldn't start subscription",
+          description: error?.message || data?.error || "Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+      window.location.href = data.checkout_url;
+    } finally {
+      setSubscribing(false);
+    }
+  };
+
+  // After returning from gateway, verify the payment.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const subParam = params.get("subscription");
+    const ref = params.get("reference") || params.get("trxref") || params.get("tx_ref");
+    if (subParam !== "success" || !ref || !user) return;
+    (async () => {
+      const { data, error } = await supabase.functions.invoke("verify-designer-subscription", {
+        body: { reference: ref },
+      });
+      if (error || (data?.status !== "success" && data?.status !== "already_paid")) {
+        toast({ title: "Payment not yet confirmed", description: "We'll keep checking. You'll see the badge update once it clears.", variant: "destructive" });
+        return;
+      }
+      toast({ title: "Subscription activated!", description: "Your designer features are now unlocked." });
+      // Refresh sub state
+      const { data: refreshed } = await supabase.from("customer_subscriptions")
+        .select("*").eq("user_id", user.id).eq("plan_name", "designer_monthly").maybeSingle();
+      setSubscription(refreshed);
+      // Clean URL
+      window.history.replaceState({}, "", "/designer-portal");
+    })();
+  }, [user, toast]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -172,6 +235,11 @@ const DesignerPortal = () => {
               <img src={fsaLogo} alt="FSA" className="w-6 h-6 object-contain" />
               <span className="font-heading font-bold text-sm hidden sm:block">Designer Studio</span>
               <Badge className="bg-primary/15 text-primary text-[10px]">Designer</Badge>
+              {subscriptionActive ? (
+                <Badge className="bg-green-500/15 text-green-700 text-[10px]">Subscription Active</Badge>
+              ) : (
+                <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-500/40">Subscribe</Badge>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <NotificationBell />
@@ -192,6 +260,24 @@ const DesignerPortal = () => {
 
           {/* Content */}
           <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+            {!subscriptionActive && (
+              <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                <div className="flex-1">
+                  <p className="font-heading font-semibold text-sm">Designer subscription not active</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Activate your $15/month plan to unlock website hosting, featured slots, AI measurements, and virtual try-on.
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="hero"
+                  onClick={handleSubscribe}
+                  disabled={subscribing}
+                >
+                  {subscribing ? "Starting..." : "Activate $15/mo"}
+                </Button>
+              </div>
+            )}
             {activeTab === "overview" && (
               <OverviewTab
                 orders={orders}
@@ -214,7 +300,7 @@ const DesignerPortal = () => {
               </div>
             )}
             {activeTab === "featured" && user && (
-              <FeaturedProductsPanel orgId={contracts[0]?.org_id || ""} userRole="designer" />
+              <FeaturedProductsPanel orgId={contracts[0]?.org_id || personalOrgId || ""} userRole="designer" />
             )}
             {activeTab === "invoice_manager" && user && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
@@ -222,7 +308,15 @@ const DesignerPortal = () => {
               </motion.div>
             )}
             {activeTab === "website" && user && (
-              <WebsiteTab userId={user.id} profile={profile} contracts={contracts} />
+              <WebsiteTab
+                userId={user.id}
+                profile={profile}
+                contracts={contracts}
+                personalOrgId={personalOrgId}
+                subscriptionActive={subscriptionActive}
+                onSubscribe={handleSubscribe}
+                subscribing={subscribing}
+              />
             )}
             {activeTab === "billing" && user && (
               <DashboardBillingPanel roleLabel="Designer" />
@@ -606,15 +700,29 @@ const EarningsTab = ({ earnings }: { earnings: any[] }) => {
 };
 
 /* ── Website (Designer exclusive) ────────────────────────────────── */
-const WebsiteTab = ({ contracts }: { userId: string; profile: any; contracts: any[] }) => {
+const WebsiteTab = ({
+  contracts,
+  personalOrgId,
+  subscriptionActive,
+  onSubscribe,
+  subscribing,
+}: {
+  userId: string;
+  profile: any;
+  contracts: any[];
+  personalOrgId: string | null;
+  subscriptionActive: boolean;
+  onSubscribe: () => void;
+  subscribing: boolean;
+}) => {
   const navigate = useNavigate();
   const [websiteData, setWebsiteData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
-      // Check if designer has an org with a website
-      const orgId = contracts[0]?.org_id;
+      // Prefer the designer's personal org; fall back to any active contract.
+      const orgId = personalOrgId || contracts[0]?.org_id;
       if (orgId) {
         const { data } = await supabase.from("org_websites").select("*").eq("org_id", orgId).maybeSingle();
         setWebsiteData(data);
@@ -622,7 +730,7 @@ const WebsiteTab = ({ contracts }: { userId: string; profile: any; contracts: an
       setLoading(false);
     };
     load();
-  }, [contracts]);
+  }, [contracts, personalOrgId]);
 
   if (loading) {
     return (
@@ -690,7 +798,11 @@ const WebsiteTab = ({ contracts }: { userId: string; profile: any; contracts: an
             <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
               <div className="flex items-center justify-between mb-2">
                 <span className="font-heading font-bold text-lg">$15/month</span>
-                <Badge className="bg-primary/15 text-primary">Active</Badge>
+                {subscriptionActive ? (
+                  <Badge className="bg-green-500/15 text-green-700">Active</Badge>
+                ) : (
+                  <Badge variant="outline" className="text-amber-600 border-amber-500/40">Inactive</Badge>
+                )}
               </div>
               <p className="text-xs text-muted-foreground">Designer subscription includes:</p>
             </div>
@@ -710,6 +822,11 @@ const WebsiteTab = ({ contracts }: { userId: string; profile: any; contracts: an
                 </li>
               ))}
             </ul>
+            {!subscriptionActive && (
+              <Button variant="hero" className="w-full" onClick={onSubscribe} disabled={subscribing}>
+                {subscribing ? "Starting..." : "Activate $15/month"}
+              </Button>
+            )}
           </div>
         </Card>
       </div>

@@ -25,6 +25,7 @@ import { useTourGuide } from "@/hooks/useTourGuide";
 import { customerTourSteps } from "@/config/tourSteps";
 import { useToast } from "@/hooks/use-toast";
 import { DisclaimerBanner } from "@/components/shared/DisclaimerDialog";
+import { joinOrganization } from "@/lib/joinOrganization";
 
 const statusLabels: Record<string, string> = {
   pending: "Pending", confirmed: "Confirmed", measuring: "Measuring",
@@ -160,47 +161,17 @@ const CustomerPortal = () => {
       return;
     }
 
-    // Check if already a member
-    const { data: existing } = await supabase
-      .from("org_members")
-      .select("id")
-      .eq("org_id", org.id)
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    if (existing) {
-      toast({ title: "Already a member", description: `You're already part of ${org.name}.` });
-      setSelectedOrgId(org.id);
-      setJoiningOrg(false);
-      return;
-    }
-
-    // Add as customer member
-    const { error: joinError } = await supabase.from("org_members").insert({
-      org_id: org.id,
-      user_id: user.id,
-      role: "customer",
-    });
-
-    if (joinError) {
-      toast({ title: "Error", description: joinError.message, variant: "destructive" });
+    const result = await joinOrganization(org.id, "customer");
+    if (!result.ok) {
+      toast({ title: "Error", description: result.error, variant: "destructive" });
+    } else if (result.paymentRequired && result.checkoutUrl) {
+      toast({ title: "Redirecting to payment", description: `Complete the registration fee for ${org.name}.` });
+      window.location.href = result.checkoutUrl;
     } else {
-      toast({ title: "Joined!", description: `You've been added to ${org.name} as a customer.` });
-      // Refresh orgs
+      toast({ title: "Joined!", description: `You've been added to ${org.name}.` });
       setOrgs((prev) => [...prev, { id: org.id, name: org.name }]);
       setSelectedOrgId(org.id);
       setInviteCode("");
-
-      // Notify org admins (fire-and-forget)
-      supabase.functions.invoke("notify-admin-registration", {
-        body: {
-          org_id: org.id,
-          user_id: user.id,
-          user_name: profile?.display_name || undefined,
-          user_email: user.email,
-          org_name: org.name,
-        },
-      }).catch(console.error);
     }
     setJoiningOrg(false);
   };
@@ -560,9 +531,13 @@ const BrowseOrgsMini = ({ navigate, user }: { navigate: any; user: any }) => {
   const handleJoin = async (org: any) => {
     if (!user) { navigate("/auth?portal=1"); return; }
     setJoiningId(org.id);
-    const { error } = await supabase.from("org_members").insert({ org_id: org.id, user_id: user.id, role: "customer" });
-    if (error) toast({ title: "Error", description: error.message, variant: "destructive" });
-    else {
+    const result = await joinOrganization(org.id, "customer");
+    if (!result.ok) {
+      toast({ title: "Error", description: result.error, variant: "destructive" });
+    } else if (result.paymentRequired && result.checkoutUrl) {
+      toast({ title: "Redirecting to payment", description: `Complete the registration fee for ${org.name}.` });
+      window.location.href = result.checkoutUrl;
+    } else {
       toast({ title: "Joined!", description: `Added to ${org.name}` });
       setMyOrgIds(prev => new Set([...prev, org.id]));
     }
