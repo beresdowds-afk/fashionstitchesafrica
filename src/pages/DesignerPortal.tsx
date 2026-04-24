@@ -700,15 +700,29 @@ const EarningsTab = ({ earnings }: { earnings: any[] }) => {
 };
 
 /* ── Website (Designer exclusive) ────────────────────────────────── */
-const WebsiteTab = ({ contracts }: { userId: string; profile: any; contracts: any[] }) => {
+const WebsiteTab = ({
+  contracts,
+  personalOrgId,
+  subscriptionActive,
+  onSubscribe,
+  subscribing,
+}: {
+  userId: string;
+  profile: any;
+  contracts: any[];
+  personalOrgId: string | null;
+  subscriptionActive: boolean;
+  onSubscribe: () => void;
+  subscribing: boolean;
+}) => {
   const navigate = useNavigate();
   const [websiteData, setWebsiteData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const load = async () => {
-      // Check if designer has an org with a website
-      const orgId = contracts[0]?.org_id;
+      // Prefer the designer's personal org; fall back to any active contract.
+      const orgId = personalOrgId || contracts[0]?.org_id;
       if (orgId) {
         const { data } = await supabase.from("org_websites").select("*").eq("org_id", orgId).maybeSingle();
         setWebsiteData(data);
@@ -716,7 +730,7 @@ const WebsiteTab = ({ contracts }: { userId: string; profile: any; contracts: an
       setLoading(false);
     };
     load();
-  }, [contracts]);
+  }, [contracts, personalOrgId]);
 
   if (loading) {
     return (
@@ -784,7 +798,11 @@ const WebsiteTab = ({ contracts }: { userId: string; profile: any; contracts: an
             <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
               <div className="flex items-center justify-between mb-2">
                 <span className="font-heading font-bold text-lg">$15/month</span>
-                <Badge className="bg-primary/15 text-primary">Active</Badge>
+                {subscriptionActive ? (
+                  <Badge className="bg-green-500/15 text-green-700">Active</Badge>
+                ) : (
+                  <Badge variant="outline" className="text-amber-600 border-amber-500/40">Inactive</Badge>
+                )}
               </div>
               <p className="text-xs text-muted-foreground">Designer subscription includes:</p>
             </div>
@@ -804,6 +822,11 @@ const WebsiteTab = ({ contracts }: { userId: string; profile: any; contracts: an
                 </li>
               ))}
             </ul>
+            {!subscriptionActive && (
+              <Button variant="hero" className="w-full" onClick={onSubscribe} disabled={subscribing}>
+                {subscribing ? "Starting..." : "Activate $15/month"}
+              </Button>
+            )}
           </div>
         </Card>
       </div>
