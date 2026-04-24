@@ -41,6 +41,7 @@ import { orgAdminTourSteps, tailorTourSteps } from "@/config/tourSteps";
 import { HelpCircle } from "lucide-react";
 import LocationPicker from "@/components/shared/LocationPicker";
 import LocationMapFooter from "@/components/shared/LocationMapFooter";
+import { TrialBanner } from "@/components/TrialBanner";
 const roleLabels: Record<AppRole, string> = {
   super_admin: "Super Admin",
   super_assistant: "Super Assistant",
@@ -208,6 +209,7 @@ const Dashboard = () => {
             </div>
           </header>
           <main className="flex-1 px-4 lg:px-8 py-6">
+            <TrialBanner audience="Organization" />
             <div className="flex md:hidden gap-2 mb-6 overflow-x-auto">
               {(["overview", "orders", "customers", "bookings", "premium", "featured", "logistics", "contracts", "members", "billing", "invoicing", "wallet", "website", "settings"] as OrgTabId[]).map((tab) => (
                 <button

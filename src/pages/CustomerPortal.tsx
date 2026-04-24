@@ -26,6 +26,7 @@ import { customerTourSteps } from "@/config/tourSteps";
 import { useToast } from "@/hooks/use-toast";
 import { DisclaimerBanner } from "@/components/shared/DisclaimerDialog";
 import { joinOrganization } from "@/lib/joinOrganization";
+import { TrialBanner } from "@/components/TrialBanner";
 
 const statusLabels: Record<string, string> = {
   pending: "Pending", confirmed: "Confirmed", measuring: "Measuring",
@@ -226,6 +227,7 @@ const CustomerPortal = () => {
       </header>
 
       <div className="container mx-auto px-4 lg:px-8 py-8 max-w-4xl">
+        <TrialBanner audience="Customer" />
         {/* No org - show join flow */}
         {!selectedOrgId && (
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
