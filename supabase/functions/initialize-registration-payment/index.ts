@@ -75,6 +75,44 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Already registered" }), { status: 400, headers: corsHeaders });
     }
 
+    // If the org holds an active 'registration' fee exemption (e.g. from the
+    // first-5-orgs promotional grant or admin grant), waive automatically.
+    const { data: exemption } = await serviceClient
+      .from("org_fee_exemptions")
+      .select("id, expires_at, is_active")
+      .eq("org_id", org_id)
+      .eq("exemption_type", "registration")
+      .eq("is_active", true)
+      .maybeSingle();
+    const exemptionActive = !!exemption && (!exemption.expires_at || new Date(exemption.expires_at) > new Date());
+    if (exemptionActive) {
+      const waivedRef = `REG-WAIVED-${org_id.substring(0, 8)}-${Date.now().toString(36)}`;
+      if (existing) {
+        await serviceClient.from("customer_registrations").update({
+          status: "waived",
+          gateway_reference: waivedRef,
+          fee_amount: 0,
+          local_amount: 0,
+        }).eq("id", existing.id);
+      } else {
+        await serviceClient.from("customer_registrations").insert({
+          user_id: userId,
+          org_id,
+          fee_amount: 0,
+          fee_currency: "USD",
+          local_amount: 0,
+          local_currency: "USD",
+          gateway_reference: waivedRef,
+          status: "waived",
+        });
+      }
+      return new Response(JSON.stringify({
+        waived: true,
+        reason: "promotional_or_admin_exemption",
+        checkout_url: null,
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     // Get org currency and exchange rate
     const { data: org } = await serviceClient
       .from("organizations")

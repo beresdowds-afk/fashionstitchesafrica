@@ -151,6 +151,24 @@ const DesignerPortal = () => {
         setOrders(orderData || []);
       }
       setLoading(false);
+
+      // Auto-claim promotional designer slot (first 30 designers) silently
+      // if no active subscription. The edge function is idempotent: it claims
+      // the slot and immediately activates a free 1-year subscription if a
+      // slot is available, otherwise it just returns the paid checkout URL
+      // (which we ignore here — the user can still click Subscribe later).
+      const sub = subRes.data as any;
+      const isActive = sub?.status === "active" && sub.current_period_end && new Date(sub.current_period_end) > new Date();
+      if (!isActive) {
+        const { data: invokeData } = await supabase.functions.invoke("initialize-designer-subscription", {
+          body: { callback_url: `${window.location.origin}/designer-portal` },
+        }).catch(() => ({ data: null }));
+        if ((invokeData as any)?.promotional) {
+          const { data: refreshed } = await supabase.from("customer_subscriptions")
+            .select("*").eq("user_id", user.id).eq("plan_name", "designer_monthly").maybeSingle();
+          if (refreshed) setSubscription(refreshed);
+        }
+      }
     };
     load();
   }, [user]);
@@ -169,10 +187,29 @@ const DesignerPortal = () => {
       const { data, error } = await supabase.functions.invoke("initialize-designer-subscription", {
         body: { callback_url: `${window.location.origin}/designer-portal?subscription=success` },
       });
-      if (error || !data?.checkout_url) {
+      if (error) {
         toast({
           title: "Couldn't start subscription",
-          description: error?.message || data?.error || "Please try again.",
+          description: error?.message || "Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
+      // Promotional grant path — subscription was activated server-side.
+      if (data?.promotional || data?.status === "granted") {
+        toast({
+          title: "🎉 Free promotional access granted!",
+          description: `You're one of our first ${30} designers — your subscription is on us for the next year.`,
+        });
+        const { data: refreshed } = await supabase.from("customer_subscriptions")
+          .select("*").eq("user_id", user!.id).eq("plan_name", "designer_monthly").maybeSingle();
+        setSubscription(refreshed);
+        return;
+      }
+      if (!data?.checkout_url) {
+        toast({
+          title: "Couldn't start subscription",
+          description: data?.error || "Please try again.",
           variant: "destructive",
         });
         return;

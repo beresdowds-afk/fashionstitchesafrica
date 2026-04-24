@@ -66,6 +66,34 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Subscription already active", status: "already_active" }), { status: 400, headers: corsHeaders });
     }
 
+    // Promotional grant: first 30 designers get the subscription free.
+    // Try to claim a slot (idempotent). If granted, activate the subscription
+    // immediately for one full year and skip checkout.
+    const { data: claim } = await serviceClient.rpc("claim_promotional_grant", {
+      _grant_type: "designer",
+    });
+    const granted = (claim as any)?.granted === true;
+    if (granted) {
+      const now = new Date();
+      const periodEnd = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000);
+      await serviceClient.from("customer_subscriptions").upsert({
+        user_id: userId,
+        plan_name: PLAN_NAME,
+        price_amount: 0,
+        price_currency: "USD",
+        billing_cycle: "monthly",
+        status: "active",
+        current_period_start: now.toISOString(),
+        current_period_end: periodEnd.toISOString(),
+      }, { onConflict: "user_id,plan_name" });
+      return new Response(JSON.stringify({
+        checkout_url: null,
+        promotional: true,
+        slot_number: (claim as any)?.slot_number ?? null,
+        status: "granted",
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     // Resolve a platform-level gateway (no org context for designer subscription)
     const order = preferredGateway
       ? [preferredGateway, ...GATEWAY_PRIORITY.filter(g => g !== preferredGateway)]
