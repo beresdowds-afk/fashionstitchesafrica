@@ -8661,6 +8661,10 @@ export type Database = {
       }
     }
     Functions: {
+      assign_role: {
+        Args: { _role: Database["public"]["Enums"]["app_role"] }
+        Returns: undefined
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -8669,6 +8673,7 @@ export type Database = {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      ensure_designer_personal_org: { Args: never; Returns: string }
       get_org_role: {
         Args: { _org_id: string; _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -8689,6 +8694,13 @@ export type Database = {
         Returns: boolean
       }
       is_own_profile: { Args: { profile_id: string }; Returns: boolean }
+      join_organization: {
+        Args: {
+          _org_id: string
+          _role?: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: Json
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
