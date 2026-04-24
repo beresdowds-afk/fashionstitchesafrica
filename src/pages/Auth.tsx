@@ -18,6 +18,14 @@ import DisclaimerDialog, { DisclaimerBanner } from "@/components/shared/Disclaim
 type AuthMode = "signin" | "signup" | "forgot";
 type UserRole = "customer" | "designer" | "tailor" | "organization";
 
+/** Map UserRole to the database `app_role` enum value used in user_roles. */
+const ROLE_TO_DB_ROLE: Record<UserRole, "customer" | "designer" | "tailor" | "org_admin"> = {
+  customer: "customer",
+  designer: "designer",
+  tailor: "tailor",
+  organization: "org_admin",
+};
+
 const ROLE_CONFIG: Record<UserRole, { label: string; icon: any; heading: string; sub: string; color: string }> = {
   customer: {
     label: "Customer",
@@ -88,6 +96,36 @@ const Auth = () => {
   const [showOrgPicker, setShowOrgPicker] = useState(false);
   const [managerOrgs, setManagerOrgs] = useState<{ org_id: string; org_name: string; role: string }[]>([]);
   const [selectingOrg, setSelectingOrg] = useState(false);
+
+  // Post-OAuth role picker (Google sign-ins that have no user_roles row yet)
+  const [showOAuthRolePicker, setShowOAuthRolePicker] = useState(false);
+  const [oauthRolePicking, setOauthRolePicking] = useState(false);
+  const [oauthSelectedRole, setOauthSelectedRole] = useState<UserRole>("customer");
+
+  // After Google OAuth returns, ensure the user has a user_roles row.
+  // If not, show the role-picker dialog.
+  useEffect(() => {
+    let cancelled = false;
+    const checkPostOAuth = async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      const u = userData?.user;
+      if (!u || cancelled) return;
+      // Only Google identities benefit from this — email/password signup runs assign_role inline.
+      const isOAuth = (u.identities || []).some(i => i.provider !== "email");
+      if (!isOAuth) return;
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", u.id)
+        .limit(1);
+      if (cancelled) return;
+      if (!roles || roles.length === 0) {
+        setShowOAuthRolePicker(true);
+      }
+    };
+    checkPostOAuth();
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     if (roleParam && ROLE_CONFIG[roleParam as UserRole]) {
