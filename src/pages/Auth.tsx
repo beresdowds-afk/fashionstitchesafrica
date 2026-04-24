@@ -225,6 +225,14 @@ const Auth = () => {
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else if (mode === "signup") {
+      // Persist the selected role into user_roles via the secure RPC.
+      // (After email signup, the session is already established so auth.uid() works.)
+      try {
+        await supabase.rpc("assign_role", { _role: ROLE_TO_DB_ROLE[selectedRole] });
+      } catch (e) {
+        console.error("assign_role failed:", e);
+      }
+
       // Save identity info to profile after signup
       if (requiresIdentity && identityType && identityNumber) {
         const { data: userData } = await supabase.auth.getUser();
