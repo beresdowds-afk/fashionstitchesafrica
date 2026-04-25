@@ -214,6 +214,7 @@ const SuperAdminDashboard = () => {
         { id: "mobile", icon: Smartphone, label: "Mobile App" },
         { id: "app_downloads", icon: Download, label: "App Downloads" },
         { id: "platform_updates", icon: Radio, label: "Platform Updates" },
+        { id: "voiced_tour_sync", icon: Radio, label: "Voiced Tour Sync" },
         { id: "identity_verification", icon: Shield, label: "Identity Verification" },
         { id: "audit", icon: ScrollText, label: "Audit Logs" },
       ],
@@ -317,6 +318,7 @@ const SuperAdminDashboard = () => {
             {activeTab === "mobile" && <MobileAppManagementPanel />}
             {activeTab === "app_downloads" && <AppDownloadsPanel />}
             {activeTab === "platform_updates" && isSuperAdmin && <PlatformUpdatesPanel />}
+            {activeTab === "voiced_tour_sync" && isSuperAdmin && <VoicedTourSyncPanel />}
             {activeTab === "audit" && <AuditLogsPanel />}
             {activeTab === "support_requests" && <AdminSupportRequestsPanel />}
             {activeTab === "bank_accounts" && <BankAccountsPanel />}
