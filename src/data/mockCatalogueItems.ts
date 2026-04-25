@@ -1,8 +1,20 @@
-import type { CatalogueItem } from "@/types/catalogueItem";
+export interface MockCatalogueItem {
+  id: string;
+  org_id: string;
+  org_name: string;
+  name: string;
+  description: string | null;
+  category: string | null;
+  image_url: string | null;
+  price: number | null;
+  currency: string | null;
+  tags: string[] | null;
+  is_available: boolean;
+}
 
 // Temporary mock products so first-time visitors see a populated catalogue.
 // Replace with real data once organizations have published their items.
-export const MOCK_CATALOGUE_ITEMS: CatalogueItem[] = [
+export const MOCK_CATALOGUE_ITEMS: MockCatalogueItem[] = [
   {
     id: "mock-1",
     org_id: "mock-org-ankara",
