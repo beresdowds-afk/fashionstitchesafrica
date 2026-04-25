@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Mail, ShieldOff, Users, Shield, Loader2 } from "lucide-react";
+import { Sparkles, Mail, ShieldOff, Users, Shield, Loader2, AlertTriangle, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
 import SentinelAddonsMarketplace from "@/components/sentinel/SentinelAddonsMarketplace";
 
@@ -22,6 +23,11 @@ interface ShieldActivation {
   requested_at: string | null;
   activated_at: string | null;
   last_error: string | null;
+  attempt_count?: number;
+  max_attempts?: number;
+  last_attempt_at?: string | null;
+  next_retry_at?: string | null;
+  stuck_after_minutes?: number;
 }
 
 const SentinelMcpSubscriptionPanel = () => {
@@ -51,11 +57,15 @@ const SentinelMcpSubscriptionPanel = () => {
     setActivating(true);
     try {
       const { data, error } = await supabase.functions.invoke("sentinel-mcp-worker", {
-        body: { action: "activate-shield" },
+        body: { action: "activate-shield", force: true },
       });
       if (error) throw error;
       const status = (data as any)?.status;
       if (status === "active") toast.success("SENTINEL-SHIELD activated for FYSORA (free tier).");
+      else if (status === "retrying")
+        toast.info(
+          `Sentinel MCP unreachable; retrying in ${(data as any)?.retry_in_seconds ?? "?"}s (attempt ${(data as any)?.activation?.attempt_count}/${(data as any)?.activation?.max_attempts}).`
+        );
       else if (status === "requested") toast.info("Activation request queued — awaiting Sentinel MCP server.");
       else toast.error(`Activation failed: ${(data as any)?.activation?.last_error || "unknown error"}`);
       await loadAll();
@@ -65,6 +75,49 @@ const SentinelMcpSubscriptionPanel = () => {
       setActivating(false);
     }
   };
+
+  // Derive an alert state for stuck / failed / retry activations
+  const alertState = useMemo(() => {
+    if (!shield) return null;
+    const stuckMins = shield.stuck_after_minutes ?? 30;
+    const lastAttempt = shield.last_attempt_at ? new Date(shield.last_attempt_at) : null;
+    const ageMins = lastAttempt ? (Date.now() - lastAttempt.getTime()) / 60000 : null;
+
+    if (shield.status === "failed") {
+      return {
+        kind: "destructive" as const,
+        title: "SENTINEL-SHIELD activation failed",
+        body: `${shield.last_error ?? "Unknown error."} Click "Retry now" to force a fresh attempt.`,
+      };
+    }
+    if (shield.status === "retrying") {
+      return {
+        kind: "default" as const,
+        title: "Activation retrying",
+        body: `Attempt ${shield.attempt_count}/${shield.max_attempts}. Next retry at ${shield.next_retry_at ? new Date(shield.next_retry_at).toLocaleTimeString() : "—"}.`,
+      };
+    }
+    if (
+      shield.status === "requested" &&
+      ageMins !== null &&
+      ageMins > stuckMins
+    ) {
+      return {
+        kind: "destructive" as const,
+        title: "Activation appears stuck",
+        body: `No response from Sentinel MCP for ${Math.round(ageMins)} minutes (threshold ${stuckMins}m).`,
+      };
+    }
+    return null;
+  }, [shield]);
+
+  // Auto-refresh activation status every 30s while retrying / requested
+  useEffect(() => {
+    if (!shield) return;
+    if (shield.status !== "retrying" && shield.status !== "requested") return;
+    const id = setInterval(loadAll, 30_000);
+    return () => clearInterval(id);
+  }, [shield?.status]);
 
   return (
     <div className="space-y-6">
@@ -117,6 +170,19 @@ const SentinelMcpSubscriptionPanel = () => {
             {shield?.status?.replace(/_/g, " ") || "not requested"}
           </Badge>
         </div>
+
+        {alertState && (
+          <Alert variant={alertState.kind}>
+            {alertState.kind === "destructive" ? (
+              <AlertTriangle className="h-4 w-4" />
+            ) : (
+              <Clock className="h-4 w-4" />
+            )}
+            <AlertTitle>{alertState.title}</AlertTitle>
+            <AlertDescription>{alertState.body}</AlertDescription>
+          </Alert>
+        )}
+
         <p className="text-xs text-muted-foreground">
           Includes WAF baseline, DDoS shielding, abuse detection, audit forwarding and uptime probes
           for the FYSORA platform. <strong>Does not</strong> extend to organization, designer or
@@ -135,12 +201,22 @@ const SentinelMcpSubscriptionPanel = () => {
         {shield?.last_error && shield.status !== "active" && (
           <p className="text-xs text-destructive">{shield.last_error}</p>
         )}
+        {(shield?.attempt_count ?? 0) > 0 && shield?.status !== "active" && (
+          <p className="text-xs text-muted-foreground">
+            Attempts: {shield?.attempt_count}/{shield?.max_attempts}
+            {shield?.next_retry_at && (
+              <> · next retry {new Date(shield.next_retry_at).toLocaleTimeString()}</>
+            )}
+          </p>
+        )}
         <div className="pt-1">
           <Button onClick={requestShield} disabled={activating} size="sm">
             {activating ? (
               <><Loader2 size={14} className="mr-2 animate-spin" /> Requesting…</>
             ) : shield?.status === "active" ? (
               <><Shield size={14} className="mr-2" /> Re-confirm activation</>
+            ) : shield?.status === "failed" || shield?.status === "retrying" ? (
+              <><Shield size={14} className="mr-2" /> Retry now</>
             ) : (
               <><Shield size={14} className="mr-2" /> Request free SENTINEL-SHIELD</>
             )}
