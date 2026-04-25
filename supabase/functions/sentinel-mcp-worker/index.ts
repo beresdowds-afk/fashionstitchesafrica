@@ -749,6 +749,134 @@ async function handleAdminAction(
       }
     }
 
+    case "activate-shield": {
+      // Super admin only — request the free SENTINEL-SHIELD subscription
+      // from Sentinel MCP for FYSORA (non-fee-paying platform client).
+      const isSuperAdmin = await verifySuperAdmin(userId, adminClient);
+      if (!isSuperAdmin) return jsonResponse({ error: "Super admin access required" }, 403);
+
+      // Resolve Sentinel MCP server URL: platform_settings → first configured org → env
+      let serverUrl: string | null = null;
+      const { data: platformRow } = await adminClient
+        .from("platform_settings")
+        .select("sentinel_mcp_url")
+        .limit(1)
+        .maybeSingle();
+      serverUrl = (platformRow as any)?.sentinel_mcp_url || null;
+      if (!serverUrl) {
+        const { data: anyConfig } = await adminClient
+          .from("mcp_worker_config")
+          .select("mcp_server_url")
+          .not("mcp_server_url", "is", null)
+          .neq("mcp_server_url", "")
+          .limit(1)
+          .maybeSingle();
+        serverUrl = anyConfig?.mcp_server_url || null;
+      }
+      if (!serverUrl) {
+        serverUrl = Deno.env.get("SENTINEL_MCP_URL") || null;
+      }
+
+      // Lookup auth bearer if configured
+      const { data: mcpAuthKey } = await adminClient
+        .from("platform_api_keys")
+        .select("key_value")
+        .eq("key_name", "sentinel_mcp_auth_key")
+        .eq("is_active", true)
+        .maybeSingle();
+
+      const requestPayload = {
+        jsonrpc: "2.0",
+        id: crypto.randomUUID(),
+        method: "tools/call",
+        params: {
+          name: "sentinel_shield_activate",
+          arguments: {
+            client_email: "sentinel-mcp@eastforte.org.ng",
+            client_name: "FYSORA FASHN (Fashion Stitches Africa)",
+            plan: "SENTINEL-SHIELD",
+            tier: "non_fee_paying",
+            requested_features: [
+              "waf_baseline",
+              "ddos_shield",
+              "abuse_detection",
+              "audit_forwarding",
+              "uptime_probe",
+            ],
+            scope: "platform_only",
+            cascades_to_users: false,
+            requested_by: userId,
+            requested_at: new Date().toISOString(),
+          },
+        },
+      };
+
+      let providerResponse: unknown = null;
+      let providerStatus: "active" | "requested" | "failed" = "requested";
+      let lastError: string | null = null;
+
+      if (serverUrl) {
+        try {
+          const headers: Record<string, string> = {
+            "Content-Type": "application/json",
+            Accept: "application/json, text/event-stream",
+          };
+          if (mcpAuthKey?.key_value) {
+            headers["Authorization"] = `Bearer ${mcpAuthKey.key_value}`;
+          }
+          const res = await fetch(serverUrl, {
+            method: "POST",
+            headers,
+            body: JSON.stringify(requestPayload),
+          });
+          const ct = res.headers.get("content-type") ?? "";
+          providerResponse = ct.includes("text/event-stream")
+            ? { stream: true, body: await res.text() }
+            : await res.json().catch(() => ({}));
+          if (!res.ok) {
+            providerStatus = "failed";
+            lastError = `MCP server returned ${res.status}`;
+          } else {
+            // Best-effort: treat any 2xx as activated for the free tier
+            providerStatus = "active";
+          }
+        } catch (e) {
+          providerStatus = "failed";
+          lastError = e instanceof Error ? e.message : "MCP server unreachable";
+        }
+      } else {
+        providerStatus = "requested";
+        lastError = "No Sentinel MCP server URL configured; activation queued.";
+      }
+
+      const nowIso = new Date().toISOString();
+      const { data: row, error: upErr } = await adminClient
+        .from("sentinel_shield_activation")
+        .upsert(
+          {
+            id: 1,
+            client_email: "sentinel-mcp@eastforte.org.ng",
+            plan_key: "sentinel_shield_free",
+            status: providerStatus,
+            requested_at: nowIso,
+            activated_at: providerStatus === "active" ? nowIso : null,
+            request_payload: requestPayload,
+            provider_response: providerResponse as any,
+            last_error: lastError,
+          },
+          { onConflict: "id" }
+        )
+        .select()
+        .single();
+
+      if (upErr) return jsonResponse({ error: upErr.message }, 500);
+      return jsonResponse({
+        status: providerStatus,
+        activation: row,
+        server_url_used: serverUrl,
+      });
+    }
+
     default:
       return jsonResponse({ error: `Unknown action: ${action}` }, 400);
   }
