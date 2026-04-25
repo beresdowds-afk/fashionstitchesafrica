@@ -131,9 +131,6 @@ const PlatformCataloguePage = () => {
         <header className="border-b border-border bg-card sticky top-0 z-30">
           <div className="container mx-auto px-4 lg:px-8 flex items-center justify-between h-14">
             <div className="flex items-center gap-3">
-              <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
-                <ArrowLeft size={16} />
-              </Button>
               <div>
                 <span className="font-heading font-bold text-sm">Platform Catalogue</span>
                 <p className="text-[10px] text-muted-foreground">{filtered.length} curated products</p>
@@ -143,6 +140,14 @@ const PlatformCataloguePage = () => {
               <Badge variant="outline" className="text-[10px] border-primary/30 text-primary">
                 <Eye size={10} className="mr-1" /> Free Preview
               </Badge>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate("/welcome")}
+                className="hidden sm:inline-flex"
+              >
+                Register here
+              </Button>
               <Button variant="hero" size="sm" onClick={() => navigate("/auth")}>
                 <LogIn size={14} className="mr-1" /> Sign In
               </Button>
