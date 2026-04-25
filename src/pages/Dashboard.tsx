@@ -33,6 +33,8 @@ import LogisticsTab from "@/components/logistics/LogisticsTab";
 
 import FeatureGate from "@/components/shared/FeatureGate";
 import ContractsTab from "@/components/contracts/ContractsTab";
+import SeoOptimizationPanel from "@/components/sentinel/SeoOptimizationPanel";
+import SentinelAddonsMarketplace from "@/components/sentinel/SentinelAddonsMarketplace";
 import AvailabilityManager from "@/components/settings/AvailabilityManager";
 import PaymentGatewayPanel from "@/components/settings/PaymentGatewayPanel";
 import TourGuide from "@/components/shared/TourGuide";
