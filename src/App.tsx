@@ -30,6 +30,7 @@ import PaymentsPortal from "./pages/PaymentsPortal";
 import OrgCustomerInstall from "./pages/OrgCustomerInstall";
 import NotFound from "./pages/NotFound";
 import PlatformUpdateWatcher from "@/components/platform/PlatformUpdateWatcher";
+import TourSyncWorker from "@/components/platform/TourSyncWorker";
 
 const queryClient = new QueryClient();
 
@@ -41,6 +42,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <PlatformUpdateWatcher audience="all" />
+          <TourSyncWorker />
           <Routes>
             <Route path="/" element={<PlatformCataloguePage />} />
             <Route path="/welcome" element={<Index />} />
