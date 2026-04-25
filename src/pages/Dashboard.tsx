@@ -33,6 +33,8 @@ import LogisticsTab from "@/components/logistics/LogisticsTab";
 
 import FeatureGate from "@/components/shared/FeatureGate";
 import ContractsTab from "@/components/contracts/ContractsTab";
+import SeoOptimizationPanel from "@/components/sentinel/SeoOptimizationPanel";
+import SentinelAddonsMarketplace from "@/components/sentinel/SentinelAddonsMarketplace";
 import AvailabilityManager from "@/components/settings/AvailabilityManager";
 import PaymentGatewayPanel from "@/components/settings/PaymentGatewayPanel";
 import TourGuide from "@/components/shared/TourGuide";
@@ -256,6 +258,12 @@ const Dashboard = () => {
             {activeTab === "invoice_manager" && <InvoiceManagerPanel orgId={currentOrg.id} orgName={currentOrg.name} currency={currentOrg.currency || "NGN"} />}
             {activeTab === "wallet" && <WalletManagementTab orgId={currentOrg.id} />}
             {activeTab === "website" && <FeatureGate featureKey="website_builder_pro" fallback={<WebsiteBuilderTab org={currentOrg} role={role} />}><WebsiteBuilderTab org={currentOrg} role={role} /></FeatureGate>}
+            {activeTab === "sentinel_seo" && (
+              <div className="space-y-8">
+                <SeoOptimizationPanel orgId={currentOrg.id} />
+                <SentinelAddonsMarketplace orgId={currentOrg.id} />
+              </div>
+            )}
             {activeTab === "settings" && <SettingsTab org={currentOrg} role={role} />}
           </main>
         </div>
