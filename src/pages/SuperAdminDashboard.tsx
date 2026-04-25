@@ -7,6 +7,7 @@ import UnifiedPricingPanel from "@/components/super-admin/UnifiedPricingPanel";
 import DataBackupPanel from "@/components/super-admin/DataBackupPanel";
 import FeatureFlagsPanel from "@/components/super-admin/FeatureFlagsPanel";
 import PlatformUpdatesPanel from "@/components/super-admin/PlatformUpdatesPanel";
+import VoicedTourSyncPanel from "@/components/super-admin/VoicedTourSyncPanel";
 import WebsiteRequestsDashboard from "@/components/super-admin/WebsiteRequestsDashboard";
 import MobileAppManagementPanel from "@/components/super-admin/MobileAppManagementPanel";
 import AppDownloadsPanel from "@/components/super-admin/AppDownloadsPanel";
@@ -82,7 +83,7 @@ import {
 
 import { cn } from "@/lib/utils";
 
-type TabId = "overview" | "platform_settings" | "carriers" | "organizations" | "users" | "accounts" | "revenue" | "invoicing" | "invoice_manager" | "sub_rates" | "tax_compliance" | "regional_management" | "featured" | "keys" | "rates" | "websites" | "pricing" | "unified_pricing" | "backups" | "features" | "mobile" | "app_downloads" | "audit" | "support_requests" | "bank_accounts" | "message_center" | "phone_numbers" | "comms_oversight" | "video_billing" | "domain_management" | "identity_verification" | "communications" | "registrations" | "disputes" | "website_templates" | "platform_updates";
+type TabId = "overview" | "platform_settings" | "carriers" | "organizations" | "users" | "accounts" | "revenue" | "invoicing" | "invoice_manager" | "sub_rates" | "tax_compliance" | "regional_management" | "featured" | "keys" | "rates" | "websites" | "pricing" | "unified_pricing" | "backups" | "features" | "mobile" | "app_downloads" | "audit" | "support_requests" | "bank_accounts" | "message_center" | "phone_numbers" | "comms_oversight" | "video_billing" | "domain_management" | "identity_verification" | "communications" | "registrations" | "disputes" | "website_templates" | "platform_updates" | "voiced_tour_sync";
 
 interface SidebarItem {
   id: TabId;
@@ -213,6 +214,7 @@ const SuperAdminDashboard = () => {
         { id: "mobile", icon: Smartphone, label: "Mobile App" },
         { id: "app_downloads", icon: Download, label: "App Downloads" },
         { id: "platform_updates", icon: Radio, label: "Platform Updates" },
+        { id: "voiced_tour_sync", icon: Radio, label: "Voiced Tour Sync" },
         { id: "identity_verification", icon: Shield, label: "Identity Verification" },
         { id: "audit", icon: ScrollText, label: "Audit Logs" },
       ],
@@ -316,6 +318,7 @@ const SuperAdminDashboard = () => {
             {activeTab === "mobile" && <MobileAppManagementPanel />}
             {activeTab === "app_downloads" && <AppDownloadsPanel />}
             {activeTab === "platform_updates" && isSuperAdmin && <PlatformUpdatesPanel />}
+            {activeTab === "voiced_tour_sync" && isSuperAdmin && <VoicedTourSyncPanel />}
             {activeTab === "audit" && <AuditLogsPanel />}
             {activeTab === "support_requests" && <AdminSupportRequestsPanel />}
             {activeTab === "bank_accounts" && <BankAccountsPanel />}
