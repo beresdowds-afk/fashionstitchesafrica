@@ -269,8 +269,22 @@ const PlatformTour = () => {
             <span className="text-xs text-muted-foreground hidden sm:inline">
               Step {currentStep + 1} of {totalSteps}
             </span>
+            {currentStep > 0 && (
+              <Badge variant="secondary" className="text-[9px] hidden md:inline-flex gap-1" title="Resumed from your last session">
+                Resumed
+              </Badge>
+            )}
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={restartFromStart}
+              className="h-8 w-8 p-0"
+              title="Restart from step 1"
+            >
+              <RotateCcw size={14} />
+            </Button>
             <Button
               variant="ghost"
               size="sm"
