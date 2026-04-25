@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useVoiceNarration } from "@/hooks/useVoiceNarration";
-import { roleTourTracks, tourRoleList, isTourRole, type TourRole } from "@/config/roleTourTracks";
+import { tourRoleList, isTourRole, type TourRole } from "@/config/roleTourTracks";
+import { usePlatformTourTracks } from "@/hooks/usePlatformTourTracks";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -34,6 +35,7 @@ const PlatformTour = () => {
   const { user } = useAuth();
   const [params, setParams] = useSearchParams();
   const { speak, stop, isSpeaking, voiceEnabled, toggleVoice } = useVoiceNarration();
+  const { tracks: roleTourTracks } = usePlatformTourTracks();
 
   const roleParam = params.get("role");
   const role: TourRole | null = isTourRole(roleParam) ? roleParam : null;
