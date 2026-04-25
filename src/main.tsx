@@ -16,6 +16,10 @@ const updateSW = registerSW({
   },
 });
 
+// Expose to the platform-update worker so it can force-reload PWAs
+// when a new platform update is broadcast.
+(window as any).__fsaUpdateSW = updateSW;
+
 createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <App />

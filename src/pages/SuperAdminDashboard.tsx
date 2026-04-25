@@ -6,6 +6,7 @@ import WebsitePricingPanel from "@/components/super-admin/WebsitePricingPanel";
 import UnifiedPricingPanel from "@/components/super-admin/UnifiedPricingPanel";
 import DataBackupPanel from "@/components/super-admin/DataBackupPanel";
 import FeatureFlagsPanel from "@/components/super-admin/FeatureFlagsPanel";
+import PlatformUpdatesPanel from "@/components/super-admin/PlatformUpdatesPanel";
 import WebsiteRequestsDashboard from "@/components/super-admin/WebsiteRequestsDashboard";
 import MobileAppManagementPanel from "@/components/super-admin/MobileAppManagementPanel";
 import AppDownloadsPanel from "@/components/super-admin/AppDownloadsPanel";
@@ -38,7 +39,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { DollarSign, Smartphone, ScrollText, HelpCircle, UserX, Search, Trash2, Star, ShoppingBag, Download, Settings, LifeBuoy, Banknote, MapPin, MessageSquare, Menu, Video, ClipboardList, Scale, Truck, Palette } from "lucide-react";
+import { DollarSign, Smartphone, ScrollText, HelpCircle, UserX, Search, Trash2, Star, ShoppingBag, Download, Settings, LifeBuoy, Banknote, MapPin, MessageSquare, Menu, Video, ClipboardList, Scale, Truck, Palette, Radio } from "lucide-react";
 import LocationMapFooter from "@/components/shared/LocationMapFooter";
 import TourGuide from "@/components/shared/TourGuide";
 import { useTourGuide } from "@/hooks/useTourGuide";
@@ -81,7 +82,7 @@ import {
 
 import { cn } from "@/lib/utils";
 
-type TabId = "overview" | "platform_settings" | "carriers" | "organizations" | "users" | "accounts" | "revenue" | "invoicing" | "invoice_manager" | "sub_rates" | "tax_compliance" | "regional_management" | "featured" | "keys" | "rates" | "websites" | "pricing" | "unified_pricing" | "backups" | "features" | "mobile" | "app_downloads" | "audit" | "support_requests" | "bank_accounts" | "message_center" | "phone_numbers" | "comms_oversight" | "video_billing" | "domain_management" | "identity_verification" | "communications" | "registrations" | "disputes" | "website_templates";
+type TabId = "overview" | "platform_settings" | "carriers" | "organizations" | "users" | "accounts" | "revenue" | "invoicing" | "invoice_manager" | "sub_rates" | "tax_compliance" | "regional_management" | "featured" | "keys" | "rates" | "websites" | "pricing" | "unified_pricing" | "backups" | "features" | "mobile" | "app_downloads" | "audit" | "support_requests" | "bank_accounts" | "message_center" | "phone_numbers" | "comms_oversight" | "video_billing" | "domain_management" | "identity_verification" | "communications" | "registrations" | "disputes" | "website_templates" | "platform_updates";
 
 interface SidebarItem {
   id: TabId;
@@ -211,6 +212,7 @@ const SuperAdminDashboard = () => {
         { id: "features", icon: Shield, label: "Feature Flags" },
         { id: "mobile", icon: Smartphone, label: "Mobile App" },
         { id: "app_downloads", icon: Download, label: "App Downloads" },
+        { id: "platform_updates", icon: Radio, label: "Platform Updates" },
         { id: "identity_verification", icon: Shield, label: "Identity Verification" },
         { id: "audit", icon: ScrollText, label: "Audit Logs" },
       ],
@@ -313,6 +315,7 @@ const SuperAdminDashboard = () => {
             {activeTab === "features" && isSuperAdmin && <FeatureFlagsPanel />}
             {activeTab === "mobile" && <MobileAppManagementPanel />}
             {activeTab === "app_downloads" && <AppDownloadsPanel />}
+            {activeTab === "platform_updates" && isSuperAdmin && <PlatformUpdatesPanel />}
             {activeTab === "audit" && <AuditLogsPanel />}
             {activeTab === "support_requests" && <AdminSupportRequestsPanel />}
             {activeTab === "bank_accounts" && <BankAccountsPanel />}

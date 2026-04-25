@@ -6155,6 +6155,45 @@ export type Database = {
         }
         Relationships: []
       }
+      platform_updates: {
+        Row: {
+          audience: string
+          created_at: string
+          created_by: string | null
+          force_reload: boolean
+          id: string
+          notes: string | null
+          published_at: string
+          severity: string
+          title: string
+          version: string
+        }
+        Insert: {
+          audience?: string
+          created_at?: string
+          created_by?: string | null
+          force_reload?: boolean
+          id?: string
+          notes?: string | null
+          published_at?: string
+          severity?: string
+          title: string
+          version: string
+        }
+        Update: {
+          audience?: string
+          created_at?: string
+          created_by?: string | null
+          force_reload?: boolean
+          id?: string
+          notes?: string | null
+          published_at?: string
+          severity?: string
+          title?: string
+          version?: string
+        }
+        Relationships: []
+      }
       premium_feature_usage: {
         Row: {
           billed_to: string
