@@ -71,10 +71,10 @@ const tailorSteps: PlatformTourStep[] = [
     description:
       "Let customers preview your designs on themselves before ordering. Five credits per try-on, billed transparently.",
     narration:
-      "Premium Virtual Try-On lets your customers see your garments on themselves before they order. Powered by Fashn dot AI, each try-on costs five credits — auto-deducted from your wallet, fully transparent billing.",
+      "Premium Virtual Try-On lets your customers see your garments on themselves before they order. Powered by Fashn dot AI, with transparent usage-based billing from your wallet.",
     icon: "Sparkles",
     visual: "try-on",
-    highlights: ["Fashn.ai Engine", "5 credits/try-on", "Higher Conversion"],
+    highlights: ["Fashn.ai Engine", "Usage-based Billing", "Higher Conversion"],
   },
   {
     id: "tailor-comms",
@@ -91,14 +91,14 @@ const tailorSteps: PlatformTourStep[] = [
   {
     id: "tailor-subscribe",
     title: "Tailor Subscription",
-    subtitle: "$29/month — unlock everything",
+    subtitle: "Unlock everything",
     description:
       "Premium subscription unlocks AI measurements, virtual try-on, priority placement in search, and zero platform commission on direct bookings.",
     narration:
-      "The Tailor subscription, just twenty-nine dollars a month, unlocks all premium features: AI measurements, virtual try-on, priority search placement, and zero platform commission on direct bookings. Upgrade when you're ready.",
+      "The Tailor subscription unlocks all premium features: AI measurements, virtual try-on, priority search placement, and zero platform commission on direct bookings. Upgrade when you're ready.",
     icon: "Crown",
     visual: "subscribe",
-    highlights: ["$29/mo", "Zero Direct-Booking Commission", "Priority Listing"],
+    highlights: ["Premium Plan", "Zero Direct-Booking Commission", "Priority Listing"],
   },
 ];
 
@@ -159,10 +159,10 @@ const designerSteps: PlatformTourStep[] = [
     description:
       "Let customers see your designs on themselves. Embed the widget on any external site you own.",
     narration:
-      "Premium Virtual Try-On lets customers see your designs on themselves before buying. Embed our SDK widget on any external website you own — five credits per try-on, billed transparently.",
+      "Premium Virtual Try-On lets customers see your designs on themselves before buying. Embed our SDK widget on any external website you own — billed transparently per use.",
     icon: "Sparkles",
     visual: "try-on",
-    highlights: ["Embeddable SDK", "Fashn.ai Engine", "5 credits/try-on"],
+    highlights: ["Embeddable SDK", "Fashn.ai Engine", "Usage-based Billing"],
   },
   {
     id: "designer-tailors",
@@ -179,14 +179,14 @@ const designerSteps: PlatformTourStep[] = [
   {
     id: "designer-subscribe",
     title: "Designer Subscription",
-    subtitle: "$15/month — go pro",
+    subtitle: "Go pro",
     description:
       "Unlock Website Builder Pro, virtual try-on credits bundle, premium analytics, and embed SDK access.",
     narration:
-      "The Designer subscription is fifteen dollars a month and unlocks Website Builder Pro, a virtual try-on credits bundle, premium analytics, and full embed SDK access for any external site.",
+      "The Designer subscription unlocks Website Builder Pro, a virtual try-on credits bundle, premium analytics, and full embed SDK access for any external site.",
     icon: "Crown",
     visual: "subscribe",
-    highlights: ["$15/mo", "Pro Website", "Try-on Credits Bundle"],
+    highlights: ["Premium Plan", "Pro Website", "Try-on Credits Bundle"],
   },
 ];
 
@@ -279,14 +279,14 @@ const organizationSteps: PlatformTourStep[] = [
   {
     id: "org-subscribe",
     title: "Organization Plans",
-    subtitle: "Free to start · Pro from $49/mo",
+    subtitle: "Free to start · Pro upgrade",
     description:
       "Start free with the core platform. Upgrade for premium AI bundles, Website Pro, branded mobile app, and reduced platform fees.",
     narration:
-      "Start completely free with the core platform. Upgrade to a premium plan from forty-nine dollars a month for AI bundles, Website Builder Pro, the branded mobile app, and reduced platform fees on every transaction.",
+      "Start completely free with the core platform. Upgrade to a premium plan for AI bundles, Website Builder Pro, the branded mobile app, and reduced platform fees on every transaction.",
     icon: "Crown",
     visual: "subscribe",
-    highlights: ["Free Core Tier", "$49/mo Pro", "Reduced Fees"],
+    highlights: ["Free Core Tier", "Pro Upgrade", "Reduced Fees"],
   },
 ];
 
@@ -298,7 +298,7 @@ export const roleTourTracks: Record<TourRole, RoleTourTrack> = {
     icon: "ShoppingBag",
     accent: "from-blue-500/20 to-primary/10",
     steps: platformTourSteps,
-    ctaLabel: "Subscribe — $10/year",
+    ctaLabel: "Subscribe to Premium",
     ctaPath: "/portal",
   },
   tailor: {
