@@ -6871,6 +6871,48 @@ export type Database = {
           },
         ]
       }
+      sentinel_shield_activation: {
+        Row: {
+          activated_at: string | null
+          client_email: string
+          created_at: string
+          id: number
+          last_error: string | null
+          plan_key: string
+          provider_response: Json | null
+          request_payload: Json | null
+          requested_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          activated_at?: string | null
+          client_email?: string
+          created_at?: string
+          id?: number
+          last_error?: string | null
+          plan_key?: string
+          provider_response?: Json | null
+          request_payload?: Json | null
+          requested_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          activated_at?: string | null
+          client_email?: string
+          created_at?: string
+          id?: number
+          last_error?: string | null
+          plan_key?: string
+          provider_response?: Json | null
+          request_payload?: Json | null
+          requested_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       seo_optimization_requests: {
         Row: {
           amount_usd: number
