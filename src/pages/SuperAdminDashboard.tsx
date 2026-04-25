@@ -7,6 +7,7 @@ import UnifiedPricingPanel from "@/components/super-admin/UnifiedPricingPanel";
 import DataBackupPanel from "@/components/super-admin/DataBackupPanel";
 import FeatureFlagsPanel from "@/components/super-admin/FeatureFlagsPanel";
 import PlatformUpdatesPanel from "@/components/super-admin/PlatformUpdatesPanel";
+import VoicedTourSyncPanel from "@/components/super-admin/VoicedTourSyncPanel";
 import WebsiteRequestsDashboard from "@/components/super-admin/WebsiteRequestsDashboard";
 import MobileAppManagementPanel from "@/components/super-admin/MobileAppManagementPanel";
 import AppDownloadsPanel from "@/components/super-admin/AppDownloadsPanel";
