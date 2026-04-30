@@ -935,6 +935,173 @@ async function handleAdminAction(
   }
 }
 
+async function activatePlatformAgent(
+  body: any,
+  userId: string,
+  adminClient: ReturnType<typeof createClient>,
+) {
+  const isSuperAdmin = await verifySuperAdmin(userId, adminClient);
+  if (!isSuperAdmin) return jsonResponse({ error: "Super admin access required" }, 403);
+
+  const agentKey = String(body.agent_key || "");
+  if (!agentKey) return jsonResponse({ error: "Missing agent_key" }, 400);
+
+  const { data: agent, error: agentErr } = await adminClient
+    .from("sentinel_platform_agents")
+    .select("*")
+    .eq("agent_key", agentKey)
+    .maybeSingle();
+  if (agentErr || !agent) return jsonResponse({ error: "Unknown platform agent" }, 404);
+
+  const force = body.force === true;
+  const prevAttempts = (agent as any).attempt_count ?? 0;
+  const maxAttempts = (agent as any).max_attempts ?? 6;
+  const nextRetryAt = (agent as any).next_retry_at
+    ? new Date((agent as any).next_retry_at)
+    : null;
+
+  if (!force && nextRetryAt && nextRetryAt.getTime() > Date.now()) {
+    return jsonResponse({
+      status: (agent as any).status,
+      agent,
+      backoff: true,
+      message: `Next retry scheduled at ${nextRetryAt.toISOString()}`,
+    });
+  }
+
+  // Resolve Sentinel MCP server URL
+  let serverUrl: string | null = null;
+  const { data: platformRow } = await adminClient
+    .from("platform_settings")
+    .select("sentinel_mcp_url")
+    .limit(1)
+    .maybeSingle();
+  serverUrl = (platformRow as any)?.sentinel_mcp_url || null;
+  if (!serverUrl) {
+    const { data: anyConfig } = await adminClient
+      .from("mcp_worker_config")
+      .select("mcp_server_url")
+      .not("mcp_server_url", "is", null)
+      .neq("mcp_server_url", "")
+      .limit(1)
+      .maybeSingle();
+    serverUrl = (anyConfig as any)?.mcp_server_url || null;
+  }
+  if (!serverUrl) serverUrl = Deno.env.get("SENTINEL_MCP_URL") || null;
+
+  const { data: mcpAuthKey } = await adminClient
+    .from("platform_api_keys")
+    .select("key_value")
+    .eq("key_name", "sentinel_mcp_auth_key")
+    .eq("is_active", true)
+    .maybeSingle();
+
+  const requestPayload = {
+    jsonrpc: "2.0",
+    id: crypto.randomUUID(),
+    method: "tools/call",
+    params: {
+      name: (agent as any).mcp_tool_name,
+      arguments: {
+        client_email: (agent as any).client_email,
+        client_name: "FYSORA FASHN (Fashion Stitches Africa)",
+        agent: (agent as any).agent_name,
+        plan: (agent as any).plan_key,
+        tier: (agent as any).tier,
+        scope: (agent as any).scope,
+        cascades_to_users: (agent as any).cascades_to_users,
+        requested_features: (agent as any).requested_features ?? [],
+        requested_by: userId,
+        requested_at: new Date().toISOString(),
+        attempt: prevAttempts + 1,
+      },
+    },
+  };
+
+  let providerResponse: unknown = null;
+  let providerStatus: "active" | "requested" | "failed" | "retrying" = "requested";
+  let lastError: string | null = null;
+  let httpStatus: number | null = null;
+  let isRetryable = false;
+
+  if (serverUrl) {
+    try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+        Accept: "application/json, text/event-stream",
+      };
+      if (mcpAuthKey?.key_value) headers["Authorization"] = `Bearer ${mcpAuthKey.key_value}`;
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 15_000);
+      const res = await fetch(serverUrl, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(requestPayload),
+        signal: ctrl.signal,
+      });
+      clearTimeout(t);
+      httpStatus = res.status;
+      const ct = res.headers.get("content-type") ?? "";
+      providerResponse = ct.includes("text/event-stream")
+        ? { stream: true, body: await res.text() }
+        : await res.json().catch(() => ({}));
+      if (!res.ok) {
+        isRetryable = res.status >= 500 && res.status <= 599;
+        providerStatus = isRetryable ? "retrying" : "failed";
+        lastError = `MCP server returned ${res.status}`;
+      } else {
+        providerStatus = "active";
+      }
+    } catch (e) {
+      isRetryable = true;
+      providerStatus = "retrying";
+      lastError = e instanceof Error ? e.message : "MCP server unreachable";
+    }
+  } else {
+    providerStatus = "requested";
+    lastError = "No Sentinel MCP server URL configured; activation queued.";
+  }
+
+  const newAttempt = prevAttempts + 1;
+  const backoffSeconds = Math.min(30 * Math.pow(2, newAttempt - 1), 30 * 60);
+  let nextRetry: string | null = null;
+  if (providerStatus === "retrying") {
+    if (newAttempt >= maxAttempts) {
+      providerStatus = "failed";
+      lastError = `${lastError ?? "retry exhausted"} (max ${maxAttempts} attempts reached)`;
+    } else {
+      nextRetry = new Date(Date.now() + backoffSeconds * 1000).toISOString();
+    }
+  }
+
+  const nowIso = new Date().toISOString();
+  const { data: row, error: upErr } = await adminClient
+    .from("sentinel_platform_agents")
+    .update({
+      status: providerStatus,
+      requested_at: nowIso,
+      activated_at: providerStatus === "active" ? nowIso : (agent as any).activated_at,
+      request_payload: requestPayload,
+      provider_response: providerResponse as any,
+      last_error: lastError,
+      attempt_count: providerStatus === "active" ? 0 : newAttempt,
+      last_attempt_at: nowIso,
+      next_retry_at: nextRetry,
+    })
+    .eq("agent_key", agentKey)
+    .select()
+    .single();
+
+  if (upErr) return jsonResponse({ error: upErr.message }, 500);
+  return jsonResponse({
+    status: providerStatus,
+    agent: row,
+    server_url_used: serverUrl,
+    http_status: httpStatus,
+    retry_in_seconds: nextRetry ? backoffSeconds : null,
+  });
+}
+
 async function verifyAdminAccess(
   userId: string,
   orgId: string,
