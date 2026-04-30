@@ -353,6 +353,22 @@ const SentinelMcpSubscriptionPanel = () => {
           </p>
         </div>
 
+        {alertSettings.agent_failure_alert_enabled && agentAlerts.length > 0 && (
+          <div className="space-y-2">
+            {agentAlerts.map((a) => (
+              <Alert key={a.agent.agent_key} variant={a.kind}>
+                {a.kind === "destructive" ? (
+                  <AlertTriangle className="h-4 w-4" />
+                ) : (
+                  <Clock className="h-4 w-4" />
+                )}
+                <AlertTitle>{a.title}</AlertTitle>
+                <AlertDescription>{a.body}</AlertDescription>
+              </Alert>
+            ))}
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {agents.map((agent) => {
             const Icon = AGENT_ICON[agent.agent_key] ?? Bot;
