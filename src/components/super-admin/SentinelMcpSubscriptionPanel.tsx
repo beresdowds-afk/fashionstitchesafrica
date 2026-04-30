@@ -444,6 +444,55 @@ const SentinelMcpSubscriptionPanel = () => {
         </AlertDescription>
       </Alert>
 
+      <Card className="p-5 space-y-3">
+        <h3 className="font-semibold flex items-center gap-2">
+          <Settings size={18} className="text-primary" /> Alert Thresholds
+        </h3>
+        <p className="text-xs text-muted-foreground">
+          Configure how long an activation can sit without a response before raising a
+          critical "stuck" alert.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <Label className="text-xs">Agent stuck threshold (minutes)</Label>
+            <Input
+              type="number"
+              min={1}
+              max={1440}
+              value={alertSettings.agent_stuck_after_minutes}
+              onChange={(e) =>
+                setAlertSettings((s) => ({
+                  ...s,
+                  agent_stuck_after_minutes: Math.max(1, Number(e.target.value) || 30),
+                }))
+              }
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs">SHIELD stuck threshold (minutes)</Label>
+            <Input
+              type="number"
+              min={1}
+              max={1440}
+              value={alertSettings.shield_stuck_after_minutes}
+              onChange={(e) =>
+                setAlertSettings((s) => ({
+                  ...s,
+                  shield_stuck_after_minutes: Math.max(1, Number(e.target.value) || 30),
+                }))
+              }
+            />
+          </div>
+        </div>
+        <Button size="sm" onClick={saveSettings} disabled={savingSettings}>
+          {savingSettings ? (
+            <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Saving…</>
+          ) : (
+            "Save thresholds"
+          )}
+        </Button>
+      </Card>
+
       <SentinelAddonsMarketplace title="Available Sentinel MCP Add-Ons (User Pricing)" />
     </div>
   );
