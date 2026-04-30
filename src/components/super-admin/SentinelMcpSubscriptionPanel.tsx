@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Mail, ShieldOff, Users, Shield, Loader2, AlertTriangle, Clock } from "lucide-react";
+import { Sparkles, Mail, ShieldOff, Users, Shield, Loader2, AlertTriangle, Clock, Bot, HeartHandshake, Cloud } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
@@ -30,23 +30,47 @@ interface ShieldActivation {
   stuck_after_minutes?: number;
 }
 
+interface PlatformAgent {
+  agent_key: string;
+  agent_name: string;
+  service_category: string;
+  description: string | null;
+  plan_key: string;
+  status: string;
+  requested_at: string | null;
+  activated_at: string | null;
+  last_error: string | null;
+  attempt_count: number;
+  max_attempts: number;
+  next_retry_at: string | null;
+}
+
+const AGENT_ICON: Record<string, React.ElementType> = {
+  steven_ai: Bot,
+  rachel_crm: HeartHandshake,
+};
+
 const SentinelMcpSubscriptionPanel = () => {
   const [sub, setSub] = useState<PlatformSub | null>(null);
   const [stats, setStats] = useState({ totalSubs: 0, totalSeoRequests: 0 });
   const [shield, setShield] = useState<ShieldActivation | null>(null);
   const [activating, setActivating] = useState(false);
+  const [agents, setAgents] = useState<PlatformAgent[]>([]);
+  const [activatingAgent, setActivatingAgent] = useState<string | null>(null);
 
   const loadAll = async () => {
-    const [{ data }, { count: subCount }, { count: seoCount }, { data: shieldRow }] =
+    const [{ data }, { count: subCount }, { count: seoCount }, { data: shieldRow }, { data: agentRows }] =
       await Promise.all([
         supabase.from("sentinel_mcp_platform_subscription" as any).select("*").eq("id", 1).maybeSingle(),
         supabase.from("sentinel_mcp_user_subscriptions" as any).select("*", { count: "exact", head: true }),
         supabase.from("seo_optimization_requests" as any).select("*", { count: "exact", head: true }),
         supabase.from("sentinel_shield_activation" as any).select("*").eq("id", 1).maybeSingle(),
+        supabase.from("sentinel_platform_agents" as any).select("*").order("agent_name"),
       ]);
     setSub(data as unknown as PlatformSub);
     setStats({ totalSubs: subCount ?? 0, totalSeoRequests: seoCount ?? 0 });
     setShield(shieldRow as unknown as ShieldActivation);
+    setAgents((agentRows as unknown as PlatformAgent[]) ?? []);
   };
 
   useEffect(() => {
@@ -73,6 +97,28 @@ const SentinelMcpSubscriptionPanel = () => {
       toast.error(e?.message || "Failed to contact Sentinel MCP");
     } finally {
       setActivating(false);
+    }
+  };
+
+  const activateAgent = async (agentKey: string) => {
+    setActivatingAgent(agentKey);
+    try {
+      const { data, error } = await supabase.functions.invoke("sentinel-mcp-worker", {
+        body: { action: "activate-agent", agent_key: agentKey, force: true },
+      });
+      if (error) throw error;
+      const status = (data as any)?.status;
+      const name = agents.find((a) => a.agent_key === agentKey)?.agent_name || agentKey;
+      if (status === "active") toast.success(`${name} engaged for FYSORA (non-fee tier).`);
+      else if (status === "retrying")
+        toast.info(`${name}: Sentinel MCP unreachable; retrying in ${(data as any)?.retry_in_seconds ?? "?"}s.`);
+      else if (status === "requested") toast.info(`${name} request queued.`);
+      else toast.error(`${name} activation failed: ${(data as any)?.agent?.last_error || "unknown"}`);
+      await loadAll();
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to contact Sentinel MCP");
+    } finally {
+      setActivatingAgent(null);
     }
   };
 
