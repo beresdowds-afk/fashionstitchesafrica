@@ -6871,6 +6871,90 @@ export type Database = {
           },
         ]
       }
+      sentinel_platform_agents: {
+        Row: {
+          activated_at: string | null
+          agent_key: string
+          agent_name: string
+          attempt_count: number
+          cascades_to_users: boolean
+          client_email: string
+          created_at: string
+          description: string | null
+          id: string
+          last_attempt_at: string | null
+          last_error: string | null
+          max_attempts: number
+          mcp_tool_name: string
+          next_retry_at: string | null
+          plan_key: string
+          provider_response: Json | null
+          request_payload: Json | null
+          requested_at: string | null
+          requested_features: Json
+          scope: string
+          service_category: string
+          status: string
+          stuck_after_minutes: number
+          tier: string
+          updated_at: string
+        }
+        Insert: {
+          activated_at?: string | null
+          agent_key: string
+          agent_name: string
+          attempt_count?: number
+          cascades_to_users?: boolean
+          client_email?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          last_error?: string | null
+          max_attempts?: number
+          mcp_tool_name: string
+          next_retry_at?: string | null
+          plan_key: string
+          provider_response?: Json | null
+          request_payload?: Json | null
+          requested_at?: string | null
+          requested_features?: Json
+          scope?: string
+          service_category: string
+          status?: string
+          stuck_after_minutes?: number
+          tier?: string
+          updated_at?: string
+        }
+        Update: {
+          activated_at?: string | null
+          agent_key?: string
+          agent_name?: string
+          attempt_count?: number
+          cascades_to_users?: boolean
+          client_email?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          last_attempt_at?: string | null
+          last_error?: string | null
+          max_attempts?: number
+          mcp_tool_name?: string
+          next_retry_at?: string | null
+          plan_key?: string
+          provider_response?: Json | null
+          request_payload?: Json | null
+          requested_at?: string | null
+          requested_features?: Json
+          scope?: string
+          service_category?: string
+          status?: string
+          stuck_after_minutes?: number
+          tier?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sentinel_shield_activation: {
         Row: {
           activated_at: string | null
