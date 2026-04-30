@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Sparkles, Mail, ShieldOff, Users, Shield, Loader2, AlertTriangle, Clock } from "lucide-react";
+import { Sparkles, Mail, ShieldOff, Users, Shield, Loader2, AlertTriangle, Clock, Bot, HeartHandshake, Cloud } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { toast } from "sonner";
@@ -30,23 +30,47 @@ interface ShieldActivation {
   stuck_after_minutes?: number;
 }
 
+interface PlatformAgent {
+  agent_key: string;
+  agent_name: string;
+  service_category: string;
+  description: string | null;
+  plan_key: string;
+  status: string;
+  requested_at: string | null;
+  activated_at: string | null;
+  last_error: string | null;
+  attempt_count: number;
+  max_attempts: number;
+  next_retry_at: string | null;
+}
+
+const AGENT_ICON: Record<string, React.ElementType> = {
+  steven_ai: Bot,
+  rachel_crm: HeartHandshake,
+};
+
 const SentinelMcpSubscriptionPanel = () => {
   const [sub, setSub] = useState<PlatformSub | null>(null);
   const [stats, setStats] = useState({ totalSubs: 0, totalSeoRequests: 0 });
   const [shield, setShield] = useState<ShieldActivation | null>(null);
   const [activating, setActivating] = useState(false);
+  const [agents, setAgents] = useState<PlatformAgent[]>([]);
+  const [activatingAgent, setActivatingAgent] = useState<string | null>(null);
 
   const loadAll = async () => {
-    const [{ data }, { count: subCount }, { count: seoCount }, { data: shieldRow }] =
+    const [{ data }, { count: subCount }, { count: seoCount }, { data: shieldRow }, { data: agentRows }] =
       await Promise.all([
         supabase.from("sentinel_mcp_platform_subscription" as any).select("*").eq("id", 1).maybeSingle(),
         supabase.from("sentinel_mcp_user_subscriptions" as any).select("*", { count: "exact", head: true }),
         supabase.from("seo_optimization_requests" as any).select("*", { count: "exact", head: true }),
         supabase.from("sentinel_shield_activation" as any).select("*").eq("id", 1).maybeSingle(),
+        supabase.from("sentinel_platform_agents" as any).select("*").order("agent_name"),
       ]);
     setSub(data as unknown as PlatformSub);
     setStats({ totalSubs: subCount ?? 0, totalSeoRequests: seoCount ?? 0 });
     setShield(shieldRow as unknown as ShieldActivation);
+    setAgents((agentRows as unknown as PlatformAgent[]) ?? []);
   };
 
   useEffect(() => {
@@ -73,6 +97,28 @@ const SentinelMcpSubscriptionPanel = () => {
       toast.error(e?.message || "Failed to contact Sentinel MCP");
     } finally {
       setActivating(false);
+    }
+  };
+
+  const activateAgent = async (agentKey: string) => {
+    setActivatingAgent(agentKey);
+    try {
+      const { data, error } = await supabase.functions.invoke("sentinel-mcp-worker", {
+        body: { action: "activate-agent", agent_key: agentKey, force: true },
+      });
+      if (error) throw error;
+      const status = (data as any)?.status;
+      const name = agents.find((a) => a.agent_key === agentKey)?.agent_name || agentKey;
+      if (status === "active") toast.success(`${name} engaged for FYSORA (non-fee tier).`);
+      else if (status === "retrying")
+        toast.info(`${name}: Sentinel MCP unreachable; retrying in ${(data as any)?.retry_in_seconds ?? "?"}s.`);
+      else if (status === "requested") toast.info(`${name} request queued.`);
+      else toast.error(`${name} activation failed: ${(data as any)?.agent?.last_error || "unknown"}`);
+      await loadAll();
+    } catch (e: any) {
+      toast.error(e?.message || "Failed to contact Sentinel MCP");
+    } finally {
+      setActivatingAgent(null);
     }
   };
 
@@ -223,6 +269,93 @@ const SentinelMcpSubscriptionPanel = () => {
           </Button>
         </div>
       </Card>
+
+      <Card className="p-5 space-y-4">
+        <div>
+          <h3 className="font-semibold flex items-center gap-2">
+            <Bot size={18} className="text-primary" /> Platform Agents (Non-Fee Tier)
+          </h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            Engage Sentinel MCP platform agents for FYSORA FASHN as a non-fee-paying client.
+            <strong> These engagements do not extend to organizations, designers, tailors or customers</strong> —
+            they remain platform-scoped only.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {agents.map((agent) => {
+            const Icon = AGENT_ICON[agent.agent_key] ?? Bot;
+            const isBusy = activatingAgent === agent.agent_key;
+            return (
+              <div key={agent.agent_key} className="border border-border rounded-lg p-4 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Icon size={18} className="text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm">{agent.agent_name}</p>
+                      <p className="text-[10px] text-muted-foreground capitalize">
+                        {agent.service_category.replace(/_/g, " ")}
+                      </p>
+                    </div>
+                  </div>
+                  <Badge
+                    variant={agent.status === "active" ? "default" : "secondary"}
+                    className="capitalize text-[10px]"
+                  >
+                    {agent.status.replace(/_/g, " ")}
+                  </Badge>
+                </div>
+                {agent.description && (
+                  <p className="text-xs text-muted-foreground">{agent.description}</p>
+                )}
+                {agent.last_error && agent.status !== "active" && (
+                  <p className="text-xs text-destructive">{agent.last_error}</p>
+                )}
+                {agent.attempt_count > 0 && agent.status !== "active" && (
+                  <p className="text-xs text-muted-foreground">
+                    Attempts: {agent.attempt_count}/{agent.max_attempts}
+                    {agent.next_retry_at && (
+                      <> · next retry {new Date(agent.next_retry_at).toLocaleTimeString()}</>
+                    )}
+                  </p>
+                )}
+                <Button
+                  size="sm"
+                  variant={agent.status === "active" ? "outline" : "default"}
+                  disabled={isBusy}
+                  onClick={() => activateAgent(agent.agent_key)}
+                  className="w-full"
+                >
+                  {isBusy ? (
+                    <><Loader2 size={14} className="mr-2 animate-spin" /> Engaging…</>
+                  ) : agent.status === "active" ? (
+                    <>Re-confirm engagement</>
+                  ) : agent.status === "failed" || agent.status === "retrying" ? (
+                    <>Retry engagement</>
+                  ) : (
+                    <>Engage {agent.agent_name}</>
+                  )}
+                </Button>
+              </div>
+            );
+          })}
+          {agents.length === 0 && (
+            <p className="text-xs text-muted-foreground">No platform agents configured.</p>
+          )}
+        </div>
+      </Card>
+
+      <Alert>
+        <Cloud className="h-4 w-4" />
+        <AlertTitle>Multi-Cloud Storage now available to organizations & designers</AlertTitle>
+        <AlertDescription>
+          Organizations and designers can subscribe to Sentinel MCP Multi-Cloud Storage
+          (AWS S3 + GCP GCS + Cloudflare R2) from the add-ons marketplace below — billed
+          independently from the FYSORA platform plan.
+        </AlertDescription>
+      </Alert>
 
       <SentinelAddonsMarketplace title="Available Sentinel MCP Add-Ons (User Pricing)" />
     </div>
