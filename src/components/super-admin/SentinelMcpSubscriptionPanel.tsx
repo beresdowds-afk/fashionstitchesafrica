@@ -270,7 +270,97 @@ const SentinelMcpSubscriptionPanel = () => {
         </div>
       </Card>
 
+      <Card className="p-5 space-y-4">
+        <div>
+          <h3 className="font-semibold flex items-center gap-2">
+            <Bot size={18} className="text-primary" /> Platform Agents (Non-Fee Tier)
+          </h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            Engage Sentinel MCP platform agents for FYSORA FASHN as a non-fee-paying client.
+            <strong> These engagements do not extend to organizations, designers, tailors or customers</strong> —
+            they remain platform-scoped only.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {agents.map((agent) => {
+            const Icon = AGENT_ICON[agent.agent_key] ?? Bot;
+            const isBusy = activatingAgent === agent.agent_key;
+            return (
+              <div key={agent.agent_key} className="border border-border rounded-lg p-4 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
+                      <Icon size={18} className="text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm">{agent.agent_name}</p>
+                      <p className="text-[10px] text-muted-foreground capitalize">
+                        {agent.service_category.replace(/_/g, " ")}
+                      </p>
+                    </div>
+                  </div>
+                  <Badge
+                    variant={agent.status === "active" ? "default" : "secondary"}
+                    className="capitalize text-[10px]"
+                  >
+                    {agent.status.replace(/_/g, " ")}
+                  </Badge>
+                </div>
+                {agent.description && (
+                  <p className="text-xs text-muted-foreground">{agent.description}</p>
+                )}
+                {agent.last_error && agent.status !== "active" && (
+                  <p className="text-xs text-destructive">{agent.last_error}</p>
+                )}
+                {agent.attempt_count > 0 && agent.status !== "active" && (
+                  <p className="text-xs text-muted-foreground">
+                    Attempts: {agent.attempt_count}/{agent.max_attempts}
+                    {agent.next_retry_at && (
+                      <> · next retry {new Date(agent.next_retry_at).toLocaleTimeString()}</>
+                    )}
+                  </p>
+                )}
+                <Button
+                  size="sm"
+                  variant={agent.status === "active" ? "outline" : "default"}
+                  disabled={isBusy}
+                  onClick={() => activateAgent(agent.agent_key)}
+                  className="w-full"
+                >
+                  {isBusy ? (
+                    <><Loader2 size={14} className="mr-2 animate-spin" /> Engaging…</>
+                  ) : agent.status === "active" ? (
+                    <>Re-confirm engagement</>
+                  ) : agent.status === "failed" || agent.status === "retrying" ? (
+                    <>Retry engagement</>
+                  ) : (
+                    <>Engage {agent.agent_name}</>
+                  )}
+                </Button>
+              </div>
+            );
+          })}
+          {agents.length === 0 && (
+            <p className="text-xs text-muted-foreground">No platform agents configured.</p>
+          )}
+        </div>
+      </Card>
+
+      <Alert>
+        <Cloud className="h-4 w-4" />
+        <AlertTitle>Multi-Cloud Storage now available to organizations & designers</AlertTitle>
+        <AlertDescription>
+          Organizations and designers can subscribe to Sentinel MCP Multi-Cloud Storage
+          (AWS S3 + GCP GCS + Cloudflare R2) from the add-ons marketplace below — billed
+          independently from the FYSORA platform plan.
+        </AlertDescription>
+      </Alert>
+
       <SentinelAddonsMarketplace title="Available Sentinel MCP Add-Ons (User Pricing)" />
+    </div>
+  );
+};
     </div>
   );
 };
