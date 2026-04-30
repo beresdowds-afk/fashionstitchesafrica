@@ -935,6 +935,10 @@ async function handleAdminAction(
             attempt_count: providerStatus === "active" ? 0 : newAttempt,
             last_attempt_at: nowIso,
             next_retry_at: nextRetry,
+            idempotency_key: idemKey ?? null,
+            idempotency_key_expires_at: idemKey
+              ? new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+              : null,
           },
           { onConflict: "id" }
         )
