@@ -969,6 +969,15 @@ async function handleAdminAction(
       return jsonResponse({ agents: data ?? [] });
     }
 
+    case "provision-storage":
+      return await provisionStorage(body, userId, adminClient);
+
+    case "revoke-storage":
+      return await revokeStorage(body, userId, adminClient);
+
+    case "compute-storage-usage":
+      return await computeStorageUsage(body, userId, adminClient);
+
     default:
       return jsonResponse({ error: `Unknown action: ${action}` }, 400);
   }
