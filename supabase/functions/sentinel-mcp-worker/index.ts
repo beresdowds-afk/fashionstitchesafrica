@@ -755,6 +755,27 @@ async function handleAdminAction(
       const isSuperAdmin = await verifySuperAdmin(userId, adminClient);
       if (!isSuperAdmin) return jsonResponse({ error: "Super admin access required" }, 403);
 
+      // Idempotency: dedupe duplicate clicks / webhook retries within 24h
+      const idemKey = (body as any).idempotency_key as string | undefined;
+      if (idemKey) {
+        const { data: existingByKey } = await adminClient
+          .from("sentinel_shield_activation")
+          .select("*")
+          .eq("idempotency_key", idemKey)
+          .maybeSingle();
+        if (
+          existingByKey &&
+          (existingByKey as any).idempotency_key_expires_at &&
+          new Date((existingByKey as any).idempotency_key_expires_at).getTime() > Date.now()
+        ) {
+          return jsonResponse({
+            status: (existingByKey as any).status,
+            activation: existingByKey,
+            idempotent_replay: true,
+          });
+        }
+      }
+
       // Load existing activation row to honor backoff schedule
       const { data: existing } = await adminClient
         .from("sentinel_shield_activation")
