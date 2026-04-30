@@ -361,8 +361,5 @@ const SentinelMcpSubscriptionPanel = () => {
     </div>
   );
 };
-    </div>
-  );
-};
 
 export default SentinelMcpSubscriptionPanel;
