@@ -19,6 +19,10 @@ export interface SentinelStorageEntitlement {
   provisioned_at: string | null;
   revoked_at: string | null;
   last_error: string | null;
+  retention_days: number | null;
+  auto_cleanup_enabled: boolean;
+  last_cleanup_at: string | null;
+  last_cleanup_deleted_count: number;
 }
 
 export interface SentinelStorageObject {
@@ -30,6 +34,7 @@ export interface SentinelStorageObject {
   content_type: string | null;
   size_bytes: number;
   created_at: string;
+  expires_at: string | null;
 }
 
 export interface SentinelStorageUsage {
@@ -144,6 +149,93 @@ export function useSentinelStorage({ orgId, designerUserId }: Options) {
     }
   }, [entitlement]);
 
+  const updateRetention = useCallback(
+    async (opts: { auto_cleanup_enabled: boolean; retention_days: number | null }) => {
+      if (!entitlement) return;
+      setBusy(true);
+      try {
+        const { error } = await supabase
+          .from("sentinel_storage_entitlements" as any)
+          .update({
+            auto_cleanup_enabled: opts.auto_cleanup_enabled,
+            retention_days: opts.auto_cleanup_enabled ? opts.retention_days : null,
+          })
+          .eq("id", entitlement.id);
+        if (error) throw error;
+        toast.success("Retention policy updated.");
+        await refresh();
+      } catch (e: any) {
+        toast.error(e?.message ?? "Failed to save retention policy");
+      } finally {
+        setBusy(false);
+      }
+    },
+    [entitlement, refresh],
+  );
+
+  const runCleanupNow = useCallback(async () => {
+    if (!entitlement) return;
+    setBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("sentinel-mcp-worker", {
+        body: { action: "cleanup-storage-objects", entitlement_id: entitlement.id },
+      });
+      if (error) throw error;
+      const n = (data as any)?.deleted ?? 0;
+      toast.success(n > 0 ? `Cleaned up ${n} expired file(s).` : "Nothing to clean up.");
+      await refresh();
+      await computeUsage();
+    } catch (e: any) {
+      toast.error(e?.message ?? "Cleanup failed");
+    } finally {
+      setBusy(false);
+    }
+  }, [entitlement, refresh, computeUsage]);
+
+  const exportUsageCsv = useCallback(async () => {
+    if (!entitlement) return;
+    const { data, error } = await supabase
+      .from("sentinel_storage_usage_ledger" as any)
+      .select("*")
+      .eq("entitlement_id", entitlement.id)
+      .order("period_start", { ascending: false });
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    const rows = (data as any[]) ?? [];
+    const header = [
+      "period_start",
+      "period_end",
+      "included_gb",
+      "avg_bytes",
+      "peak_bytes",
+      "overage_gb",
+      "base_charge_usd",
+      "overage_charge_usd",
+      "total_usd",
+      "status",
+    ];
+    const escape = (v: unknown) => {
+      const s = v == null ? "" : String(v);
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+    const csv = [
+      header.join(","),
+      ...rows.map((r) => header.map((h) => escape(r[h])).join(",")),
+    ].join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `sentinel-storage-usage-${entitlement.id.slice(0, 8)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    toast.success(`Exported ${rows.length} billing cycle(s).`);
+  }, [entitlement]);
+
   useEffect(() => {
     if (entitlement?.status === "active") computeUsage();
   }, [entitlement?.id, entitlement?.status, computeUsage]);
@@ -237,5 +329,8 @@ export function useSentinelStorage({ orgId, designerUserId }: Options) {
     deleteFile,
     getDownloadUrl,
     computeUsage,
+    updateRetention,
+    runCleanupNow,
+    exportUsageCsv,
   };
 }

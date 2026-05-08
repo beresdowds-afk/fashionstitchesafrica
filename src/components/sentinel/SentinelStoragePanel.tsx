@@ -1,10 +1,13 @@
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useSentinelStorage, type SentinelStorageObject } from "@/hooks/useSentinelStorage";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import {
   Cloud,
   Upload,
@@ -15,6 +18,9 @@ import {
   CloudOff,
   Database,
   RefreshCw,
+  CalendarClock,
+  FileSpreadsheet,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -46,7 +52,20 @@ const SentinelStoragePanel = ({ orgId, designerUserId, readOnly = false }: Props
     deleteFile,
     getDownloadUrl,
     computeUsage,
+    updateRetention,
+    runCleanupNow,
+    exportUsageCsv,
   } = useSentinelStorage({ orgId, designerUserId });
+
+  const [retentionEnabled, setRetentionEnabled] = useState(false);
+  const [retentionDays, setRetentionDays] = useState<number>(30);
+
+  useEffect(() => {
+    if (entitlement) {
+      setRetentionEnabled(!!entitlement.auto_cleanup_enabled);
+      setRetentionDays(entitlement.retention_days ?? 30);
+    }
+  }, [entitlement?.id, entitlement?.auto_cleanup_enabled, entitlement?.retention_days]);
 
   const handleFiles = async (files: FileList | null) => {
     if (!files) return;
@@ -183,8 +202,71 @@ const SentinelStoragePanel = ({ orgId, designerUserId, readOnly = false }: Props
               <CloudOff className="h-4 w-4 mr-2" /> Revoke storage
             </Button>
           )}
+          <Button onClick={exportUsageCsv} variant="outline" size="sm" disabled={busy}>
+            <FileSpreadsheet className="h-4 w-4 mr-2" /> Export usage CSV
+          </Button>
         </div>
       </Card>
+
+      {entitlement.status === "active" && !readOnly && (
+        <Card className="p-5 space-y-3">
+          <div className="flex items-center gap-2">
+            <CalendarClock className="h-5 w-5 text-primary" />
+            <h3 className="font-semibold">File retention &amp; auto-cleanup</h3>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Automatically delete files older than your retention window. Applies to all
+            existing &amp; future objects in this entitlement.
+          </p>
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-3">
+              <Switch
+                checked={retentionEnabled}
+                onCheckedChange={setRetentionEnabled}
+                id="retention-toggle"
+              />
+              <Label htmlFor="retention-toggle" className="text-sm">
+                Enable auto-cleanup
+              </Label>
+            </div>
+            <div className="flex items-center gap-2">
+              <Label className="text-xs text-muted-foreground">Retention (days)</Label>
+              <Input
+                type="number"
+                min={1}
+                max={3650}
+                value={retentionDays}
+                disabled={!retentionEnabled}
+                onChange={(e) => setRetentionDays(Math.max(1, Number(e.target.value) || 30))}
+                className="w-24"
+              />
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              size="sm"
+              onClick={() =>
+                updateRetention({
+                  auto_cleanup_enabled: retentionEnabled,
+                  retention_days: retentionDays,
+                })
+              }
+              disabled={busy}
+            >
+              <Sparkles className="h-4 w-4 mr-2" /> Save retention policy
+            </Button>
+            <Button size="sm" variant="outline" onClick={runCleanupNow} disabled={busy}>
+              <Trash2 className="h-4 w-4 mr-2" /> Run cleanup now
+            </Button>
+          </div>
+          {entitlement.last_cleanup_at && (
+            <p className="text-[11px] text-muted-foreground">
+              Last cleanup: {new Date(entitlement.last_cleanup_at).toLocaleString()} ·
+              deleted {entitlement.last_cleanup_deleted_count} file(s)
+            </p>
+          )}
+        </Card>
+      )}
 
       {entitlement.status === "active" && (
         <Card className="p-5 space-y-4">
@@ -230,6 +312,9 @@ const SentinelStoragePanel = ({ orgId, designerUserId, readOnly = false }: Props
                     <p className="text-xs text-muted-foreground">
                       {formatBytes(obj.size_bytes)} · {obj.content_type ?? "unknown"} ·{" "}
                       {new Date(obj.created_at).toLocaleString()}
+                      {obj.expires_at && (
+                        <> · expires {new Date(obj.expires_at).toLocaleDateString()}</>
+                      )}
                     </p>
                   </div>
                   <Button size="sm" variant="ghost" onClick={() => handleDownload(obj)}>
