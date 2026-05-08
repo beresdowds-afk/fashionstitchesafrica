@@ -978,6 +978,9 @@ async function handleAdminAction(
     case "compute-storage-usage":
       return await computeStorageUsage(body, userId, adminClient);
 
+    case "cleanup-storage-objects":
+      return await cleanupStorageObjects(body, userId, adminClient);
+
     default:
       return jsonResponse({ error: `Unknown action: ${action}` }, 400);
   }
