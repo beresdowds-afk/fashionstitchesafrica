@@ -1475,3 +1475,55 @@ async function computeStorageUsage(
     total_usd: Number((baseUsd + overageUsd).toFixed(4)),
   });
 }
+
+async function cleanupStorageObjects(
+  body: any,
+  userId: string,
+  adminClient: ReturnType<typeof createClient>,
+) {
+  const entitlementId = String(body.entitlement_id || "");
+  if (!entitlementId) return jsonResponse({ error: "entitlement_id required" }, 400);
+
+  const { data: ent } = await adminClient
+    .from("sentinel_storage_entitlements")
+    .select("*")
+    .eq("id", entitlementId)
+    .maybeSingle();
+  if (!ent) return jsonResponse({ error: "Entitlement not found" }, 404);
+  if (!(await verifyStorageOwner(userId, ent, adminClient))) {
+    return jsonResponse({ error: "Forbidden" }, 403);
+  }
+
+  // Find all objects past their expires_at
+  const nowIso = new Date().toISOString();
+  const { data: expired } = await adminClient
+    .from("sentinel_storage_objects")
+    .select("id, storage_path")
+    .eq("entitlement_id", entitlementId)
+    .not("expires_at", "is", null)
+    .lte("expires_at", nowIso)
+    .limit(1000);
+
+  const items = (expired ?? []) as Array<{ id: string; storage_path: string }>;
+  if (items.length > 0) {
+    const paths = items.map((i) => i.storage_path);
+    await adminClient.storage.from("sentinel-cloud-storage").remove(paths);
+    await adminClient
+      .from("sentinel_storage_objects")
+      .delete()
+      .in(
+        "id",
+        items.map((i) => i.id),
+      );
+  }
+
+  await adminClient
+    .from("sentinel_storage_entitlements")
+    .update({
+      last_cleanup_at: nowIso,
+      last_cleanup_deleted_count: items.length,
+    })
+    .eq("id", entitlementId);
+
+  return jsonResponse({ deleted: items.length });
+}
