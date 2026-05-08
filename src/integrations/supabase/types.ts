@@ -6710,6 +6710,51 @@ export type Database = {
         }
         Relationships: []
       }
+      sentinel_agent_incidents: {
+        Row: {
+          agent_key: string
+          agent_kind: string
+          agent_name: string | null
+          attempt_count: number | null
+          created_at: string
+          details: Json
+          error_message: string | null
+          event_type: string
+          from_status: string | null
+          id: string
+          next_retry_at: string | null
+          to_status: string | null
+        }
+        Insert: {
+          agent_key: string
+          agent_kind: string
+          agent_name?: string | null
+          attempt_count?: number | null
+          created_at?: string
+          details?: Json
+          error_message?: string | null
+          event_type: string
+          from_status?: string | null
+          id?: string
+          next_retry_at?: string | null
+          to_status?: string | null
+        }
+        Update: {
+          agent_key?: string
+          agent_kind?: string
+          agent_name?: string | null
+          attempt_count?: number | null
+          created_at?: string
+          details?: Json
+          error_message?: string | null
+          event_type?: string
+          from_status?: string | null
+          id?: string
+          next_retry_at?: string | null
+          to_status?: string | null
+        }
+        Relationships: []
+      }
       sentinel_alert_settings: {
         Row: {
           agent_failure_alert_enabled: boolean
@@ -7053,6 +7098,7 @@ export type Database = {
       }
       sentinel_storage_entitlements: {
         Row: {
+          auto_cleanup_enabled: boolean
           base_monthly_usd: number
           created_at: string
           current_object_count: number
@@ -7061,6 +7107,8 @@ export type Database = {
           current_usage_bytes: number
           id: string
           included_gb: number
+          last_cleanup_at: string | null
+          last_cleanup_deleted_count: number
           last_error: string | null
           last_usage_calc_at: string | null
           metadata: Json
@@ -7070,6 +7118,7 @@ export type Database = {
           provider_buckets: Json
           provisioned_at: string | null
           provisioning_response: Json | null
+          retention_days: number | null
           revoked_at: string | null
           status: string
           subscription_id: string | null
@@ -7077,6 +7126,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          auto_cleanup_enabled?: boolean
           base_monthly_usd?: number
           created_at?: string
           current_object_count?: number
@@ -7085,6 +7135,8 @@ export type Database = {
           current_usage_bytes?: number
           id?: string
           included_gb?: number
+          last_cleanup_at?: string | null
+          last_cleanup_deleted_count?: number
           last_error?: string | null
           last_usage_calc_at?: string | null
           metadata?: Json
@@ -7094,6 +7146,7 @@ export type Database = {
           provider_buckets?: Json
           provisioned_at?: string | null
           provisioning_response?: Json | null
+          retention_days?: number | null
           revoked_at?: string | null
           status?: string
           subscription_id?: string | null
@@ -7101,6 +7154,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          auto_cleanup_enabled?: boolean
           base_monthly_usd?: number
           created_at?: string
           current_object_count?: number
@@ -7109,6 +7163,8 @@ export type Database = {
           current_usage_bytes?: number
           id?: string
           included_gb?: number
+          last_cleanup_at?: string | null
+          last_cleanup_deleted_count?: number
           last_error?: string | null
           last_usage_calc_at?: string | null
           metadata?: Json
@@ -7118,6 +7174,7 @@ export type Database = {
           provider_buckets?: Json
           provisioned_at?: string | null
           provisioning_response?: Json | null
+          retention_days?: number | null
           revoked_at?: string | null
           status?: string
           subscription_id?: string | null
@@ -7160,6 +7217,7 @@ export type Database = {
           content_type: string | null
           created_at: string
           entitlement_id: string
+          expires_at: string | null
           id: string
           is_public: boolean
           metadata: Json
@@ -7172,6 +7230,7 @@ export type Database = {
           content_type?: string | null
           created_at?: string
           entitlement_id: string
+          expires_at?: string | null
           id?: string
           is_public?: boolean
           metadata?: Json
@@ -7184,6 +7243,7 @@ export type Database = {
           content_type?: string | null
           created_at?: string
           entitlement_id?: string
+          expires_at?: string | null
           id?: string
           is_public?: boolean
           metadata?: Json
@@ -9603,6 +9663,14 @@ export type Database = {
       claim_promotional_grant: {
         Args: { _grant_type: string; _org_id?: string }
         Returns: Json
+      }
+      cleanup_expired_sentinel_storage_objects: {
+        Args: { _limit?: number }
+        Returns: {
+          deleted_id: string
+          entitlement_id: string
+          storage_path: string
+        }[]
       }
       delete_email: {
         Args: { message_id: number; queue_name: string }
