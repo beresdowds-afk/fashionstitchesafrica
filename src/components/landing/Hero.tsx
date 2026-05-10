@@ -10,12 +10,27 @@ const Hero = () => {
   const { pricing } = useHeroPricing();
   const { settings } = usePlatformSettings();
 
+  const customBackdrop = settings.hero_backdrop_url;
+  const isVideo = settings.hero_backdrop_type === "video" && !!customBackdrop;
+  const imageUrl = customBackdrop && !isVideo ? customBackdrop : heroBg;
+
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden">
-      <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: `url(${heroBg})` }}
-      />
+      {isVideo ? (
+        <video
+          src={customBackdrop}
+          className="absolute inset-0 w-full h-full object-cover"
+          autoPlay
+          muted
+          loop
+          playsInline
+        />
+      ) : (
+        <div
+          className="absolute inset-0 bg-cover bg-center"
+          style={{ backgroundImage: `url(${imageUrl})` }}
+        />
+      )}
       <div className="absolute inset-0 bg-gradient-hero" />
       <div className="absolute inset-0 bg-ebony/40" />
 
