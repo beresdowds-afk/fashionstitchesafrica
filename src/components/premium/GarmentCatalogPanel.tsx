@@ -11,6 +11,8 @@ import { Plus, Upload, ShirtIcon, Globe, Camera, Trash2, RefreshCw, Download, Sp
 import { useGarmentCatalog, GarmentItem } from "@/hooks/useGarmentCatalog";
 import { useGarmentAI } from "@/hooks/useGarmentAI";
 import { useToast } from "@/hooks/use-toast";
+import MediaDropzone from "@/components/shared/MediaDropzone";
+import { supabase } from "@/integrations/supabase/client";
 
 interface GarmentCatalogPanelProps {
   orgId: string;
@@ -57,6 +59,29 @@ const GarmentCatalogPanel = ({ orgId, role }: GarmentCatalogPanelProps) => {
     if (error) toast({ title: "Upload failed", variant: "destructive" });
     else toast({ title: "Image uploaded" });
     setUploading(false);
+  };
+
+  const handleMediaUpload = async (garmentId: string, file: File, type: "image" | "video") => {
+    if (type === "image") {
+      const { error, url } = await uploadGarmentImage(file, garmentId);
+      if (error) {
+        toast({ title: "Upload failed", variant: "destructive" });
+        return null;
+      }
+      await updateGarment(garmentId, { media_url: url || undefined, media_type: "image" } as any);
+      toast({ title: "Image uploaded" });
+      return url;
+    }
+    const path = `${orgId}/${garmentId}/${Date.now()}-${file.name}`;
+    const { error: uploadError } = await supabase.storage.from("garment-images").upload(path, file, { upsert: true });
+    if (uploadError) {
+      toast({ title: "Video upload failed", variant: "destructive" });
+      return null;
+    }
+    const { data } = supabase.storage.from("garment-images").getPublicUrl(path);
+    await updateGarment(garmentId, { media_url: data.publicUrl, media_type: "video" } as any);
+    toast({ title: "Video uploaded" });
+    return data.publicUrl;
   };
 
   const handleSync = async (garment: GarmentItem) => {
@@ -164,9 +189,20 @@ const GarmentCatalogPanel = ({ orgId, role }: GarmentCatalogPanelProps) => {
           <p className="text-sm text-muted-foreground py-8 text-center">No garments uploaded yet. Add your first garment to enable virtual try-on.</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {garments.map(g => (
+            {garments.map((g: any) => {
+              const isVideoMedia = g.media_type === "video" && g.media_url;
+              return (
               <div key={g.id} className="rounded-lg border border-border overflow-hidden">
-                {g.image_url ? (
+                {isVideoMedia ? (
+                  <video
+                    src={g.media_url}
+                    className="w-full h-40 object-cover"
+                    muted
+                    loop
+                    autoPlay
+                    playsInline
+                  />
+                ) : g.image_url ? (
                   <div className="relative group">
                     <img src={g.image_url} alt={g.name} className="w-full h-40 object-cover" />
                     {/* AI overlay buttons */}
@@ -220,10 +256,12 @@ const GarmentCatalogPanel = ({ orgId, role }: GarmentCatalogPanelProps) => {
                     )}
                   </div>
                 ) : (
-                  <div className="w-full h-40 bg-muted/30 flex flex-col items-center justify-center cursor-pointer"
-                    onClick={() => { fileRef.current?.setAttribute("data-garment-id", g.id); fileRef.current?.click(); }}>
-                    <Upload size={24} className="text-muted-foreground mb-1" />
-                    <span className="text-xs text-muted-foreground">Upload image</span>
+                  <div className="p-2">
+                    <MediaDropzone
+                      aspect="video"
+                      label="Drop image or short video"
+                      onUpload={(file, type) => handleMediaUpload(g.id, file, type)}
+                    />
                   </div>
                 )}
                 <div className="p-3 space-y-2">
@@ -267,7 +305,8 @@ const GarmentCatalogPanel = ({ orgId, role }: GarmentCatalogPanelProps) => {
                   )}
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
         <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => {
