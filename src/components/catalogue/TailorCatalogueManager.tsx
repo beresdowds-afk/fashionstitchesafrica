@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,11 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Upload, Scissors, Globe, Trash2, ExternalLink, Tag } from "lucide-react";
+import { Plus, Scissors, Globe, Trash2, ExternalLink } from "lucide-react";
 import { useTailorCatalogue } from "@/hooks/useTailorCatalogue";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import SocialSyncPanel from "./SocialSyncPanel";
+import MediaDropzone from "@/components/shared/MediaDropzone";
 
 interface TailorCatalogueManagerProps {
   tailorId: string;
@@ -23,10 +24,8 @@ const CATEGORIES = ["Suits", "Shirts", "Trousers", "Dresses", "Traditional", "Ac
 const TailorCatalogueManager = ({ tailorId, orgId }: TailorCatalogueManagerProps) => {
   const { items, loading, addItem, updateItem, deleteItem } = useTailorCatalogue(tailorId);
   const { toast } = useToast();
-  const fileRef = useRef<HTMLInputElement>(null);
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ name: "", description: "", category: "General", price: "", tags: "" });
-  const [uploading, setUploading] = useState(false);
   const [activeTab, setActiveTab] = useState<"items" | "sync">("items");
 
   const handleAdd = async () => {
@@ -47,18 +46,21 @@ const TailorCatalogueManager = ({ tailorId, orgId }: TailorCatalogueManagerProps
     }
   };
 
-  const handleImageUpload = async (itemId: string, file: File) => {
-    setUploading(true);
-    const path = `tailor/${tailorId}/${itemId}/${file.name}`;
+  const handleMediaUpload = async (itemId: string, file: File, type: "image" | "video") => {
+    const path = `tailor/${tailorId}/${itemId}/${Date.now()}-${file.name}`;
     const { error: uploadError } = await supabase.storage.from("garment-images").upload(path, file, { upsert: true });
     if (uploadError) {
       toast({ title: "Upload failed", variant: "destructive" });
-    } else {
-      const { data } = supabase.storage.from("garment-images").getPublicUrl(path);
-      await updateItem(itemId, { image_url: data.publicUrl });
-      toast({ title: "Image uploaded" });
+      return null;
     }
-    setUploading(false);
+    const { data } = supabase.storage.from("garment-images").getPublicUrl(path);
+    await updateItem(itemId, {
+      image_url: type === "image" ? data.publicUrl : (undefined as any),
+      media_url: data.publicUrl,
+      media_type: type,
+    } as any);
+    toast({ title: type === "video" ? "Video uploaded" : "Image uploaded" });
+    return data.publicUrl;
   };
 
   if (loading) {
@@ -120,17 +122,20 @@ const TailorCatalogueManager = ({ tailorId, orgId }: TailorCatalogueManagerProps
             <p className="text-sm text-muted-foreground py-8 text-center">No items yet. Add your first catalogue item or sync from social media.</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {items.map(item => (
+              {items.map((item: any) => {
+                const mediaUrl = item.media_url || item.image_url;
+                const mediaType: "image" | "video" = item.media_type === "video" ? "video" : "image";
+                return (
                 <div key={item.id} className="rounded-lg border border-border overflow-hidden">
-                  {item.image_url ? (
-                    <img src={item.image_url} alt={item.name} className="w-full h-40 object-cover" />
-                  ) : (
-                    <div className="w-full h-40 bg-muted/30 flex flex-col items-center justify-center cursor-pointer"
-                      onClick={() => { fileRef.current?.setAttribute("data-item-id", item.id); fileRef.current?.click(); }}>
-                      <Upload size={24} className="text-muted-foreground mb-1" />
-                      <span className="text-xs text-muted-foreground">Upload image</span>
-                    </div>
-                  )}
+                  <MediaDropzone
+                    value={mediaUrl ? { url: mediaUrl, type: mediaType } : null}
+                    aspect="video"
+                    label="Drop image or short video"
+                    onUpload={(file, type) => handleMediaUpload(item.id, file, type)}
+                    onClear={async () => {
+                      await updateItem(item.id, { image_url: null, media_url: null, media_type: "image" } as any);
+                    }}
+                  />
                   <div className="p-3 space-y-2">
                     <div className="flex items-center justify-between">
                       <h4 className="font-medium text-sm truncate">{item.name}</h4>
@@ -154,14 +159,10 @@ const TailorCatalogueManager = ({ tailorId, orgId }: TailorCatalogueManagerProps
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
-          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => {
-            const file = e.target.files?.[0];
-            const itemId = fileRef.current?.getAttribute("data-item-id");
-            if (file && itemId) handleImageUpload(itemId, file);
-          }} />
         </Card>
       )}
     </div>
