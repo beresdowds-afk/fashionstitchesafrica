@@ -242,6 +242,44 @@ export default function PlatformSettingsPanel() {
         </div>
       </section>
 
+      {/* Hero Backdrop */}
+      <section className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="px-5 py-3 border-b border-border bg-muted/30 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Film size={16} className="text-primary" />
+            <h3 className="font-heading font-semibold text-sm">Landing Hero Backdrop</h3>
+          </div>
+          <span className="text-[10px] text-muted-foreground">Image or video ≤ 10s</span>
+        </div>
+        <div className="p-5 space-y-3">
+          <MediaDropzone
+            value={form.hero_backdrop_url ? { url: form.hero_backdrop_url, type: form.hero_backdrop_type } : null}
+            aspect="video"
+            label="Drop hero backdrop image or short video"
+            hint="Used as the full-bleed background on the landing hero. Saved instantly."
+            onClear={async () => {
+              setHeroSaving(true);
+              await updateSettings({ hero_backdrop_url: "", hero_backdrop_type: "image" } as any);
+              setForm((p) => ({ ...p, hero_backdrop_url: "", hero_backdrop_type: "image" }));
+              setHeroSaving(false);
+            }}
+            disabled={heroSaving}
+            onUpload={async (file, type) => {
+              setHeroSaving(true);
+              const path = `platform/hero-backdrop-${Date.now()}.${file.name.split(".").pop()}`;
+              const url = await uploadFile(file, path);
+              if (url) {
+                await updateSettings({ hero_backdrop_url: url, hero_backdrop_type: type } as any);
+                setForm((p) => ({ ...p, hero_backdrop_url: url, hero_backdrop_type: type }));
+                toast({ title: "Hero backdrop updated" });
+              }
+              setHeroSaving(false);
+              return url;
+            }}
+          />
+        </div>
+      </section>
+
       {/* Social Links */}
       <section className="rounded-xl border border-border bg-card overflow-hidden">
         <div className="px-5 py-3 border-b border-border bg-muted/30 flex items-center gap-2">
