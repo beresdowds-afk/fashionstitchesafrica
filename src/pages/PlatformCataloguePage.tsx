@@ -22,6 +22,7 @@ import {
   Info, Check, X, ShieldCheck,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import TourCtaBubble from "@/components/tour/TourCtaBubble";
 import { MOCK_CATALOGUE_ITEMS } from "@/data/mockCatalogueItems";
 
@@ -58,6 +59,9 @@ const PlatformCataloguePage = () => {
   const [isVerified, setIsVerified] = useState(false);
   const [profileLoading, setProfileLoading] = useState(true);
   const [tourActive, setTourActive] = useState(false); // true when user accepted consent for this session
+  // Guest interaction-blocked state: drives a clear in-page message + dialog
+  const [guestBlockOpen, setGuestBlockOpen] = useState(false);
+  const [guestBlockedAction, setGuestBlockedAction] = useState<string | null>(null);
 
   // Determine user role + profile info
   useEffect(() => {
@@ -116,11 +120,8 @@ const PlatformCataloguePage = () => {
   }
 
   const promptAuth = () => {
-    toast({
-      title: "Sign in to interact",
-      description: "Create a free account or sign in to view product details and place orders.",
-    });
-    navigate("/auth");
+    setGuestBlockedAction("open this product");
+    setGuestBlockOpen(true);
   };
 
   // Unauthenticated visitors get a free, non-interactive preview of the catalogue.
