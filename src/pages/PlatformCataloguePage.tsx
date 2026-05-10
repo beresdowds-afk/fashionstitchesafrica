@@ -22,6 +22,7 @@ import {
   Info, Check, X, ShieldCheck,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import TourCtaBubble from "@/components/tour/TourCtaBubble";
 import { MOCK_CATALOGUE_ITEMS } from "@/data/mockCatalogueItems";
 
@@ -58,6 +59,8 @@ const PlatformCataloguePage = () => {
   const [isVerified, setIsVerified] = useState(false);
   const [profileLoading, setProfileLoading] = useState(true);
   const [tourActive, setTourActive] = useState(false); // true when user accepted consent for this session
+  // Guest interaction-blocked state: drives a clear in-page message
+  const [guestBlockedAction, setGuestBlockedAction] = useState<string | null>(null);
 
   // Determine user role + profile info
   useEffect(() => {
@@ -116,11 +119,9 @@ const PlatformCataloguePage = () => {
   }
 
   const promptAuth = () => {
-    toast({
-      title: "Sign in to interact",
-      description: "Create a free account or sign in to view product details and place orders.",
-    });
-    navigate("/auth");
+    setGuestBlockedAction("open this product");
+    // Scroll the alert into view so the message is unmissable
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   // Unauthenticated visitors get a free, non-interactive preview of the catalogue.
@@ -246,6 +247,22 @@ const PlatformCataloguePage = () => {
           </div>
 
           {/* Search (read-only filtering allowed) */}
+          {guestBlockedAction && (
+            <Alert className="mb-4 border-primary/30 bg-primary/5">
+              <Lock className="h-4 w-4" />
+              <AlertTitle className="text-sm font-semibold">Sign in required to {guestBlockedAction}</AlertTitle>
+              <AlertDescription className="text-xs">
+                The platform catalogue is view-only for guests. Create a free account or sign in to open product
+                details, contact fashion houses, save favourites, or place orders.
+                <div className="mt-2 flex gap-2">
+                  <Button size="sm" variant="hero" onClick={() => navigate("/auth")}>
+                    <LogIn size={12} className="mr-1" /> Sign in / Sign up
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setGuestBlockedAction(null)}>Dismiss</Button>
+                </div>
+              </AlertDescription>
+            </Alert>
+          )}
           <div className="flex flex-col sm:flex-row gap-3 mb-6">
             <div className="relative flex-1">
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
