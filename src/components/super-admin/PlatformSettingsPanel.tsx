@@ -10,8 +10,9 @@ import { motion } from "framer-motion";
 import {
   Globe, Mail, Phone, MapPin, Save, Loader2, Image, FileImage,
   Eye, Type, Target, Compass, Link as LinkIcon, Hash, Copyright,
-  Twitter, Facebook, Instagram, Linkedin, Youtube
+  Twitter, Facebook, Instagram, Linkedin, Youtube, Film
 } from "lucide-react";
+import MediaDropzone from "@/components/shared/MediaDropzone";
 
 const SOCIAL_FIELDS = [
   { key: "twitter", label: "Twitter / X", icon: Twitter },
@@ -29,6 +30,7 @@ export default function PlatformSettingsPanel() {
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [faviconFile, setFaviconFile] = useState<File | null>(null);
   const [socialLinks, setSocialLinks] = useState<Record<string, string>>({});
+  const [heroSaving, setHeroSaving] = useState(false);
 
   useEffect(() => {
     setForm(settings);
