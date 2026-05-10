@@ -59,8 +59,7 @@ const PlatformCataloguePage = () => {
   const [isVerified, setIsVerified] = useState(false);
   const [profileLoading, setProfileLoading] = useState(true);
   const [tourActive, setTourActive] = useState(false); // true when user accepted consent for this session
-  // Guest interaction-blocked state: drives a clear in-page message + dialog
-  const [guestBlockOpen, setGuestBlockOpen] = useState(false);
+  // Guest interaction-blocked state: drives a clear in-page message
   const [guestBlockedAction, setGuestBlockedAction] = useState<string | null>(null);
 
   // Determine user role + profile info
@@ -121,7 +120,8 @@ const PlatformCataloguePage = () => {
 
   const promptAuth = () => {
     setGuestBlockedAction("open this product");
-    setGuestBlockOpen(true);
+    // Scroll the alert into view so the message is unmissable
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   // Unauthenticated visitors get a free, non-interactive preview of the catalogue.
