@@ -1209,6 +1209,7 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
             favicon_url: (settings as any).favicon_url,
             vision_statement: (settings as any).vision_statement,
             mission_statement: (settings as any).mission_statement,
+            our_story: (settings as any).our_story,
           }}
           canEdit={canEdit}
           onSettingsChange={(updates) => setSettings({ ...settings, ...updates } as any)}
