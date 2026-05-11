@@ -1010,34 +1010,6 @@ const AboutPage = ({ org, website, brandColor, accentColor, fontHeading, officer
           </div>
         )}
 
-        {officers.filter(o => o.is_public).length > 0 && (
-          <div>
-            <div className="text-center mb-14">
-              <span className="text-[11px] font-medium uppercase tracking-[0.25em] mb-3 block" style={textMuted}>Leadership</span>
-              <h2 className="text-3xl" style={{ fontFamily: `'${fontHeading}'`, fontWeight: td.headingWeight }}>Meet Our Team</h2>
-            </div>
-            <div className={`grid gap-10 ${officers.length <= 3 ? `grid-cols-1 md:grid-cols-${officers.length}` : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"}`}>
-              {officers.map((officer, i) => (
-                <motion.div key={officer.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }} className="text-center group">
-                  <div className={`w-28 h-28 mx-auto overflow-hidden mb-5 border-2 ${borderStyle} group-hover:shadow-lg transition-all`} style={{ borderRadius: "50%" }}>
-                    {officer.photo_url ? (
-                      <img src={officer.photo_url} alt={officer.full_name} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: `${brandColor}08` }}>
-                        <span className="text-2xl font-light" style={textMuted}>
-                          {officer.full_name.split(" ").map(n => n[0]).join("").slice(0, 2)}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  <h3 className="font-medium text-base mb-1" style={{ fontFamily: `'${fontHeading}'` }}>{officer.full_name}</h3>
-                  <p className="text-xs mb-2" style={{ color: accentColor }}>{officer.title}</p>
-                  {officer.bio && <p className="text-sm leading-relaxed max-w-xs mx-auto" style={textMuted}>{officer.bio}</p>}
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        )}
       </motion.div>
     </div>
   );
