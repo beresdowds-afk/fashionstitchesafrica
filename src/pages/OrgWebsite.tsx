@@ -999,30 +999,18 @@ const AboutPage = ({ org, website, brandColor, accentColor, fontHeading, officer
           <p className="text-base leading-relaxed" style={textMuted}>{org.description || template.copy.aboutIntro}</p>
         </div>
 
-        {(website.vision_statement || website.mission_statement) && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-24">
-            {website.vision_statement && (
-              <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className={`p-10 border ${borderStyle}`} style={{ backgroundColor: `${brandColor}04` }}>
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="h-px w-10" style={{ background: accentColor }} />
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.25em]" style={{ color: accentColor }}>Our Vision</span>
-                </div>
-                <p className="text-lg leading-relaxed" style={textMuted}>{website.vision_statement}</p>
-              </motion.div>
-            )}
-            {website.mission_statement && (
-              <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className={`p-10 border ${borderStyle}`} style={{ backgroundColor: `${accentColor}04` }}>
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="h-px w-10" style={{ background: brandColor }} />
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.25em]" style={{ color: brandColor }}>Our Mission</span>
-                </div>
-                <p className="text-lg leading-relaxed" style={textMuted}>{website.mission_statement}</p>
-              </motion.div>
-            )}
+        {(website.our_story || website.vision_statement || website.mission_statement || officers.filter(o => o.is_public).length > 0) && (
+          <div className="text-center mb-24 p-8 border rounded-lg" style={{ borderColor: `${accentColor}22`, backgroundColor: `${brandColor}04` }}>
+            <p className="text-sm mb-4" style={textMuted}>
+              Discover our journey, vision, mission and the team behind {org.name}.
+            </p>
+            <p className="text-[11px] uppercase tracking-[0.2em]" style={{ color: accentColor }}>
+              Tap the “Our Story” button on the home page
+            </p>
           </div>
         )}
 
-        {officers.length > 0 && (
+        {officers.filter(o => o.is_public).length > 0 && (
           <div>
             <div className="text-center mb-14">
               <span className="text-[11px] font-medium uppercase tracking-[0.25em] mb-3 block" style={textMuted}>Leadership</span>
