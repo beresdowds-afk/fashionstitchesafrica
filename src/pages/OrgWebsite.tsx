@@ -38,6 +38,7 @@ interface OrgWebsiteData {
   favicon_url?: string | null;
   vision_statement?: string | null;
   mission_statement?: string | null;
+  our_story?: string | null;
   template_id?: string | null;
 }
 
