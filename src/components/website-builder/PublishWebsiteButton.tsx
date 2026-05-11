@@ -31,15 +31,17 @@ const PublishWebsiteButton = ({ org, disabled }: PublishWebsiteButtonProps) => {
       }
 
       // Fetch org details, website settings, catalogue, and officers in parallel
-      const [orgResult, wsResult, catResult] = await Promise.all([
+      const [orgResult, wsResult, catResult, officersResult] = await Promise.all([
         supabase.from("organizations").select("name, slug, description, email, phone, address, logo_url").eq("id", org.id).single(),
         supabase.from("org_websites").select("*").eq("org_id", org.id).single(),
         supabase.from("org_catalogue_items").select("id, name, description, price, currency, image_url, category, tags").eq("org_id", org.id).order("sort_order"),
+        supabase.from("org_company_officers").select("id, full_name, title, photo_url, is_public, display_order").eq("org_id", org.id).eq("is_public", true).order("display_order"),
       ]);
 
       const orgData = orgResult.data as any || {};
       const ws = wsResult.data as any || {};
       const catalogue = (catResult.data || []) as any[];
+      const officers = (officersResult.data || []) as any[];
 
       const orgName = orgData.name || org.name;
       const slug = orgData.slug || org.slug;
@@ -106,10 +108,8 @@ const PublishWebsiteButton = ({ org, disabled }: PublishWebsiteButtonProps) => {
         linkedin && `<a href="${linkedin}" target="_blank" title="LinkedIn">💼</a>`,
       ].filter(Boolean).join("\n            ");
 
-      // About section with vision/mission
-      let aboutExtra = "";
-      if (visionStatement) aboutExtra += `<div class="vm-block"><h4>Our Vision</h4><p>${visionStatement}</p></div>`;
-      if (missionStatement) aboutExtra += `<div class="vm-block"><h4>Our Mission</h4><p>${missionStatement}</p></div>`;
+      // Vision/Mission moved into the Our Story modal — keep About section lean
+      const aboutExtra = "";
 
       const whatsappLink = whatsapp ? `https://wa.me/${whatsapp.replace(/[^0-9]/g, "")}` : "";
 
@@ -121,6 +121,34 @@ const PublishWebsiteButton = ({ org, disabled }: PublishWebsiteButtonProps) => {
       const ourStoryHtml = ourStory
         ? escapeHtml(ourStory).split(/\n+/).map((p) => `<p>${p}</p>`).join("")
         : "";
+
+      const initials = (name: string) =>
+        escapeHtml((name || "").split(" ").map(n => n[0] || "").join("").slice(0, 2).toUpperCase());
+      const officersHtml = officers.length
+        ? `<div class="story-team">
+            <div class="story-divider"><span class="section-tag">Our Team</span></div>
+            <div class="story-team-grid">
+              ${officers.map(o => `
+                <div class="story-team-member">
+                  <div class="story-team-avatar">
+                    ${o.photo_url ? `<img src="${o.photo_url}" alt="${escapeHtml(o.full_name)}" loading="lazy">` : `<span>${initials(o.full_name)}</span>`}
+                  </div>
+                  <p class="story-team-name">${escapeHtml(o.full_name || "")}</p>
+                  <p class="story-team-title">${escapeHtml(o.title || "")}</p>
+                </div>`).join("")}
+            </div>
+          </div>`
+        : "";
+      const visionMissionHtml =
+        (visionStatement || missionStatement)
+          ? `<div class="story-vm">
+              ${visionStatement ? `<div class="story-vm-card"><span class="story-vm-tag">Our Vision</span><p>${escapeHtml(visionStatement)}</p></div>` : ""}
+              ${missionStatement ? `<div class="story-vm-card alt"><span class="story-vm-tag alt">Our Mission</span><p>${escapeHtml(missionStatement)}</p></div>` : ""}
+            </div>`
+          : "";
+      const storyLogoHtml = logoUrl
+        ? `<img src="${logoUrl}" alt="${escapeHtml(orgName)}" class="story-logo">`
+        : `<div class="story-logo placeholder">${escapeHtml(orgName.charAt(0))}</div>`;
 
       const fontUrl = `https://fonts.googleapis.com/css2?family=${fontHeading.replace(/ /g, "+")}:wght@400;600;700;900&family=${fontBody.replace(/ /g, "+")}:wght@300;400;500;600&display=swap`;
 
@@ -179,9 +207,14 @@ const PublishWebsiteButton = ({ org, disabled }: PublishWebsiteButtonProps) => {
     <div class="story-backdrop" data-close-story></div>
     <div class="story-card" role="document">
       <button type="button" class="story-close" aria-label="Close" data-close-story>×</button>
-      <span class="section-tag">Our Story</span>
-      <h2 id="ourStoryTitle" class="section-title">${escapeHtml(orgName)}</h2>
+      <div class="story-header">
+        ${storyLogoHtml}
+        <span class="section-tag">Our Story</span>
+        <h2 id="ourStoryTitle" class="section-title">${escapeHtml(orgName)}</h2>
+      </div>
       <div class="story-body">${ourStoryHtml}</div>
+      ${visionMissionHtml}
+      ${officersHtml}
     </div>
   </div>` : ""}
 
@@ -443,7 +476,7 @@ function generateStyles(
 
 .comm-bar{position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:12px;z-index:999}.comm-btn{width:52px;height:52px;border-radius:50%;background:var(--bg-card);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:1.3rem;text-decoration:none;transition:all .3s;box-shadow:var(--shadow-sm)}.comm-btn:hover{background:var(--primary);transform:scale(1.1);border-color:var(--primary)}
 
-.story-modal{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px}.story-modal[hidden]{display:none}.story-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(6px)}.story-card{position:relative;z-index:2;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;max-width:680px;width:100%;max-height:85vh;overflow-y:auto;padding:48px 40px;box-shadow:0 30px 80px rgba(0,0,0,.5);animation:storyIn .35s ease}.story-close{position:absolute;top:14px;right:18px;background:transparent;border:none;color:var(--text);font-size:1.6rem;cursor:pointer;line-height:1;padding:6px 10px;border-radius:8px}.story-close:hover{background:var(--border)}.story-body{margin-top:18px;color:var(--text-muted);font-size:1rem;line-height:1.8}.story-body p{margin-bottom:14px}@keyframes storyIn{from{opacity:0;transform:translateY(20px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+.story-modal{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px}.story-modal[hidden]{display:none}.story-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(6px)}.story-card{position:relative;z-index:2;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;max-width:760px;width:100%;max-height:88vh;overflow-y:auto;padding:40px 36px;box-shadow:0 30px 80px rgba(0,0,0,.5);animation:storyIn .35s ease}.story-close{position:absolute;top:14px;right:18px;background:transparent;border:none;color:var(--text);font-size:1.6rem;cursor:pointer;line-height:1;padding:6px 10px;border-radius:8px;z-index:3}.story-close:hover{background:var(--border)}.story-header{text-align:center;margin-bottom:8px}.story-logo{width:96px;height:96px;border-radius:50%;object-fit:contain;border:1px solid ${accentColor}55;background:${brandColor}0f;margin:0 auto 18px;display:block}.story-logo.placeholder{display:flex;align-items:center;justify-content:center;font-family:var(--font-heading);font-size:2.2rem;color:${accentColor}}.story-body{margin-top:20px;color:var(--text-muted);font-size:1rem;line-height:1.8}.story-body p{margin-bottom:14px}.story-vm{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:28px}@media(max-width:640px){.story-vm{grid-template-columns:1fr}}.story-vm-card{padding:20px;border:1px solid ${accentColor}33;border-radius:10px;background:${brandColor}0a}.story-vm-card.alt{border-color:${brandColor}33;background:${accentColor}0a}.story-vm-tag{display:inline-block;font-size:.7rem;font-weight:600;letter-spacing:.25em;text-transform:uppercase;color:${accentColor};margin-bottom:10px}.story-vm-tag.alt{color:${brandColor}}.story-vm-card p{font-size:.92rem;line-height:1.7;color:var(--text-muted);margin:0}.story-divider{text-align:center;margin:32px 0 20px}.story-team-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}@media(max-width:640px){.story-team-grid{grid-template-columns:repeat(2,1fr)}}.story-team-member{text-align:center}.story-team-avatar{width:74px;height:74px;border-radius:50%;overflow:hidden;border:1px solid ${accentColor}40;margin:0 auto 10px;background:${brandColor}12;display:flex;align-items:center;justify-content:center}.story-team-avatar img{width:100%;height:100%;object-fit:cover}.story-team-avatar span{color:var(--text-muted);font-size:.95rem}.story-team-name{font-family:var(--font-heading);font-size:.9rem;color:var(--text);margin:0}.story-team-title{font-size:.7rem;color:${accentColor};margin:2px 0 0;text-transform:uppercase;letter-spacing:.1em}@keyframes storyIn{from{opacity:0;transform:translateY(20px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
 
 @media(max-width:768px){.nav-toggle{display:flex}.nav-links{position:fixed;top:0;right:-100%;width:280px;height:100vh;background:var(--bg-card);flex-direction:column;padding:80px 32px 32px;gap:24px;transition:right .4s;border-left:1px solid var(--border)}.nav-links.open{right:0}.about-grid,.contact-grid,.footer-grid{grid-template-columns:1fr}.footer-bottom{flex-direction:column;gap:8px;text-align:center}}`;
 }

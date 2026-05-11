@@ -718,28 +718,101 @@ const HomePage = ({ org, website, brandColor, accentColor, fontHeading, officers
                 exit={{ y: 20, opacity: 0, scale: 0.98 }}
                 transition={{ type: "spring", stiffness: 220, damping: 24 }}
                 onClick={(e) => e.stopPropagation()}
-                className="relative w-full max-w-2xl max-h-[85vh] overflow-y-auto"
-                style={{ background: td.bgSurface, color: td.textPrimary, borderRadius: 8 }}
+                className="relative w-full max-w-3xl max-h-[88vh] overflow-y-auto"
+                style={{ background: td.bgSurface, color: td.textPrimary, borderRadius: 10 }}
               >
                 <button
                   onClick={() => setStoryOpen(false)}
                   aria-label="Close"
-                  className="absolute top-4 right-4 p-2 rounded-full hover:opacity-70"
+                  className="absolute top-4 right-4 p-2 rounded-full hover:opacity-70 z-10"
                   style={{ color: td.textPrimary }}
                 >
                   <X size={18} />
                 </button>
-                <div className="p-10 md:p-14">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="h-px w-10" style={{ background: accentColor }} />
-                    <span className="text-[11px] font-semibold uppercase tracking-[0.25em]" style={{ color: accentColor }}>Our Story</span>
+                <div className="p-8 md:p-12 space-y-10">
+                  {/* Header with org logo */}
+                  <div className="flex flex-col items-center text-center">
+                    {org.logo_url ? (
+                      <img
+                        src={org.logo_url}
+                        alt={`${org.name} logo`}
+                        className="w-24 h-24 md:w-28 md:h-28 object-contain rounded-full border mb-5"
+                        style={{ borderColor: `${accentColor}55`, background: `${brandColor}08` }}
+                      />
+                    ) : (
+                      <div
+                        className="w-24 h-24 md:w-28 md:h-28 flex items-center justify-center rounded-full mb-5 text-3xl font-light"
+                        style={{ background: `${brandColor}12`, color: accentColor }}
+                      >
+                        {org.name.charAt(0)}
+                      </div>
+                    )}
+                    <div className="flex items-center gap-3 mb-3 justify-center">
+                      <div className="h-px w-10" style={{ background: accentColor }} />
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.25em]" style={{ color: accentColor }}>Our Story</span>
+                      <div className="h-px w-10" style={{ background: accentColor }} />
+                    </div>
+                    <h2 className="text-3xl md:text-4xl" style={{ fontFamily: `'${fontHeading}'`, fontWeight: td.headingWeight }}>
+                      {org.name}
+                    </h2>
+                    <div className="text-base md:text-lg leading-relaxed whitespace-pre-line mt-6 text-left" style={{ color: td.textSecondary }}>
+                      {website.our_story}
+                    </div>
                   </div>
-                  <h2 className="text-3xl md:text-4xl mb-6" style={{ fontFamily: `'${fontHeading}'`, fontWeight: td.headingWeight }}>
-                    {org.name}
-                  </h2>
-                  <div className="text-base md:text-lg leading-relaxed whitespace-pre-line" style={{ color: td.textSecondary }}>
-                    {website.our_story}
-                  </div>
+
+                  {/* Vision & Mission */}
+                  {(website.vision_statement || website.mission_statement) && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      {website.vision_statement && (
+                        <div className="p-6 border rounded-lg" style={{ borderColor: `${accentColor}33`, background: `${brandColor}06` }}>
+                          <div className="flex items-center gap-2 mb-3">
+                            <Eye size={14} style={{ color: accentColor }} />
+                            <span className="text-[11px] font-semibold uppercase tracking-[0.25em]" style={{ color: accentColor }}>Our Vision</span>
+                          </div>
+                          <p className="text-sm md:text-base leading-relaxed" style={{ color: td.textSecondary }}>{website.vision_statement}</p>
+                        </div>
+                      )}
+                      {website.mission_statement && (
+                        <div className="p-6 border rounded-lg" style={{ borderColor: `${brandColor}33`, background: `${accentColor}06` }}>
+                          <div className="flex items-center gap-2 mb-3">
+                            <Sparkles size={14} style={{ color: brandColor }} />
+                            <span className="text-[11px] font-semibold uppercase tracking-[0.25em]" style={{ color: brandColor }}>Our Mission</span>
+                          </div>
+                          <p className="text-sm md:text-base leading-relaxed" style={{ color: td.textSecondary }}>{website.mission_statement}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Our Team */}
+                  {officers.filter(o => o.is_public).length > 0 && (
+                    <div>
+                      <div className="flex items-center gap-3 mb-6 justify-center">
+                        <div className="h-px w-8" style={{ background: brandColor }} />
+                        <span className="text-[11px] font-semibold uppercase tracking-[0.25em]" style={{ color: brandColor }}>Our Team</span>
+                        <div className="h-px w-8" style={{ background: brandColor }} />
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
+                        {officers.filter(o => o.is_public).map((officer) => (
+                          <div key={officer.id} className="text-center">
+                            <div className="w-20 h-20 mx-auto rounded-full overflow-hidden mb-3 border" style={{ borderColor: `${accentColor}40` }}>
+                              {officer.photo_url ? (
+                                <img src={officer.photo_url} alt={officer.full_name} className="w-full h-full object-cover" />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center" style={{ background: `${brandColor}12` }}>
+                                  <span className="text-lg font-light" style={{ color: td.textSecondary }}>
+                                    {officer.full_name.split(" ").map(n => n[0]).join("").slice(0, 2)}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                            <p className="font-medium text-sm" style={{ fontFamily: `'${fontHeading}'`, color: td.textPrimary }}>{officer.full_name}</p>
+                            <p className="text-[11px] mt-0.5" style={{ color: accentColor }}>{officer.title}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </motion.div>
             </motion.div>
@@ -926,57 +999,17 @@ const AboutPage = ({ org, website, brandColor, accentColor, fontHeading, officer
           <p className="text-base leading-relaxed" style={textMuted}>{org.description || template.copy.aboutIntro}</p>
         </div>
 
-        {(website.vision_statement || website.mission_statement) && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-24">
-            {website.vision_statement && (
-              <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className={`p-10 border ${borderStyle}`} style={{ backgroundColor: `${brandColor}04` }}>
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="h-px w-10" style={{ background: accentColor }} />
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.25em]" style={{ color: accentColor }}>Our Vision</span>
-                </div>
-                <p className="text-lg leading-relaxed" style={textMuted}>{website.vision_statement}</p>
-              </motion.div>
-            )}
-            {website.mission_statement && (
-              <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className={`p-10 border ${borderStyle}`} style={{ backgroundColor: `${accentColor}04` }}>
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="h-px w-10" style={{ background: brandColor }} />
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.25em]" style={{ color: brandColor }}>Our Mission</span>
-                </div>
-                <p className="text-lg leading-relaxed" style={textMuted}>{website.mission_statement}</p>
-              </motion.div>
-            )}
+        {(website.our_story || website.vision_statement || website.mission_statement || officers.filter(o => o.is_public).length > 0) && (
+          <div className="text-center mb-24 p-8 border rounded-lg" style={{ borderColor: `${accentColor}22`, backgroundColor: `${brandColor}04` }}>
+            <p className="text-sm mb-4" style={textMuted}>
+              Discover our journey, vision, mission and the team behind {org.name}.
+            </p>
+            <p className="text-[11px] uppercase tracking-[0.2em]" style={{ color: accentColor }}>
+              Tap the “Our Story” button on the home page
+            </p>
           </div>
         )}
 
-        {officers.length > 0 && (
-          <div>
-            <div className="text-center mb-14">
-              <span className="text-[11px] font-medium uppercase tracking-[0.25em] mb-3 block" style={textMuted}>Leadership</span>
-              <h2 className="text-3xl" style={{ fontFamily: `'${fontHeading}'`, fontWeight: td.headingWeight }}>Meet Our Team</h2>
-            </div>
-            <div className={`grid gap-10 ${officers.length <= 3 ? `grid-cols-1 md:grid-cols-${officers.length}` : "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"}`}>
-              {officers.map((officer, i) => (
-                <motion.div key={officer.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }} className="text-center group">
-                  <div className={`w-28 h-28 mx-auto overflow-hidden mb-5 border-2 ${borderStyle} group-hover:shadow-lg transition-all`} style={{ borderRadius: "50%" }}>
-                    {officer.photo_url ? (
-                      <img src={officer.photo_url} alt={officer.full_name} className="w-full h-full object-cover" />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: `${brandColor}08` }}>
-                        <span className="text-2xl font-light" style={textMuted}>
-                          {officer.full_name.split(" ").map(n => n[0]).join("").slice(0, 2)}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  <h3 className="font-medium text-base mb-1" style={{ fontFamily: `'${fontHeading}'` }}>{officer.full_name}</h3>
-                  <p className="text-xs mb-2" style={{ color: accentColor }}>{officer.title}</p>
-                  {officer.bio && <p className="text-sm leading-relaxed max-w-xs mx-auto" style={textMuted}>{officer.bio}</p>}
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        )}
       </motion.div>
     </div>
   );
