@@ -843,6 +843,9 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
       font_body: (settings as any).font_body || "Inter",
       color_palette: (settings as any).color_palette || {},
       favicon_url: (settings as any).favicon_url || null,
+      vision_statement: (settings as any).vision_statement || null,
+      mission_statement: (settings as any).mission_statement || null,
+      our_story: (settings as any).our_story || null,
     };
 
     // Save org details if changed
