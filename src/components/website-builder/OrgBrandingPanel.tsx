@@ -1,9 +1,10 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, Image, Type, Palette, Building2, Loader2, Sparkles, Eye, BookOpen } from "lucide-react";
 import BrandingLivePreview from "./BrandingLivePreview";
+import OurStoryPreview, { OurStoryPreviewOfficer } from "./OurStoryPreview";
 
 interface OrgBrandingPanelProps {
   org: { id: string; name: string; slug: string; description?: string | null; email?: string | null; phone?: string | null; address?: string | null; logo_url?: string | null };
@@ -41,6 +42,25 @@ const OrgBrandingPanel = ({ org, websiteSettings, canEdit, onSettingsChange, onO
   const palette = (websiteSettings.color_palette || {}) as Record<string, string>;
   const fontHeading = websiteSettings.font_heading || "Inter";
   const fontBody = websiteSettings.font_body || "Inter";
+
+  const [storyPreviewOpen, setStoryPreviewOpen] = useState(false);
+  const [officers, setOfficers] = useState<OurStoryPreviewOfficer[]>([]);
+
+  // Refetch officers whenever the story preview opens, so order/photos stay in sync
+  useEffect(() => {
+    if (!storyPreviewOpen) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("org_company_officers")
+        .select("id, full_name, title, photo_url, is_public, display_order")
+        .eq("org_id", org.id)
+        .eq("is_public", true)
+        .order("display_order");
+      if (!cancelled) setOfficers((data || []) as any);
+    })();
+    return () => { cancelled = true; };
+  }, [storyPreviewOpen, org.id]);
 
   const handleFileUpload = async (file: File, type: "logo" | "favicon") => {
     const setUploading = type === "logo" ? setUploadingLogo : setUploadingFavicon;
@@ -279,9 +299,14 @@ const OrgBrandingPanel = ({ org, websiteSettings, canEdit, onSettingsChange, onO
 
       {/* Our Story (optional) */}
       <div className="rounded-xl bg-card border border-border p-6 space-y-4">
-        <h3 className="font-heading font-semibold text-base flex items-center gap-2"><BookOpen size={16} /> Our Story <span className="text-xs font-normal text-muted-foreground">(optional)</span></h3>
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <h3 className="font-heading font-semibold text-base flex items-center gap-2"><BookOpen size={16} /> Our Story <span className="text-xs font-normal text-muted-foreground">(optional)</span></h3>
+          <Button variant="outline" size="sm" onClick={() => setStoryPreviewOpen(true)} className="gap-2">
+            <Eye size={14} /> Preview Our Story
+          </Button>
+        </div>
         <p className="text-xs text-muted-foreground">
-          When filled, an "OUR STORY" button appears on the landing page. Visitors click it to open a card with this narrative. Leave blank to hide.
+          When filled, an "OUR STORY" button appears on the landing page. Visitors click it to open a card with this narrative. Leave blank to hide. Use Preview to see the live modal as it will appear on your website (logo, vision, mission, and team).
         </p>
         <textarea
           value={websiteSettings.our_story || ""}
@@ -294,6 +319,20 @@ const OrgBrandingPanel = ({ org, websiteSettings, canEdit, onSettingsChange, onO
         />
         <p className="text-[11px] text-muted-foreground text-right">{(websiteSettings.our_story || "").length}/2000</p>
       </div>
+
+      <OurStoryPreview
+        open={storyPreviewOpen}
+        onClose={() => setStoryPreviewOpen(false)}
+        orgName={org.name}
+        logoUrl={org.logo_url}
+        ourStory={websiteSettings.our_story}
+        visionStatement={websiteSettings.vision_statement}
+        missionStatement={websiteSettings.mission_statement}
+        officers={officers}
+        brandColor={websiteSettings.brand_color}
+        accentColor={websiteSettings.accent_color}
+        fontHeading={fontHeading}
+      />
 
       {/* Company Details */}
       <div className="rounded-xl bg-card border border-border p-6 space-y-4">
