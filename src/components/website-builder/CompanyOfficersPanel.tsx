@@ -28,6 +28,9 @@ const CompanyOfficersPanel = ({ orgId, canEdit }: CompanyOfficersPanelProps) => 
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Officer | null>(null);
   const [adding, setAdding] = useState(false);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
+  const [savingOrder, setSavingOrder] = useState(false);
 
   const loadOfficers = async () => {
     setLoading(true);
@@ -56,6 +59,40 @@ const CompanyOfficersPanel = ({ orgId, canEdit }: CompanyOfficersPanelProps) => 
     loadOfficers();
   };
 
+  const persistOrder = async (list: Officer[]) => {
+    setSavingOrder(true);
+    // Update each row's display_order to its new index
+    const updates = list.map((o, idx) =>
+      supabase.from("org_company_officers")
+        .update({ display_order: idx })
+        .eq("id", o.id)
+    );
+    const results = await Promise.all(updates);
+    setSavingOrder(false);
+    const failed = results.find(r => r.error);
+    if (failed?.error) {
+      toast({ title: "Reorder failed", description: failed.error.message, variant: "destructive" });
+      loadOfficers();
+    } else {
+      toast({ title: "Team order updated", description: "New order will appear on Our Story." });
+    }
+  };
+
+  const handleDrop = (targetId: string) => {
+    if (!dragId || dragId === targetId) { setDragId(null); setOverId(null); return; }
+    const fromIdx = officers.findIndex(o => o.id === dragId);
+    const toIdx = officers.findIndex(o => o.id === targetId);
+    if (fromIdx < 0 || toIdx < 0) return;
+    const next = [...officers];
+    const [moved] = next.splice(fromIdx, 1);
+    next.splice(toIdx, 0, moved);
+    const reindexed = next.map((o, idx) => ({ ...o, display_order: idx }));
+    setOfficers(reindexed);
+    setDragId(null);
+    setOverId(null);
+    persistOrder(reindexed);
+  };
+
   if (loading) {
     return <div className="flex justify-center py-8"><div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>;
   }
@@ -66,6 +103,7 @@ const CompanyOfficersPanel = ({ orgId, canEdit }: CompanyOfficersPanelProps) => 
         <div className="flex items-center justify-between">
           <h3 className="font-heading font-semibold text-base flex items-center gap-2">
             <Users size={16} /> Company Officers ({officers.length})
+            {savingOrder && <Loader2 size={12} className="animate-spin text-muted-foreground" />}
           </h3>
           {canEdit && (
             <Button variant="hero" size="sm" onClick={() => { setAdding(true); setEditing(null); }}>
@@ -74,7 +112,7 @@ const CompanyOfficersPanel = ({ orgId, canEdit }: CompanyOfficersPanelProps) => 
           )}
         </div>
         <p className="text-xs text-muted-foreground">
-          Add key team members to display on your public website. Toggle visibility per officer.
+          Add key team members to display on your public website. Drag the handle to reorder how they appear on the Our Story card. Toggle visibility per officer.
         </p>
 
         {(adding || editing) && (
@@ -95,7 +133,26 @@ const CompanyOfficersPanel = ({ orgId, canEdit }: CompanyOfficersPanelProps) => 
         ) : (
           <div className="space-y-3">
             {officers.map((officer) => (
-              <div key={officer.id} className="flex items-center gap-4 rounded-xl border border-border bg-background p-4">
+              <div
+                key={officer.id}
+                draggable={canEdit}
+                onDragStart={(e) => { setDragId(officer.id); e.dataTransfer.effectAllowed = "move"; }}
+                onDragOver={(e) => { if (canEdit && dragId && dragId !== officer.id) { e.preventDefault(); setOverId(officer.id); } }}
+                onDragLeave={() => { if (overId === officer.id) setOverId(null); }}
+                onDrop={(e) => { e.preventDefault(); handleDrop(officer.id); }}
+                onDragEnd={() => { setDragId(null); setOverId(null); }}
+                className={`flex items-center gap-3 rounded-xl border bg-background p-4 transition-all ${
+                  dragId === officer.id ? "opacity-50 scale-[0.98]" : ""
+                } ${overId === officer.id ? "border-primary ring-2 ring-primary/30" : "border-border"}`}
+              >
+                {canEdit && (
+                  <div
+                    className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground shrink-0"
+                    title="Drag to reorder"
+                  >
+                    <GripVertical size={16} />
+                  </div>
+                )}
                 <div className="w-14 h-14 rounded-full bg-muted/50 flex items-center justify-center overflow-hidden shrink-0">
                   {officer.photo_url ? (
                     <img src={officer.photo_url} alt={officer.full_name} className="w-full h-full object-cover" />
