@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { joinOrganization } from "@/lib/joinOrganization";
+import { resolvePublicSiteUrl, isExternalSiteUrl } from "@/lib/publicSiteUrl";
 
 interface OrgCard {
   id: string;
@@ -28,6 +29,7 @@ interface OrgCard {
   created_at: string;
   catalogue_count?: number;
   categories?: string[];
+  public_website_url?: string | null;
 }
 
 const REGIONS = ["All Regions", "West Africa", "East Africa", "North Africa", "Southern Africa", "Central Africa", "International"];
@@ -73,6 +75,7 @@ const BrowseOrganizations = () => {
       const orgIds = orgsData.map((o: any) => o.id);
       let catalogueCounts: Record<string, number> = {};
       let categoryMap: Record<string, Set<string>> = {};
+      let publicUrlMap: Record<string, string | null> = {};
       if (orgIds.length > 0) {
         const { data: cats } = await supabase
           .from("garment_catalog")
@@ -84,12 +87,18 @@ const BrowseOrganizations = () => {
           if (!categoryMap[c.org_id]) categoryMap[c.org_id] = new Set();
           if (c.category) categoryMap[c.org_id].add(c.category);
         });
+        const { data: sites } = await (supabase
+          .from("org_websites")
+          .select("org_id, public_website_url")
+          .in("org_id", orgIds) as any);
+        (sites || []).forEach((s: any) => { publicUrlMap[s.org_id] = s.public_website_url || null; });
       }
 
       setOrgs(orgsData.map((o: any) => ({
         ...o,
         catalogue_count: catalogueCounts[o.id] || 0,
         categories: categoryMap[o.id] ? [...categoryMap[o.id]] : [],
+        public_website_url: publicUrlMap[o.id] || null,
       })));
       setLoading(false);
     };
@@ -304,9 +313,19 @@ const BrowseOrganizations = () => {
                       <Palette size={10} className="text-primary" /> {org.catalogue_count} items
                     </span>
                   )}
-                  <button onClick={() => navigate(`/site/${org.slug}`)} className="flex items-center gap-1 hover:text-primary transition-colors">
-                    <Globe size={10} /> Visit Site
-                  </button>
+                  {(() => {
+                    const url = resolvePublicSiteUrl(org.slug, org.public_website_url);
+                    const ext = isExternalSiteUrl(url);
+                    return ext ? (
+                      <a href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 hover:text-primary transition-colors">
+                        <Globe size={10} /> Visit Site
+                      </a>
+                    ) : (
+                      <button onClick={() => navigate(url)} className="flex items-center gap-1 hover:text-primary transition-colors">
+                        <Globe size={10} /> Visit Site
+                      </button>
+                    );
+                  })()}
                 </div>
 
                 <div className="flex items-center gap-2">
