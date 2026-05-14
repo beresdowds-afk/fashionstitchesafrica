@@ -802,9 +802,23 @@ const WebsiteTab = ({
                 </p>
               </div>
               {orgSlug && (
-                <Button variant="outline" size="sm" className="w-full" onClick={() => navigate(`/site/${orgSlug}`)}>
-                  <Globe size={14} className="mr-2" /> View Live Website
-                </Button>
+                (() => {
+                  const publicUrl = (websiteData as any)?.public_website_url as string | undefined;
+                  if (publicUrl && /^https?:\/\//i.test(publicUrl.trim())) {
+                    return (
+                      <a href={publicUrl.trim()} target="_blank" rel="noopener noreferrer" className="block">
+                        <Button variant="outline" size="sm" className="w-full">
+                          <Globe size={14} className="mr-2" /> View Live Website
+                        </Button>
+                      </a>
+                    );
+                  }
+                  return (
+                    <Button variant="outline" size="sm" className="w-full" onClick={() => navigate(`/site/${orgSlug}`)}>
+                      <Globe size={14} className="mr-2" /> View Live Website
+                    </Button>
+                  );
+                })()
               )}
             </div>
           ) : (

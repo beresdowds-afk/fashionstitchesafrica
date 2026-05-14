@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
 import { ArrowLeft, Search, ShoppingBag, Sparkles, Tag, Phone, Instagram, Facebook, Twitter, Linkedin, Youtube, ExternalLink, Scissors } from "lucide-react";
+import { resolvePublicSiteUrl, isExternalSiteUrl } from "@/lib/publicSiteUrl";
 
 const TikTokIcon = ({ size = 16, className = "" }: { size?: number; className?: string }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -30,7 +31,7 @@ const CataloguePage = () => {
       const [orgRes, itemsRes, websiteRes, membersRes] = await Promise.all([
         (supabase.from("organizations_public" as any).select("id, name, slug, currency, phone, logo_url, description").eq("id", orgId).single() as any),
         supabase.from("garment_catalog").select("*").eq("org_id", orgId).eq("is_published", true).order("name"),
-        supabase.from("org_websites").select("instagram_url, facebook_url, whatsapp_number, twitter_url, linkedin_url, tiktok_url, youtube_url, brand_color").eq("org_id", orgId).single(),
+        supabase.from("org_websites").select("instagram_url, facebook_url, whatsapp_number, twitter_url, linkedin_url, tiktok_url, youtube_url, brand_color, public_website_url").eq("org_id", orgId).single(),
         supabase.from("org_members").select("user_id, role, profiles(id, display_name, specialty)").eq("org_id", orgId).eq("role", "tailor").eq("is_active", true),
       ]);
       setOrg(orgRes.data);
@@ -204,9 +205,19 @@ const CataloguePage = () => {
         {/* Website link */}
         {org?.slug && (
           <div className="mt-8 text-center">
-            <Link to={`/site/${org.slug}`} className="text-xs text-muted-foreground hover:text-primary transition-colors inline-flex items-center gap-1">
-              <ExternalLink size={10} /> Visit {org.name}'s website
-            </Link>
+            {(() => {
+              const url = resolvePublicSiteUrl(org.slug, (website as any)?.public_website_url);
+              const ext = isExternalSiteUrl(url);
+              return ext ? (
+                <a href={url} target="_blank" rel="noopener noreferrer" className="text-xs text-muted-foreground hover:text-primary transition-colors inline-flex items-center gap-1">
+                  <ExternalLink size={10} /> Visit {org.name}'s website
+                </a>
+              ) : (
+                <Link to={url} className="text-xs text-muted-foreground hover:text-primary transition-colors inline-flex items-center gap-1">
+                  <ExternalLink size={10} /> Visit {org.name}'s website
+                </Link>
+              );
+            })()}
           </div>
         )}
       </div>
