@@ -757,6 +757,23 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
     console.log(`[Dashboard] Sync event received: ${action}, reloading data...`);
     load();
     toast({ title: "Data synced", description: `${action.replace(/_/g, " ")} synced from connected app/website.` });
+    // If this org points to a custom-domain / non-native public site, push
+    // the latest content to it whenever Our Story-relevant data changes.
+    const externalUrl = ((settings as any).public_website_url || "").trim();
+    const storyRelated = action === "officers_updated"
+      || action === "settings_updated"
+      || action === "org_details_updated"
+      || action === "branding_updated"
+      || action === "catalogue_updated";
+    if (externalUrl && storyRelated && publishRef.current) {
+      // Debounce so a burst of edits coalesces into one publish
+      if ((window as any).__fsaPublishTimer) {
+        clearTimeout((window as any).__fsaPublishTimer);
+      }
+      (window as any).__fsaPublishTimer = setTimeout(() => {
+        publishRef.current?.publish({ silent: true }).catch(() => {});
+      }, 1500);
+    }
   });
 
   const canEdit = role === "org_admin" || role === "manager" || role === "super_admin";
