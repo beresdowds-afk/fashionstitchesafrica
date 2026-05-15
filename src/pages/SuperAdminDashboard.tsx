@@ -45,6 +45,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { DollarSign, Smartphone, ScrollText, HelpCircle, UserX, Search, Trash2, Star, ShoppingBag, Download, Settings, LifeBuoy, Banknote, MapPin, MessageSquare, Menu, Video, ClipboardList, Scale, Truck, Palette, Radio } from "lucide-react";
 import LocationMapFooter from "@/components/shared/LocationMapFooter";
 import TourGuide from "@/components/shared/TourGuide";
+import ManualPwaUpdateButton from "@/components/platform/ManualPwaUpdateButton";
 import { useTourGuide } from "@/hooks/useTourGuide";
 import { useToast } from "@/hooks/use-toast";
 import { superAdminTourSteps } from "@/config/tourSteps";
@@ -289,6 +290,7 @@ const SuperAdminDashboard = () => {
                 <Button variant="ghost" size="icon" onClick={tour.restart} title="Restart tour guide" className="text-ivory/70 hover:text-ivory h-8 w-8">
                   <HelpCircle size={16} />
                 </Button>
+                <ManualPwaUpdateButton compact />
                 <div className="w-px h-6 bg-border/30 mx-1" />
                 <Button variant="ghost" size="icon" className="text-ivory/70 hover:text-ivory h-8 w-8" onClick={() => signOut().then(() => navigate("/"))}>
                   <LogOut size={14} />

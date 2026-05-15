@@ -7,7 +7,8 @@ type SyncAction =
   | "catalogue_updated"
   | "settings_updated"
   | "website_published"
-  | "org_details_updated";
+  | "org_details_updated"
+  | "officers_updated";
 
 interface SyncEvent {
   type: "FSA_UPDATE";
@@ -100,6 +101,21 @@ export const useOrgSync = (orgId: string | undefined, onSyncReceived?: (action: 
           console.log("[FSA Sync] Org details changed");
           broadcastSync("org_details_updated", { table: "organizations" });
           onSyncReceived?.("org_details_updated");
+        }
+      )
+      // Listen for company officers changes (Our Story team grid)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "org_company_officers",
+          filter: `org_id=eq.${orgId}`,
+        },
+        (payload) => {
+          console.log("[FSA Sync] Company officers changed:", payload.eventType);
+          broadcastSync("officers_updated", { table: "org_company_officers", event: payload.eventType });
+          onSyncReceived?.("officers_updated");
         }
       )
       // Listen for broadcast messages from apps/websites
