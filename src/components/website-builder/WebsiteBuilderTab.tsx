@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -13,7 +13,7 @@ import SocialSyncPanel from "@/components/catalogue/SocialSyncPanel";
 import CompanyOfficersPanel from "./CompanyOfficersPanel";
 import WebsiteBuilderManual from "./WebsiteBuilderManual";
 import WebsiteTemplatePicker from "./WebsiteTemplatePicker";
-import PublishWebsiteButton from "./PublishWebsiteButton";
+import PublishWebsiteButton, { type PublishWebsiteButtonHandle } from "./PublishWebsiteButton";
 import { PaymentFlowTracker } from "@/components/payments/PaymentFlowTracker";
 import { usePaymentFlow } from "@/hooks/usePaymentFlow";
 import type { AppRole } from "@/hooks/useOrganization";
@@ -895,6 +895,14 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
       toast({ title: "Website settings saved!" });
       broadcastSync("settings_updated");
       load();
+
+      // Auto-sync to the public custom-domain (non-native) site whenever
+      // a public_website_url is configured — so Our Story / branding edits
+      // saved here propagate to e.g. gabulkfashionstudio.org.ng immediately.
+      const externalUrl = ((settings as any).public_website_url || "").trim();
+      if (externalUrl && publishRef.current) {
+        publishRef.current.publish({ silent: true }).catch(() => {});
+      }
     }
   };
 
