@@ -203,7 +203,7 @@ const CreateOrganization = () => {
               <div className="flex items-center gap-2">
                 <Shield size={16} className="text-primary" />
                 <Label className="text-sm font-semibold">Business Registration Verification</Label>
-                <Badge variant="outline" className="text-[10px]">Required</Badge>
+                <Badge variant="outline" className="text-[10px]">Recommended</Badge>
               </div>
 
               <div className="space-y-2">
@@ -258,6 +258,19 @@ const CreateOrganization = () => {
             </div>
 
             <DisclaimerBanner compact />
+            <div className="space-y-2">
+              <Label htmlFor="org-referral" className="text-xs flex items-center gap-2">
+                Referral code <span className="text-muted-foreground">(optional)</span>
+              </Label>
+              <Input
+                id="org-referral"
+                value={referralCode}
+                onChange={(e) => setReferralCode(e.target.value)}
+                placeholder="e.g. FYS-ADAEZE"
+                maxLength={32}
+                autoComplete="off"
+              />
+            </div>
             <div className="flex items-start gap-2">
               <Checkbox
                 id="org-terms"
@@ -269,7 +282,7 @@ const CreateOrganization = () => {
               </label>
             </div>
 
-            <Button variant="hero" className="w-full" type="submit" disabled={submitting || !orgTermsAccepted || bizVerifyStatus !== "verified"}>
+            <Button variant="hero" className="w-full" type="submit" disabled={submitting || !orgTermsAccepted}>
               {submitting ? "Creating..." : "Create Organization"}
               <ArrowRight size={16} className="ml-2" />
             </Button>
