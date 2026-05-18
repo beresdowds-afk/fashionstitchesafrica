@@ -408,9 +408,10 @@ function localValidation(type: string, number: string, entity_type: string) {
   const isValid = patterns.pattern.test(number);
   let checksumValid = true;
 
-  if ((type === "nin" || type === "bvn") && isValid) {
-    checksumValid = luhnCheck(number);
-  }
+  // NIN and BVN are NOT Luhn-protected (Luhn is a credit-card checksum).
+  // Format check (11 digits) is the strongest local validation we can do
+  // without a live provider call. Real validation happens via Smile ID /
+  // YouVerify / IdentityPass when their keys are configured.
   if (type === "sa_id" && isValid) {
     const month = parseInt(number.substring(2, 4));
     const day = parseInt(number.substring(4, 6));
@@ -422,8 +423,8 @@ function localValidation(type: string, number: string, entity_type: string) {
     valid,
     confidence: valid ? 70 : 0,
     message: valid
-      ? "Identity verified (format validation)"
-      : `Invalid ${patterns.description}. Please check and try again.`,
+      ? "Format validated locally (no external KYC provider active)"
+      : `Invalid ${patterns.description}. Please check the number and try again.`,
     provider: "local",
   };
 }
