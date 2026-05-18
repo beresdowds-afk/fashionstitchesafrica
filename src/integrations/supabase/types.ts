@@ -6479,6 +6479,7 @@ export type Database = {
           portfolio_url: string | null
           promo_consent: boolean
           promo_consent_at: string | null
+          referral_code: string | null
           specialty: string | null
           tiktok_url: string | null
           twitter_url: string | null
@@ -6510,6 +6511,7 @@ export type Database = {
           portfolio_url?: string | null
           promo_consent?: boolean
           promo_consent_at?: string | null
+          referral_code?: string | null
           specialty?: string | null
           tiktok_url?: string | null
           twitter_url?: string | null
@@ -6541,6 +6543,7 @@ export type Database = {
           portfolio_url?: string | null
           promo_consent?: boolean
           promo_consent_at?: string | null
+          referral_code?: string | null
           specialty?: string | null
           tiktok_url?: string | null
           twitter_url?: string | null
