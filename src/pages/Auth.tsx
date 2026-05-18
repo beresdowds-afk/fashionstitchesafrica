@@ -526,6 +526,19 @@ const Auth = () => {
             {mode === "signup" && (
               <div className="space-y-3">
                 <DisclaimerBanner compact />
+                <div className="space-y-2">
+                  <Label htmlFor="referral" className="text-xs flex items-center gap-2">
+                    Referral code <span className="text-muted-foreground">(optional)</span>
+                  </Label>
+                  <Input
+                    id="referral"
+                    value={referralCode}
+                    onChange={(e) => setReferralCode(e.target.value)}
+                    placeholder="e.g. FYS-ADAEZE"
+                    maxLength={32}
+                    autoComplete="off"
+                  />
+                </div>
                 <div className="flex items-start gap-2">
                   <Checkbox
                     id="terms"
