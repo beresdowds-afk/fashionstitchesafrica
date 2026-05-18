@@ -83,6 +83,7 @@ Deno.serve(async (req) => {
 
     // 2. Find best provider for this verification
     const activeProviders = (providers || []) as ProviderConfig[];
+    console.log(`[verify-identity] type=${type} country=${country} entity=${entity_type} active_providers=${activeProviders.length}`);
     const selectedProvider = activeProviders.find(p => 
       p.supported_countries.includes(country) &&
       p.supported_id_types.includes(type) &&
@@ -114,12 +115,13 @@ Deno.serve(async (req) => {
         error_message: result.valid ? null : result.message,
       });
 
-      // Increment monthly usage
+      // Increment monthly usage safely
       await serviceClient.from("verification_provider_config")
-        .update({ monthly_used: (selectedProvider as any).monthly_used + 1 })
+        .update({ monthly_used: ((selectedProvider as any).monthly_used || 0) + 1 })
         .eq("provider", selectedProvider.provider);
 
     } else {
+      console.log(`[verify-identity] no provider matched — using local format validation`);
       // Fallback to local validation
       result = localValidation(type, cleanNumber, entity_type);
       
