@@ -203,7 +203,11 @@ const CreateOrganization = () => {
               <div className="flex items-center gap-2">
                 <Shield size={16} className="text-primary" />
                 <Label className="text-sm font-semibold">Business Registration Verification</Label>
-                <Badge variant="outline" className="text-[10px]">Recommended</Badge>
+                <Badge variant="default" className="text-[10px]">Required</Badge>
+                <p className="text-[11px] text-muted-foreground leading-snug">
+                  Your account will be created immediately, but dashboard access stays in <b>Pending review</b> until our team
+                  approves your business registration. You can finish verification later from the pending screen.
+                </p>
               </div>
 
               <div className="space-y-2">
