@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useOrganizations } from "@/hooks/useOrganization";
+import { useCurrentOrg } from "@/hooks/useOrganization";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +15,7 @@ import { useNavigate } from "react-router-dom";
  */
 const AccessGate = ({ children }: { children: React.ReactNode }) => {
   const { user } = useAuth();
-  const { currentOrg } = useOrganizations();
+  const { currentOrg } = useCurrentOrg();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<any>(null);
   const [org, setOrg] = useState<any>(null);
