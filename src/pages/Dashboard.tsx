@@ -271,7 +271,7 @@ const Dashboard = () => {
           </main>
         </div>
       </div>
-    </SidebarProvider>
+    </SidebarProvider></AccessGate>
   );
 };
 
