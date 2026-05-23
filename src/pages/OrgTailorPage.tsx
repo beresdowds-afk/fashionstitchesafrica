@@ -68,7 +68,7 @@ const OrgTailorPage = () => {
       setOrg(orgData as any);
 
       const [websiteRes, tailorRes, itemsRes] = await Promise.all([
-        supabase.from("org_websites").select("brand_color, accent_color, font_heading, font_body, color_palette, instagram_url").eq("org_id", (orgData as any).id).single(),
+        supabase.from("org_websites_public" as any).select("brand_color, accent_color, font_heading, font_body, color_palette, instagram_url").eq("org_id", (orgData as any).id).single(),
         supabase.from("profiles").select("id, display_name, bio, specialty, instagram_url, facebook_url, twitter_url, tiktok_url, youtube_url, linkedin_url, portfolio_url").eq("id", tailorId).single(),
         supabase.from("tailor_catalogue_items").select("*").eq("tailor_id", tailorId).eq("is_published", true).order("created_at", { ascending: false }),
       ]);
