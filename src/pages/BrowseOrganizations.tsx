@@ -88,7 +88,7 @@ const BrowseOrganizations = () => {
           if (c.category) categoryMap[c.org_id].add(c.category);
         });
         const { data: sites } = await (supabase
-          .from("org_websites")
+          .from("org_websites_public" as any)
           .select("org_id, public_website_url")
           .in("org_id", orgIds) as any);
         (sites || []).forEach((s: any) => { publicUrlMap[s.org_id] = s.public_website_url || null; });
