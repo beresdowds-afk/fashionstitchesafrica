@@ -14,6 +14,7 @@ import CompanyOfficersPanel from "./CompanyOfficersPanel";
 import WebsiteBuilderManual from "./WebsiteBuilderManual";
 import WebsiteTemplatePicker from "./WebsiteTemplatePicker";
 import PublishWebsiteButton, { type PublishWebsiteButtonHandle } from "./PublishWebsiteButton";
+import MediaDropzone from "@/components/shared/MediaDropzone";
 import { PaymentFlowTracker } from "@/components/payments/PaymentFlowTracker";
 import { usePaymentFlow } from "@/hooks/usePaymentFlow";
 import type { AppRole } from "@/hooks/useOrganization";
@@ -1678,9 +1679,27 @@ const CatalogueItemForm = ({ item, orgId, currency, onSave, onCancel }: {
       </div>
 
       <div className="space-y-1">
-        <label className="text-xs font-medium text-muted-foreground">Image URL</label>
-        <input value={form.image_url} onChange={(e) => setForm({ ...form, image_url: e.target.value })}
-          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" placeholder="https://..."
+        <label className="text-xs font-medium text-muted-foreground">Product Image / Short Video</label>
+        <MediaDropzone
+          value={form.image_url ? { url: form.image_url, type: "image" } : null}
+          onClear={() => setForm({ ...form, image_url: "" })}
+          aspect="square"
+          label="Drop product image here"
+          hint="Or click to browse. PNG, JPG, WebP up to 50MB."
+          onUpload={async (file) => {
+            const path = `org/${orgId}/catalogue/${Date.now()}-${file.name.replace(/[^a-z0-9.\-_]/gi, "_")}`;
+            const { error: upErr } = await supabase.storage.from("garment-images").upload(path, file, { upsert: true });
+            if (upErr) { toast({ title: "Upload failed", description: upErr.message, variant: "destructive" }); return null; }
+            const { data } = supabase.storage.from("garment-images").getPublicUrl(path);
+            setForm((f) => ({ ...f, image_url: data.publicUrl }));
+            return data.publicUrl;
+          }}
+        />
+        <input
+          value={form.image_url}
+          onChange={(e) => setForm({ ...form, image_url: e.target.value })}
+          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-xs"
+          placeholder="…or paste an image URL"
         />
       </div>
 
