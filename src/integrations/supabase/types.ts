@@ -9940,6 +9940,15 @@ export type Database = {
           storage_path: string
         }[]
       }
+      create_organization_with_admin: {
+        Args: {
+          _country?: string
+          _currency?: string
+          _name: string
+          _slug: string
+        }
+        Returns: Json
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
