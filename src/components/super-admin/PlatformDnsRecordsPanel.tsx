@@ -13,7 +13,13 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter,
 } from "@/components/ui/dialog";
-import { Globe, Plus, Trash2, CheckCircle2, Clock, Loader2, RefreshCw, Copy, Edit2 } from "lucide-react";
+import {
+  Collapsible, CollapsibleContent, CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
+  Globe, Plus, Trash2, CheckCircle2, Clock, Loader2, RefreshCw, Copy, Edit2,
+  Mail, Activity, ChevronDown, History, XCircle,
+} from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 interface DnsRecord {
@@ -49,6 +55,9 @@ const PlatformDnsRecordsPanel = () => {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<typeof blank>(blank);
   const [verifying, setVerifying] = useState<string | null>(null);
+  const [syncingDkim, setSyncingDkim] = useState(false);
+  const [sweeping, setSweeping] = useState(false);
+  const [propOpen, setPropOpen] = useState(false);
 
   const { data: records = [], isLoading } = useQuery({
     queryKey: ["platform-dns-records"],
@@ -62,6 +71,60 @@ const PlatformDnsRecordsPanel = () => {
       return (data || []) as unknown as DnsRecord[];
     },
   });
+
+  const { data: propChecks = [] } = useQuery({
+    queryKey: ["dns-propagation-checks"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("dns_propagation_checks" as any)
+        .select("*")
+        .order("checked_at", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      return (data || []) as any[];
+    },
+    enabled: propOpen,
+  });
+
+  const { data: auditRows = [] } = useQuery({
+    queryKey: ["dns-record-audit"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("dns_record_audit" as any)
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return (data || []) as any[];
+    },
+    enabled: propOpen,
+  });
+
+  const syncDkim = async () => {
+    setSyncingDkim(true);
+    const { data, error } = await supabase.functions.invoke("resend-dkim-sync", { body: {} });
+    setSyncingDkim(false);
+    if (error) {
+      toast({ title: "DKIM sync failed", description: error.message, variant: "destructive" });
+    } else {
+      const changed = data?.changes?.length ?? data?.updated ?? 0;
+      toast({ title: "DKIM sync complete", description: `${changed} record(s) updated from Resend.` });
+    }
+    qc.invalidateQueries({ queryKey: ["platform-dns-records"] });
+    qc.invalidateQueries({ queryKey: ["dns-record-audit"] });
+  };
+
+  const runSweep = async () => {
+    setSweeping(true);
+    const { error } = await supabase.functions.invoke("dns-propagation-sweep", { body: {} });
+    setSweeping(false);
+    if (error) {
+      toast({ title: "Sweep failed", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Propagation sweep started", description: "Checked all records across global resolvers." });
+      qc.invalidateQueries({ queryKey: ["dns-propagation-checks"] });
+    }
+  };
 
   const save = useMutation({
     mutationFn: async () => {
@@ -229,6 +292,19 @@ const PlatformDnsRecordsPanel = () => {
             </DialogContent>
           </Dialog>
         </div>
+        <div className="flex flex-wrap items-center gap-2 mt-3">
+          <Button size="sm" variant="outline" onClick={syncDkim} disabled={syncingDkim}>
+            {syncingDkim ? <Loader2 size={14} className="mr-1 animate-spin" /> : <Mail size={14} className="mr-1" />}
+            Sync DKIM
+          </Button>
+          <Button size="sm" variant="outline" onClick={runSweep} disabled={sweeping}>
+            {sweeping ? <Loader2 size={14} className="mr-1 animate-spin" /> : <Activity size={14} className="mr-1" />}
+            Run propagation sweep
+          </Button>
+          <span className="text-[10px] text-muted-foreground ml-auto">
+            Automated: DKIM daily 03:00 UTC · Sweep hourly
+          </span>
+        </div>
       </CardHeader>
       <CardContent className="pt-0 space-y-5">
         {isLoading ? (
@@ -285,6 +361,88 @@ const PlatformDnsRecordsPanel = () => {
             </div>
           ))
         )}
+
+        {/* DNS Propagation + Audit expansion */}
+        <Collapsible open={propOpen} onOpenChange={setPropOpen}>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" size="sm" className="w-full justify-between border border-dashed">
+              <span className="flex items-center gap-2 text-xs">
+                <Activity size={14} /> DNS propagation &amp; audit history
+              </span>
+              <ChevronDown size={14} className={`transition-transform ${propOpen ? "rotate-180" : ""}`} />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="space-y-4 pt-3">
+            <div className="rounded-lg border border-border overflow-hidden">
+              <div className="bg-muted/40 px-3 py-2 text-xs font-semibold flex items-center gap-2">
+                <Activity size={12} /> Latest resolver sweep ({propChecks.length})
+              </div>
+              {propChecks.length === 0 ? (
+                <p className="text-[11px] text-muted-foreground text-center py-4">
+                  No propagation checks yet. Run a sweep above.
+                </p>
+              ) : (
+                <div className="divide-y divide-border text-[11px]">
+                  {propChecks.slice(0, 50).map((c: any) => {
+                    const rec = records.find((r) => r.id === c.record_id);
+                    return (
+                      <div key={c.id} className="px-3 py-2 grid grid-cols-12 gap-2 items-center">
+                        <div className="col-span-3 truncate font-mono">
+                          {rec ? `${rec.name === "@" ? rec.domain : `${rec.name}.${rec.domain}`} ${rec.record_type}` : c.record_id?.slice(0,8)}
+                        </div>
+                        <div className="col-span-2 text-muted-foreground">{c.resolver_label || c.resolver}</div>
+                        <div className="col-span-1">
+                          {c.matched ? (
+                            <Badge variant="default" className="text-[9px] gap-1"><CheckCircle2 size={9} /> OK</Badge>
+                          ) : (
+                            <Badge variant="destructive" className="text-[9px] gap-1"><XCircle size={9} /> Miss</Badge>
+                          )}
+                        </div>
+                        <div className="col-span-1 text-muted-foreground">{c.latency_ms ?? "—"}ms</div>
+                        <div className="col-span-3 text-muted-foreground truncate font-mono">
+                          {(c.found_values || []).join(", ") || (c.error ? `err: ${c.error}` : "—")}
+                        </div>
+                        <div className="col-span-2 text-right text-muted-foreground">
+                          {new Date(c.checked_at).toLocaleString()}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="rounded-lg border border-border overflow-hidden">
+              <div className="bg-muted/40 px-3 py-2 text-xs font-semibold flex items-center gap-2">
+                <History size={12} /> Record audit history ({auditRows.length})
+              </div>
+              {auditRows.length === 0 ? (
+                <p className="text-[11px] text-muted-foreground text-center py-4">No audit events recorded.</p>
+              ) : (
+                <div className="divide-y divide-border text-[11px]">
+                  {auditRows.map((a: any) => (
+                    <div key={a.id} className="px-3 py-2 grid grid-cols-12 gap-2 items-start">
+                      <div className="col-span-3 font-mono truncate">{a.name === "@" ? a.domain : `${a.name}.${a.domain}`}</div>
+                      <div className="col-span-1 font-mono">{a.record_type}</div>
+                      <div className="col-span-1">
+                        <Badge variant="secondary" className="text-[9px] capitalize">{a.source}</Badge>
+                      </div>
+                      <div className="col-span-3 font-mono truncate text-muted-foreground">
+                        {a.old_value ? `− ${a.old_value.slice(0, 40)}` : <span className="opacity-60">created</span>}
+                      </div>
+                      <div className="col-span-2 font-mono truncate">
+                        {a.new_value ? `+ ${a.new_value.slice(0, 40)}` : <span className="opacity-60">removed</span>}
+                      </div>
+                      <div className="col-span-2 text-right text-muted-foreground">
+                        {new Date(a.created_at).toLocaleString()}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       </CardContent>
     </Card>
   );
