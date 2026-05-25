@@ -50,51 +50,78 @@ const PublishWebsiteButton = forwardRef<PublishWebsiteButtonHandle, PublishWebsi
       const catalogue = (catResult.data || []) as any[];
       const officers = (officersResult.data || []) as any[];
 
-      const orgName = orgData.name || org.name;
-      const slug = orgData.slug || org.slug;
-      const description = orgData.description || "Premium bespoke fashion powered by FYSORA FASHN (Fashion Stitches Africa).";
-      const email = orgData.email || "";
-      const phone = orgData.phone || "";
-      const address = orgData.address || "";
-      const logoUrl = orgData.logo_url || "";
-      const brandColor = ws.brand_color || "#C9A84C";
-      const accentColor = ws.accent_color || "#1A1A2E";
-      const tagline = ws.tagline || "";
-      const heroDesc = ws.hero_description || description;
-      const heroImg = ws.hero_image_url || "";
-      const fontHeading = ws.font_heading || "Playfair Display";
-      const fontBody = ws.font_body || "DM Sans";
-      const palette = (ws.color_palette || {}) as Record<string, string>;
-      const visionStatement = ws.vision_statement || "";
-      const missionStatement = ws.mission_statement || "";
-      const ourStory = (ws.our_story || "").trim();
-      const instagram = ws.instagram_url || "";
-      const facebook = ws.facebook_url || "";
-      const whatsapp = ws.whatsapp_number || phone;
-      const twitter = ws.twitter_url || "";
-      const tiktok = ws.tiktok_url || "";
-      const youtube = ws.youtube_url || "";
-      const linkedin = ws.linkedin_url || "";
+      // ---- HTML-escape helpers (must run BEFORE building any HTML) ----
+      const escapeHtml = (s: string) => (s ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+      const sanitizeUrl = (raw: string) => {
+        const u = (raw ?? "").trim();
+        if (!u) return "";
+        // Only allow safe schemes; block javascript:, data:, vbscript:, etc.
+        if (/^(https?:|mailto:|tel:|\/|#)/i.test(u)) return escapeHtml(u);
+        return "";
+      };
+      const sanitizeColor = (c: string, fallback: string) =>
+        /^#[0-9a-fA-F]{3,8}$/.test(c || "") ? c : fallback;
+      const sanitizeFont = (f: string, fallback: string) =>
+        /^[A-Za-z0-9 \-]{1,60}$/.test(f || "") ? f : fallback;
 
-      const bgColor = palette.background || "#0A0A0F";
-      const textColor = palette.text_color || "#F5F0E8";
-      const surfaceColor = palette.surface || "#16161F";
+      const orgName = escapeHtml(orgData.name || org.name);
+      const slug = orgData.slug || org.slug;
+      const description = escapeHtml(orgData.description || "Premium bespoke fashion powered by FYSORA FASHN (Fashion Stitches Africa).");
+      const email = escapeHtml(orgData.email || "");
+      const phone = escapeHtml(orgData.phone || "");
+      const address = escapeHtml(orgData.address || "");
+      const logoUrl = sanitizeUrl(orgData.logo_url || "");
+      const brandColor = sanitizeColor(ws.brand_color, "#C9A84C");
+      const accentColor = sanitizeColor(ws.accent_color, "#1A1A2E");
+      const tagline = escapeHtml(ws.tagline || "");
+      const heroDesc = escapeHtml(ws.hero_description || (orgData.description || "Premium bespoke fashion powered by FYSORA FASHN (Fashion Stitches Africa)."));
+      const heroImg = sanitizeUrl(ws.hero_image_url || "");
+      const fontHeading = sanitizeFont(ws.font_heading, "Playfair Display");
+      const fontBody = sanitizeFont(ws.font_body, "DM Sans");
+      const palette = (ws.color_palette || {}) as Record<string, string>;
+      const visionStatement = escapeHtml(ws.vision_statement || "");
+      const missionStatement = escapeHtml(ws.mission_statement || "");
+      const ourStory = (ws.our_story || "").trim();
+      const instagram = sanitizeUrl(ws.instagram_url || "");
+      const facebook = sanitizeUrl(ws.facebook_url || "");
+      const rawWhatsapp = ws.whatsapp_number || orgData.phone || "";
+      const whatsapp = escapeHtml(rawWhatsapp);
+      const twitter = sanitizeUrl(ws.twitter_url || "");
+      const tiktok = sanitizeUrl(ws.tiktok_url || "");
+      const youtube = sanitizeUrl(ws.youtube_url || "");
+      const linkedin = sanitizeUrl(ws.linkedin_url || "");
+
+      const bgColor = sanitizeColor(palette.background, "#0A0A0F");
+      const textColor = sanitizeColor(palette.text_color, "#F5F0E8");
+      const surfaceColor = sanitizeColor(palette.surface, "#16161F");
 
       const platformUrl = "https://fashionstitchesafrica.lovable.app";
 
       // Build catalogue HTML
       let catalogueHtml = "";
       if (catalogue.length > 0) {
-        catalogueHtml = catalogue.map(item => `
+        catalogueHtml = catalogue.map(item => {
+          const imgUrl = sanitizeUrl(item.image_url || "");
+          const name = escapeHtml(item.name || "Untitled");
+          const cat = escapeHtml(item.category || "");
+          const desc = escapeHtml(item.description || "");
+          const cur = escapeHtml(item.currency || "₦");
+          return `
         <div class="catalogue-item">
-          ${item.image_url ? `<img src="${item.image_url}" alt="${(item.name || "").replace(/"/g, "&quot;")}" loading="lazy">` : '<div class="item-placeholder">🧵</div>'}
+          ${imgUrl ? `<img src="${imgUrl}" alt="${name}" loading="lazy">` : '<div class="item-placeholder">🧵</div>'}
           <div class="catalogue-item-info">
-            ${item.category ? `<span class="item-category">${item.category}</span>` : ""}
-            <h3>${item.name || "Untitled"}</h3>
-            ${item.description ? `<p>${item.description}</p>` : ""}
-            ${item.price ? `<div class="catalogue-item-price">${item.currency || "₦"}${Number(item.price).toLocaleString()}</div>` : ""}
+            ${cat ? `<span class="item-category">${cat}</span>` : ""}
+            <h3>${name}</h3>
+            ${desc ? `<p>${desc}</p>` : ""}
+            ${item.price ? `<div class="catalogue-item-price">${cur}${Number(item.price).toLocaleString()}</div>` : ""}
           </div>
-        </div>`).join("\n");
+        </div>`;
+        }).join("\n");
       } else {
         catalogueHtml = `
         <div class="catalogue-empty">
@@ -118,13 +145,7 @@ const PublishWebsiteButton = forwardRef<PublishWebsiteButtonHandle, PublishWebsi
       // Vision/Mission moved into the Our Story modal — keep About section lean
       const aboutExtra = "";
 
-      const whatsappLink = whatsapp ? `https://wa.me/${whatsapp.replace(/[^0-9]/g, "")}` : "";
-
-      const escapeHtml = (s: string) => s
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
+      const whatsappLink = rawWhatsapp ? `https://wa.me/${rawWhatsapp.replace(/[^0-9]/g, "")}` : "";
       const ourStoryHtml = ourStory
         ? escapeHtml(ourStory).split(/\n+/).map((p) => `<p>${p}</p>`).join("")
         : "";
