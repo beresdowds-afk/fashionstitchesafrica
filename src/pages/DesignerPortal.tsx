@@ -1,4 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
+import { useUserGlobalRole } from "@/hooks/useOrganization";
+import { homeForRole } from "@/lib/roleHome";
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -100,6 +102,7 @@ const DesignerSidebar = ({ activeTab, onTabChange }: { activeTab: TabId; onTabCh
 
 const DesignerPortal = () => {
   const { user, loading: authLoading, signOut } = useAuth();
+  const { primaryRole, isSuperAdmin, isSuperAssistant, loading: roleLoading } = useUserGlobalRole();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<TabId>("overview");
@@ -116,6 +119,14 @@ const DesignerPortal = () => {
   useEffect(() => {
     if (!authLoading && !user) navigate("/auth?role=designer");
   }, [user, authLoading, navigate]);
+
+  // Role gate: only designers (or platform users) belong here.
+  useEffect(() => {
+    if (authLoading || roleLoading || !user) return;
+    if (isSuperAdmin || isSuperAssistant) return;
+    if (!primaryRole || primaryRole === "designer") return;
+    navigate(homeForRole(primaryRole), { replace: true });
+  }, [authLoading, roleLoading, user, primaryRole, isSuperAdmin, isSuperAssistant, navigate]);
 
   useEffect(() => {
     if (!user) return;
