@@ -1,58 +1,84 @@
-# Pending Verifications Approval Panel
+## Goal
 
-A new Super Admin panel that surfaces every designer and organization whose business-registration / access status is still `pending`, so the team can approve or reject them in one place. Approving immediately removes the `AccessGate` block and lets the user into their dashboard.
+Lock down SECURITY DEFINER functions so privileged ones are usable only by `super_admin`, while keeping the everyday helpers that the app depends on functional for normal authenticated users.
 
-## What you'll see
+## Why not "super_admin only on every definer"
 
-A new sidebar item **"Pending Verifications"** in the **Account & Onboarding** group of the Super Admin Dashboard (next to Users / Accounts). The panel has:
+Many SECURITY DEFINER functions are called by regular users on every page load. Restricting all of them to super_admin would break: signup (`handle_new_user`), org creation/joining (`create_organization_with_admin`, `join_organization`), RLS gating (`has_role`, `is_org_member`, `is_org_admin`, `is_own_profile`, `get_org_role`), designer onboarding (`ensure_designer_personal_org`, `assign_role`), promotions (`claim_promotional_grant`), monetization gating (`is_monetization_enabled`), and billing triggers (`bill_outbound_message`, `archive_message_log`, `bill_completed_seo_request`).
 
-- Header strip with live counts: *Orgs pending*, *Designers pending*, *Approved today*, *Rejected today*.
-- Tabs: **Organizations** | **Designers** | **Recently reviewed**.
-- For each pending row:
-  - Name, owner email, country, submitted date, business reg type & number (orgs), or display name & role (designers).
-  - "View documents" link (opens any uploaded business-registration file from storage in a new tab) when available.
-  - **Approve**, **Reject**, **Request more info** buttons.
-  - Inline notes field (saved to `verification_notes`).
-- Filters: search by name/email, country, submitted date range.
-- Refresh button + 30 s auto-refresh.
-- "Recently reviewed" tab shows the last 50 approvals/rejections with reviewer, decision, timestamp, and notes — read-only.
+So the plan classifies functions into three buckets and treats each appropriately.
 
-## Approval flow
+## Classification
 
-- **Approve org** → `organizations.business_reg_verification_status = 'approved'`, `business_reg_verified = true`, `business_reg_verified_at = now()`, `verification_reviewed_by = auth.uid()`, persist notes. AccessGate stops blocking immediately (it already releases when status ≠ `pending`).
-- **Approve designer** → `profiles.access_status = 'approved'`, store reviewer + timestamp + notes.
-- **Reject** → status set to `rejected`, notes required. AccessGate copy will read "Verification rejected" with the notes shown (small AccessGate copy tweak — the only frontend gate change).
-- **Request more info** → status set to `info_requested`, notes required, AccessGate keeps blocking but shows the message.
-- Every decision triggers an in-app + email notification to the org admin / designer through the existing `send-email` edge function (subject + templated body), and writes an `audit_logs` entry.
+```text
+ADMIN-ONLY (super_admin EXECUTE only + in-function guard)
+  - admin_set_verification_status        (already guards internally)
+  - cleanup_expired_sentinel_storage_objects
+  - read_email_batch, delete_email, enqueue_email, move_to_dlq
+  - refresh_storage_objects_expiry  (trigger; also lock EXECUTE)
 
-## Technical details
+TRIGGER-ONLY (revoke EXECUTE from anon/authenticated/PUBLIC; triggers still fire)
+  - handle_new_user
+  - archive_message_log, archive_inbound_message
+  - bill_outbound_message, bill_completed_seo_request
+  - enforce_eastforte_super_admin, enforce_eastforte_org_verification
+  - enforce_sentinel_shield_platform_only
+  - enforce_storage_entitlement_authorization
+  - log_sentinel_shield_event, log_sentinel_agent_event
+  - mark_tour_stale_on_platform_update
+  - auto_grant_exemptions
+  - set_storage_object_expiry
+  - handle_storage_subscription_changes
+  - update_updated_at_column
 
-### Database (one migration)
+USER-FACING HELPERS (keep EXECUTE for authenticated; revoke from anon/PUBLIC)
+  - has_role, is_own_profile, is_org_admin, is_org_member, get_org_role
+  - is_monetization_enabled
+  - has_promotional_grant, org_has_promotional_grant
+  - assign_role, ensure_designer_personal_org
+  - join_organization, create_organization_with_admin
+  - claim_promotional_grant
+```
 
-- Add columns (idempotent `ADD COLUMN IF NOT EXISTS`):
-  - `organizations.verification_reviewed_by uuid`, `verification_reviewed_at timestamptz`
-  - `profiles.access_status` already exists; add `access_status_reviewed_by uuid`, `access_status_reviewed_at timestamptz`, `access_status_notes text` if missing.
-- Add `'info_requested'` to the allowed status values (CHECK relaxation or text-only — keep as free text since current column is `text`).
-- New SECURITY DEFINER RPC `admin_set_verification_status(_target_type text, _target_id uuid, _decision text, _notes text)`:
-  - Auth: `has_role(auth.uid(), 'super_admin')` OR `has_role(auth.uid(), 'super_assistant')`; reject otherwise.
-  - `_target_type` ∈ {`organization`, `designer`}; `_decision` ∈ {`approved`, `rejected`, `info_requested`, `pending`}.
-  - Atomically updates the right table, records reviewer + timestamp + notes, inserts an `audit_logs` row, and enqueues a notification row consumed by the existing email/in-app pipeline.
-  - `REVOKE EXECUTE … FROM PUBLIC, anon;` `GRANT EXECUTE … TO authenticated;` (internal role check enforces super-admin-only).
-- New read-only view `admin_pending_verifications_v` joining orgs + profiles + auth.users email, filtered to `status = 'pending'` or recent reviews, scoped via RLS helper to super_admin/assistant only.
+## Implementation (single migration)
 
-### Frontend
+For each function above, run the appropriate combination of:
 
-- `src/components/super-admin/PendingVerificationsPanel.tsx` — new file. Uses `supabase.from('admin_pending_verifications_v').select()` for listing and `supabase.rpc('admin_set_verification_status', …)` for decisions. Implements tabs, filters, notes editor, optimistic UI updates, toast feedback.
-- `src/pages/SuperAdminDashboard.tsx` — register tab `pending_verifications` in the **Account & Onboarding** group; mount `<PendingVerificationsPanel />` in the render switch. Tab visible to both super_admin and super_assistant (not added to `restrictedTabs`).
-- `src/components/shared/AccessGate.tsx` — minor copy tweak: render distinct messages for `rejected` / `info_requested` in addition to the current `pending` state, and surface `verification_notes`. Continue letting `approved` users through.
+```sql
+-- Admin-only
+REVOKE EXECUTE ON FUNCTION public.<fn>(<args>) FROM PUBLIC, anon, authenticated;
+GRANT  EXECUTE ON FUNCTION public.<fn>(<args>) TO postgres;
+-- (super_admin is an app role stored in user_roles, not a Postgres role,
+--  so access is enforced by an in-function check, not by GRANT)
 
-### Notifications
+-- Trigger-only
+REVOKE EXECUTE ON FUNCTION public.<fn>(<args>) FROM PUBLIC, anon, authenticated;
+-- triggers run as table owner and still fire normally
 
-- Reuse `supabase.functions.invoke('send-email', …)` with two new template bodies (approve / reject) generated inline; no new edge function needed.
-- Write an `in_app_messages` (or existing equivalent) row addressed to the org admin / designer so they see a banner on next sign-in.
+-- User-facing helpers
+REVOKE EXECUTE ON FUNCTION public.<fn>(<args>) FROM PUBLIC, anon;
+GRANT  EXECUTE ON FUNCTION public.<fn>(<args>) TO authenticated;
+```
+
+For the admin-only RPCs that don't already check role, add a guard at the top of the function body:
+
+```sql
+IF NOT public.has_role(auth.uid(), 'super_admin') THEN
+  RAISE EXCEPTION 'super_admin role required' USING ERRCODE = 'insufficient_privilege';
+END IF;
+```
+
+This will be added to: `cleanup_expired_sentinel_storage_objects`, `read_email_batch`, `delete_email`, `enqueue_email`, `move_to_dlq`.
+
+## Verification
+
+After migration:
+1. Run `supabase--linter` — no new warnings.
+2. Smoke-test as a non-admin authenticated user: signup, RLS reads, org join, monetization toggle reads all still work.
+3. Smoke-test as super_admin: pending verifications approve/reject still works; data-backup edge function still works (it calls `has_role` via service role — unaffected).
 
 ## Out of scope
 
-- No changes to the customer or tailor flows (they aren't gated).
-- No new identity-provider integration (Smile ID / YouVerify panels already exist separately).
-- No bulk approval — single-row decisions only in this iteration.
+- No frontend changes.
+- No edge function changes (already locked down in the previous security-hardening pass).
+- No RLS policy changes.
