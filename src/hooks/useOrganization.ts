@@ -166,8 +166,10 @@ export const useUserGlobalRole = () => {
         .from("user_roles")
         .select("role")
         .eq("user_id", user.id)
-        .in("role", ["super_admin", "super_assistant"]);
-      setIsSuperAdmin((data || []).some(r => r.role === "super_admin"));
+        .in("role", ["super_admin", "super_assistant", "platform_management"]);
+      // platform_management is a privileged role that inherits Super Admin access
+      // to the Super Admin dashboard/panel while preserving existing RBAC.
+      setIsSuperAdmin((data || []).some(r => r.role === "super_admin" || r.role === "platform_management"));
       setIsSuperAssistant((data || []).some(r => r.role === "super_assistant"));
       setLoading(false);
     };
