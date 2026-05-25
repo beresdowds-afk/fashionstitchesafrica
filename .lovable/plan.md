@@ -1,53 +1,65 @@
 ## Goal
-Polish the Platform Catalogue (now the home page) along four axes: SEO, mobile CTA layout, guest conversion analytics, and signed-in redirect.
 
-## 1. SEO metadata for the home page
-- Install `react-helmet-async` and wrap the app in `<HelmetProvider>` once in `src/main.tsx` (outside `BrowserRouter`).
-- Update `index.html`: keep brand title/description as sitewide fallback (for non-JS social crawlers) but remove `<link rel="canonical">` so per-route Helmet owns it.
-- Add a `<Helmet>` block at the top of `PlatformCataloguePage.tsx` rendered for both guest and authed states, with:
-  - `<title>` — "Shop African Fashion — Platform Catalogue | FYSORA FASHN" (<60 chars)
-  - `<meta name="description">` — curated marketplace pitch (<160 chars)
-  - `<link rel="canonical" href="https://fs-africa.org.ng/">`
-  - OpenGraph: `og:title`, `og:description`, `og:url`, `og:type=website`, `og:image` (reuse the existing R2 preview image already in `index.html`)
-  - Twitter card equivalents
-  - JSON-LD `WebSite` + `ItemList` (top 10 catalogue items) so search engines index the marketplace
-- Add a single `<h1>` ("Platform Catalogue") inside the guest header for semantic structure (currently only a `<span>`).
+Make every footer entry on the landing footer either a real navigation link (when a page already exists) or plain non-clickable text (when the page doesn't exist yet). Also make the email, phone, and address clickable.
 
-## 2. Responsive floating CTA
-Current container `fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40` overlaps bottom nav and chat widgets on small screens.
-- Use `env(safe-area-inset-bottom)` padding so the pill clears iOS home indicator.
-- Bump bottom offset on mobile to clear potential bottom-nav (`bottom-20 sm:bottom-6`) and reduce z-index to `z-30` so chat widgets layered higher remain reachable; verify against other fixed UI (`TourCtaBubble`, `CookieConsent`).
-- Make the pill collapse to icon-only on `<xs` widths (hide "Guest preview" + "What can I do?" labels, keep `Sign in` button). Add an accessible `aria-label` on the icon-only trigger.
-- Constrain `max-w-[calc(100vw-2rem)]` and switch to `flex-wrap` so it never overflows on 320 px screens.
-- Add `pb-32 sm:pb-28` to the catalogue content container so the last row of products is never hidden beneath the CTA.
+## Audit of existing routes
 
-## 3. Analytics events
-- Add a tiny helper `src/lib/analytics.ts` exporting `track(event, props?)` that:
-  - Dispatches a `CustomEvent('fsa:analytics', { detail })` on `window` (any future provider can listen).
-  - Pushes to `window.dataLayer` if present (GTM-ready).
-  - No-ops silently if neither is wired.
-- Fire events from `PlatformCataloguePage.tsx`:
-  - `guest_cta_view` — once on mount when `!user`.
-  - `guest_cta_signin_click` — pill "Sign in" button.
-  - `guest_cta_dialog_open` — Dialog `onOpenChange(true)`.
-  - `guest_cta_dialog_signin_click` — footer "Continue to Sign In".
-  - `guest_product_card_click` — inside `promptAuth()` (already the conversion intent).
-  - `guest_signin_required_alert_cta` — Alert's "Sign in / Sign up".
-- Each event includes `{ path: '/', items_count, category: selectedCategory }` for context.
+Pages that exist today (from `src/App.tsx`):
+- `/docs/api` → API Docs
+- `/legal` → Legal Document Generator
+- `/install` → install instructions / PWA install page
+- `/browse` → Browse Organizations
+- `/platform-tour` → Platform Tour
+- `/payments` → Payments Portal
+- `/` → Platform Catalogue (home)
 
-## 4. Hide CTA + auto-route when signed in
-- The guest CTA already lives inside the `if (!user) { return ... }` branch, so it is naturally hidden once signed in. Verify and document.
-- Add a new `useEffect` near the top: when `!authLoading && user && !roleLoading && userRole`, if the resolved role is anything other than `customer` (or super_admin / super_assistant who legitimately browse), call `resolveHomeRoute(user.id)` from `src/lib/roleHome.ts` and `navigate(home, { replace: true })`. Customers stay on the catalogue (it's their home).
-- Keep the existing prefetch path; no behavior change for customers.
+Nothing currently exists for: Features, Pricing, Website Builder, Integrations, About Us, Careers, Blog, Press, Partners, Help Center, Documentation, Status, Contact Us, Community, Privacy Policy, Terms of Service, Cookie Policy, GDPR, Data Protection.
 
-## Files touched
-- `index.html` — remove canonical, keep sitewide fallbacks.
-- `src/main.tsx` — wrap with `HelmetProvider`.
-- `src/pages/PlatformCataloguePage.tsx` — Helmet, responsive CTA, analytics calls, signed-in redirect, `<h1>`.
-- `src/lib/analytics.ts` — new helper.
-- `package.json` — add `react-helmet-async`.
+## Link mapping
+
+**Platform**
+- Features → plain text (no page)
+- Pricing → plain text
+- API Docs → `/docs/api` (Link)
+- Website Builder → plain text
+- Integrations → plain text
+
+**Company**
+- About Us, Careers, Blog, Press, Partners → all plain text
+
+**Support**
+- Help Center → plain text
+- Documentation → `/docs/api` (closest existing surface)
+- Status → plain text
+- Contact Us → `mailto:` using `settings.contact_email` (acts as the contact channel)
+- Community → plain text
+
+**Legal**
+- Privacy Policy → `/legal` (Link, opens generator where Privacy can be created)
+- Terms of Service → `/legal`
+- Cookie Policy → plain text
+- GDPR → plain text
+- Data Protection → plain text
+
+## Contact block
+
+In the same footer top-left contact section:
+- Email → `<a href="mailto:{settings.contact_email}">`
+- Phone → `<a href="tel:{digits-only(settings.contact_phone)}">` (strip spaces/dashes for the `tel:` href, keep display value as-is)
+- Address → `<a href="https://www.google.com/maps/search/?api=1&query={encoded address}" target="_blank" rel="noopener noreferrer">`
+
+All three keep the existing icon + style; only the wrapper changes to `<a>` with hover styling consistent with the link list (`hover:text-primary transition-colors`).
+
+## Implementation
+
+Single-file edit: `src/components/landing/Footer.tsx`.
+
+1. Replace the flat string arrays in `footerLinks` with an array of `{ label, to?, href? }` objects per category. Items with no `to`/`href` render as `<span>` (muted, no hover, no cursor).
+2. Items with `to` render via React Router `<Link>` (import from `react-router-dom`).
+3. Items with `href` (e.g. mailto) render as `<a>`.
+4. Wrap the email/phone/address contact rows in the appropriate `<a>` tags.
+5. No other UI/visual changes; keep colours, spacing, icons, semantic tokens.
 
 ## Out of scope
-- No backend / RLS / migration changes.
-- No new analytics provider (GA/Posthog) — only the event surface; user can wire a provider later.
-- Security scan findings in the side panel are not addressed here (separate task).
+
+No new pages, no route changes, no business logic, no analytics events.
