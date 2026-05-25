@@ -363,24 +363,32 @@ const PlatformCataloguePage = () => {
         </div>
 
         {/* Floating guest CTA — replaces the old full-page Free Catalogue Preview */}
-        <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 max-w-[calc(100vw-2rem)]">
-          <Dialog>
+        <div
+          className="fixed right-3 sm:right-6 z-30 max-w-[calc(100vw-1.5rem)] pointer-events-none"
+          style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 1rem)" }}
+        >
+          <Dialog onOpenChange={(open) => { if (open) track("guest_cta_dialog_open"); }}>
             <motion.div
               initial={{ opacity: 0, y: 20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ delay: 0.4, type: "spring", stiffness: 220, damping: 22 }}
-              className="flex items-center gap-2 rounded-full border border-primary/30 bg-card/95 backdrop-blur shadow-gold pl-3 pr-1.5 py-1.5"
+              className="pointer-events-auto flex flex-wrap items-center gap-2 rounded-full border border-primary/30 bg-card/95 backdrop-blur shadow-gold pl-3 pr-1.5 py-1.5"
             >
               <ShieldCheck size={14} className="text-primary shrink-0" />
-              <span className="text-[11px] sm:text-xs text-muted-foreground hidden xs:inline sm:inline">
+              <span className="text-[11px] sm:text-xs text-muted-foreground hidden sm:inline">
                 Guest preview
               </span>
               <DialogTrigger asChild>
-                <Button variant="ghost" size="sm" className="h-7 px-2 text-[11px]">
-                  <Info size={12} className="mr-1" /> What can I do?
+                <Button variant="ghost" size="sm" className="h-7 px-2 text-[11px]" aria-label="What can I do as a guest?">
+                  <Info size={12} className="sm:mr-1" /> <span className="hidden sm:inline">What can I do?</span>
                 </Button>
               </DialogTrigger>
-              <Button variant="hero" size="sm" className="h-7 rounded-full px-3 text-[11px]" onClick={() => navigate("/auth")}>
+              <Button
+                variant="hero"
+                size="sm"
+                className="h-7 rounded-full px-3 text-[11px]"
+                onClick={() => { track("guest_cta_signin_click"); navigate("/auth"); }}
+              >
                 <UserPlus size={12} className="mr-1" /> Sign in
               </Button>
             </motion.div>
@@ -416,7 +424,12 @@ const PlatformCataloguePage = () => {
                 </div>
               </div>
               <DialogFooter>
-                <Button variant="hero" size="sm" className="w-full" onClick={() => navigate("/auth")}>
+                <Button
+                  variant="hero"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => { track("guest_cta_dialog_signin_click"); navigate("/auth"); }}
+                >
                   <LogIn size={14} className="mr-1" /> Continue to Sign In
                 </Button>
               </DialogFooter>
