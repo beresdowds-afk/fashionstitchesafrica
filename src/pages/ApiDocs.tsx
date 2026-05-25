@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import {
   Code2, Copy, Check, ArrowLeft, Zap, Shield, Globe, Palette,
-  BookOpen, Terminal, Settings, ChevronRight, ExternalLink
+  BookOpen, Terminal, Settings, ChevronRight, ExternalLink, Webhook
 } from "lucide-react";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -18,6 +18,7 @@ const sections = [
   { id: "features", label: "Features", icon: BookOpen },
   { id: "theming", label: "Theming", icon: Palette },
   { id: "security", label: "Security", icon: Shield },
+  { id: "webhooks", label: "Payment Webhooks", icon: Webhook },
   { id: "api-reference", label: "API Reference", icon: Code2 },
 ];
 
@@ -285,6 +286,109 @@ export function FSAWidget({ widgetKey }: { widgetKey: string }) {
                     The widget API supports Cross-Origin Resource Sharing (CORS) from all origins. Domain restriction happens at the application layer for finer control.
                   </p>
                 </div>
+              </div>
+            </section>
+
+            {/* Payment Webhooks */}
+            <section id="webhooks" className="mb-12">
+              <h2 className="font-heading font-bold text-xl mb-4 flex items-center gap-2">
+                <Shield size={20} className="text-primary" /> Payment Webhooks
+              </h2>
+              <p className="text-muted-foreground text-sm mb-4">
+                FYSORA FASHN runs a unified, signature-verified webhook endpoint that activates subscriptions, orders,
+                registrations, measurement bookings and website plans the moment your payment service provider (PSP)
+                confirms the payment — even if the customer closes the browser tab before the redirect completes.
+              </p>
+
+              <div className="rounded-xl bg-card border border-border p-5 mb-4">
+                <h3 className="font-heading font-semibold text-sm mb-2">Unified webhook endpoint</h3>
+                <p className="text-muted-foreground text-xs mb-3">
+                  Paste this URL into your Paystack and Flutterwave dashboards. The same endpoint handles both providers
+                  — signatures are verified server-side and the corresponding <code className="bg-muted px-1 py-0.5 rounded">verify-*</code> flow runs automatically.
+                </p>
+                <CodeBlock
+                  language="text"
+                  code={`${SUPABASE_URL}/functions/v1/payment-webhook`}
+                />
+              </div>
+
+              <div className="rounded-xl bg-card border border-border p-5 mb-4">
+                <h3 className="font-heading font-semibold text-sm mb-2">Required platform secrets</h3>
+                <p className="text-muted-foreground text-xs mb-3">
+                  Configure these under <strong>Super Admin → Keys &amp; Secrets → FSA Platform Secrets</strong>.
+                  Without them, signature checks fail and webhooks are rejected with <code>401</code>.
+                </p>
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/30">
+                      <th className="text-left px-3 py-2 font-medium">Provider</th>
+                      <th className="text-left px-3 py-2 font-medium">Secret</th>
+                      <th className="text-left px-3 py-2 font-medium">Header verified</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      ["Paystack", "secret_key (signs with HMAC-SHA512)", "x-paystack-signature"],
+                      ["Paystack", "webhook_secret (optional override)", "x-paystack-signature"],
+                      ["Flutterwave", "webhook_hash (verif-hash value)", "verif-hash"],
+                    ].map(([prov, secret, header]) => (
+                      <tr key={`${prov}-${secret}`} className="border-b border-border last:border-0">
+                        <td className="px-3 py-2 font-medium">{prov}</td>
+                        <td className="px-3 py-2 font-mono text-primary">{secret}</td>
+                        <td className="px-3 py-2 font-mono text-muted-foreground">{header}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="rounded-xl bg-card border border-border p-5 mb-4">
+                <h3 className="font-heading font-semibold text-sm mb-2">Browser return URLs (front-channel)</h3>
+                <p className="text-muted-foreground text-xs mb-3">
+                  When a payment redirects back to the app, the global <code>PaymentReturnHandler</code> inspects the URL,
+                  extracts the gateway reference and calls the matching verify function. You normally do not need to wire
+                  these up — they are appended automatically by the relevant initializer.
+                </p>
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/30">
+                      <th className="text-left px-3 py-2 font-medium">Flow</th>
+                      <th className="text-left px-3 py-2 font-medium">URL markers</th>
+                      <th className="text-left px-3 py-2 font-medium">Verify function</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      ["Order payment", "?payment=success&kind=order&order_id=…", "verify-payment"],
+                      ["Customer registration", "?reg_status=success or ?onboard=success", "verify-registration-payment"],
+                      ["Designer subscription", "?reference=…", "verify-designer-subscription"],
+                      ["AI measurement booking", "?meas=success&reference=…", "verify-measurement-payment"],
+                      ["Website builder plan", "(polled after checkout)", "verify-website-payment"],
+                    ].map(([flow, marker, fn]) => (
+                      <tr key={flow} className="border-b border-border last:border-0">
+                        <td className="px-3 py-2 font-medium">{flow}</td>
+                        <td className="px-3 py-2 font-mono text-muted-foreground">{marker}</td>
+                        <td className="px-3 py-2 font-mono text-primary">{fn}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="rounded-xl bg-card border border-border p-5">
+                <h3 className="font-heading font-semibold text-sm mb-2">Test with curl</h3>
+                <p className="text-muted-foreground text-xs mb-2">
+                  Webhook calls must include a valid signature header — direct curl requests without a real PSP signature
+                  will be rejected with <code>401</code>. Use the PSP dashboard's “Send test webhook” button instead.
+                </p>
+                <CodeBlock
+                  language="bash"
+                  code={`# Paystack — from the Paystack dashboard
+# Settings → API Keys & Webhooks → Test Webhook
+
+# Flutterwave — from the Flutterwave dashboard
+# Settings → Webhooks → Send test`}
+                />
               </div>
             </section>
 
