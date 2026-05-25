@@ -72,6 +72,24 @@ const PlatformCataloguePage = () => {
   // Guest interaction-blocked state: drives a clear in-page message
   const [guestBlockedAction, setGuestBlockedAction] = useState<string | null>(null);
 
+  // Signed-in role-based redirect: privileged operational roles belong on their
+  // own portal, not browsing the marketplace. Customers / super_admin /
+  // super_assistant stay here (catalogue is their home / oversight surface).
+  useEffect(() => {
+    if (authLoading || roleLoading || !user || !userRole) return;
+    const stayRoles = ["customer", "super_admin", "super_assistant"];
+    if (stayRoles.includes(userRole)) return;
+    resolveHomeRoute(user.id).then((home) => {
+      if (home && home !== "/") navigate(home, { replace: true });
+    });
+  }, [authLoading, roleLoading, user, userRole, navigate]);
+
+  // Fire a one-shot view event for guest CTA exposure.
+  useEffect(() => {
+    if (authLoading || user) return;
+    track("guest_cta_view", { path: "/" });
+  }, [authLoading, user]);
+
   // Determine user role + profile info
   useEffect(() => {
     if (!user) { setRoleLoading(false); setProfileLoading(false); return; }
