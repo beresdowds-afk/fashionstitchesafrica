@@ -135,7 +135,7 @@ const Dashboard = () => {
   // Only org admins can claim. Idempotent — safe to call on every mount.
   useEffect(() => {
     if (!user || !currentOrg) return;
-    if (role !== "org_admin" && role !== "super_admin") return;
+    if (role !== "org_admin" && !isSuperAdmin) return;
     (async () => {
       try {
         await supabase.rpc("claim_promotional_grant", {
@@ -144,7 +144,7 @@ const Dashboard = () => {
         });
       } catch { /* ignore: cap reached or already claimed */ }
     })();
-  }, [user, currentOrg, role]);
+  }, [user, currentOrg, role, isSuperAdmin]);
 
   const handleSignOut = async () => {
     await signOut();
