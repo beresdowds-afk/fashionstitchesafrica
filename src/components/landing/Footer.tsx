@@ -1,16 +1,54 @@
 import { Mail, MapPin, Phone } from "lucide-react";
+import { Link } from "react-router-dom";
 import fsaLogo from "@/assets/fsa-logo.png";
 import { usePlatformSettings } from "@/hooks/usePlatformSettings";
 
-const footerLinks = {
-  Platform: ["Features", "Pricing", "API Docs", "Website Builder", "Integrations"],
-  Company: ["About Us", "Careers", "Blog", "Press", "Partners"],
-  Support: ["Help Center", "Documentation", "Status", "Contact Us", "Community"],
-  Legal: ["Privacy Policy", "Terms of Service", "Cookie Policy", "GDPR", "Data Protection"],
+type FooterLink = { label: string; to?: string; href?: string };
+
+const footerLinks: Record<string, FooterLink[]> = {
+  Platform: [
+    { label: "Features" },
+    { label: "Pricing" },
+    { label: "API Docs", to: "/docs/api" },
+    { label: "Website Builder" },
+    { label: "Integrations" },
+  ],
+  Company: [
+    { label: "About Us" },
+    { label: "Careers" },
+    { label: "Blog" },
+    { label: "Press" },
+    { label: "Partners" },
+  ],
+  Support: [
+    { label: "Help Center" },
+    { label: "Documentation", to: "/docs/api" },
+    { label: "Status" },
+    { label: "Contact Us" },
+    { label: "Community" },
+  ],
+  Legal: [
+    { label: "Privacy Policy", to: "/legal" },
+    { label: "Terms of Service", to: "/legal" },
+    { label: "Cookie Policy" },
+    { label: "GDPR" },
+    { label: "Data Protection" },
+  ],
 };
 
 const Footer = () => {
   const { settings } = usePlatformSettings();
+  const supportLinks: FooterLink[] = footerLinks.Support.map((l) =>
+    l.label === "Contact Us" && settings.contact_email
+      ? { ...l, href: `mailto:${settings.contact_email}` }
+      : l,
+  );
+  const phoneHref = settings.contact_phone
+    ? `tel:${String(settings.contact_phone).replace(/[^\d+]/g, "")}`
+    : undefined;
+  const mapHref = settings.contact_address
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(settings.contact_address)}`
+    : undefined;
 
   return (
     <footer id="contact" className="bg-ebony pt-20 pb-8 relative">
@@ -32,35 +70,65 @@ const Footer = () => {
               {settings.description}
             </p>
             <div className="space-y-3 text-sm text-ivory/40">
-              <div className="flex items-center gap-2">
-                <Mail size={14} className="text-primary" />
-                {settings.contact_email}
-              </div>
-              <div className="flex items-center gap-2">
-                <Phone size={14} className="text-primary" />
-                {settings.contact_phone}
-              </div>
-              <div className="flex items-center gap-2">
-                <MapPin size={14} className="text-primary" />
-                {settings.contact_address}
-              </div>
+              {settings.contact_email && (
+                <a
+                  href={`mailto:${settings.contact_email}`}
+                  className="flex items-center gap-2 hover:text-primary transition-colors"
+                >
+                  <Mail size={14} className="text-primary" />
+                  {settings.contact_email}
+                </a>
+              )}
+              {settings.contact_phone && (
+                <a
+                  href={phoneHref}
+                  className="flex items-center gap-2 hover:text-primary transition-colors"
+                >
+                  <Phone size={14} className="text-primary" />
+                  {settings.contact_phone}
+                </a>
+              )}
+              {settings.contact_address && (
+                <a
+                  href={mapHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 hover:text-primary transition-colors"
+                >
+                  <MapPin size={14} className="text-primary" />
+                  {settings.contact_address}
+                </a>
+              )}
             </div>
           </div>
 
-          {Object.entries(footerLinks).map(([category, links]) => (
+          {Object.entries({ ...footerLinks, Support: supportLinks }).map(([category, links]) => (
             <div key={category}>
               <h4 className="font-heading font-semibold text-ivory mb-4 text-sm">
                 {category}
               </h4>
               <ul className="space-y-2.5">
                 {links.map((link) => (
-                  <li key={link}>
-                    <a
-                      href="#"
-                      className="text-ivory/40 hover:text-primary text-sm transition-colors"
-                    >
-                      {link}
-                    </a>
+                  <li key={link.label}>
+                    {link.to ? (
+                      <Link
+                        to={link.to}
+                        className="text-ivory/40 hover:text-primary text-sm transition-colors"
+                      >
+                        {link.label}
+                      </Link>
+                    ) : link.href ? (
+                      <a
+                        href={link.href}
+                        className="text-ivory/40 hover:text-primary text-sm transition-colors"
+                      >
+                        {link.label}
+                      </a>
+                    ) : (
+                      <span className="text-ivory/30 text-sm cursor-default">
+                        {link.label}
+                      </span>
+                    )}
                   </li>
                 ))}
               </ul>
