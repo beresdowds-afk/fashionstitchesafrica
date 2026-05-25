@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import TourCtaBubble from "@/components/tour/TourCtaBubble";
+// Tour bubble removed — platform-catalogue and platform-tour are kept independent
 import { MOCK_CATALOGUE_ITEMS } from "@/data/mockCatalogueItems";
 
 const MAX_FREE_TOURS = 2;
