@@ -49,6 +49,7 @@ import { TrialBanner } from "@/components/TrialBanner";
 const roleLabels: Record<AppRole, string> = {
   super_admin: "Super Admin",
   super_assistant: "Super Assistant",
+  platform_management: "Platform Management",
   org_admin: "Org Admin",
   manager: "Manager",
   designer: "Designer",
@@ -59,6 +60,7 @@ const roleLabels: Record<AppRole, string> = {
 const roleColors: Record<AppRole, string> = {
   super_admin: "bg-accent text-accent-foreground",
   super_assistant: "bg-accent/80 text-accent-foreground",
+  platform_management: "bg-accent text-accent-foreground",
   org_admin: "bg-primary text-primary-foreground",
   manager: "bg-primary/80 text-primary-foreground",
   designer: "bg-secondary/80 text-secondary-foreground",

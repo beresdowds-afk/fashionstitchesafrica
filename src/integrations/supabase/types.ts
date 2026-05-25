@@ -10106,6 +10106,7 @@ export type Database = {
         | "tailor"
         | "customer"
         | "designer"
+        | "platform_management"
       order_status:
         | "pending"
         | "confirmed"
@@ -10251,6 +10252,7 @@ export const Constants = {
         "tailor",
         "customer",
         "designer",
+        "platform_management",
       ],
       order_status: [
         "pending",
