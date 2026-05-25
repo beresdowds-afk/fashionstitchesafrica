@@ -46,12 +46,12 @@ interface OfficerData {
   id: string;
   full_name: string;
   title: string;
-  email: string | null;
-  phone: string | null;
+  email?: string | null;
+  phone?: string | null;
   bio: string | null;
   photo_url: string | null;
   display_order: number;
-  is_public: boolean;
+  is_public?: boolean;
 }
 
 interface OrgData {
