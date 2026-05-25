@@ -193,7 +193,7 @@ const PlatformCataloguePage = () => {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => navigate("/welcome")}
+                onClick={() => navigate("/")}
                 className="hidden sm:inline-flex"
               >
                 Register here

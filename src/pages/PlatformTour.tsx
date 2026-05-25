@@ -145,7 +145,7 @@ const PlatformTour = () => {
   const exitTour = useCallback(() => {
     stop();
     clearAdvanceTimer();
-    navigate("/welcome");
+    navigate("/");
   }, [stop, navigate, clearAdvanceTimer]);
 
   const goCta = useCallback(() => {
@@ -215,7 +215,7 @@ const PlatformTour = () => {
             })}
           </div>
           <div className="text-center mt-6">
-            <Button variant="ghost" size="sm" onClick={() => navigate("/welcome")} className="text-xs gap-1">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/")} className="text-xs gap-1">
               <Eye size={12} /> Skip — go to homepage
             </Button>
           </div>

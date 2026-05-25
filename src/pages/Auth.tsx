@@ -329,8 +329,16 @@ const Auth = () => {
           navigate("/tailor-dashboard");
           return;
         case "org_admin":
-        case "manager":
           navigate("/create-organization");
+          return;
+        case "manager":
+          // Managers join orgs via invitation — they should never be creating one.
+          toast({
+            title: "No organization yet",
+            description: "Ask your organization admin to invite you before signing in as a manager.",
+            variant: "destructive",
+          });
+          navigate("/dashboard");
           return;
         default:
           navigate(isPortal ? "/portal" : "/dashboard");
