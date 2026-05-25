@@ -196,6 +196,7 @@ const PlatformCataloguePage = () => {
 
   const promptAuth = () => {
     setGuestBlockedAction("open this product");
+    track("guest_product_card_click", { category: selectedCategory, items_count: items.length });
     // Scroll the alert into view so the message is unmissable
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -204,12 +205,47 @@ const PlatformCataloguePage = () => {
   if (!user) {
     return (
       <div className="min-h-screen bg-background">
+        <Helmet>
+          <title>{SEO_TITLE}</title>
+          <meta name="description" content={SEO_DESCRIPTION} />
+          <link rel="canonical" href={CANONICAL_URL} />
+          <meta property="og:title" content={SEO_TITLE} />
+          <meta property="og:description" content={SEO_DESCRIPTION} />
+          <meta property="og:url" content={CANONICAL_URL} />
+          <meta property="og:type" content="website" />
+          <meta property="og:image" content={OG_IMAGE} />
+          <meta name="twitter:card" content="summary_large_image" />
+          <meta name="twitter:title" content={SEO_TITLE} />
+          <meta name="twitter:description" content={SEO_DESCRIPTION} />
+          <meta name="twitter:image" content={OG_IMAGE} />
+          <script type="application/ld+json">{JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            name: "FYSORA FASHN (Fashion Stitches Africa)",
+            url: CANONICAL_URL,
+            potentialAction: {
+              "@type": "SearchAction",
+              target: `${CANONICAL_URL}?q={search_term_string}`,
+              "query-input": "required name=search_term_string",
+            },
+          })}</script>
+          <script type="application/ld+json">{JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "ItemList",
+            itemListElement: filtered.slice(0, 10).map((it, idx) => ({
+              "@type": "ListItem",
+              position: idx + 1,
+              name: it.name,
+              image: it.image_url || undefined,
+            })),
+          })}</script>
+        </Helmet>
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-brand" />
         <header className="border-b border-border bg-card sticky top-0 z-30">
           <div className="container mx-auto px-4 lg:px-8 flex items-center justify-between h-14">
             <div className="flex items-center gap-3">
               <div>
-                <span className="font-heading font-bold text-sm">Platform Catalogue</span>
+                <h1 className="font-heading font-bold text-sm leading-tight">Platform Catalogue</h1>
                 <p className="text-[10px] text-muted-foreground">{filtered.length} curated products</p>
               </div>
             </div>
@@ -224,7 +260,7 @@ const PlatformCataloguePage = () => {
           </div>
         </header>
 
-        <div className="container mx-auto px-4 lg:px-8 py-4 max-w-6xl pb-28">
+        <div className="container mx-auto px-4 lg:px-8 py-4 max-w-6xl pb-36 sm:pb-28">
           {guestBlockedAction && (
             <Alert className="mb-4 border-primary/30 bg-primary/5">
               <Lock className="h-4 w-4" />
@@ -233,7 +269,7 @@ const PlatformCataloguePage = () => {
                 The platform catalogue is view-only for guests. Create a free account or sign in to open product
                 details, contact fashion houses, save favourites, or place orders.
                 <div className="mt-2 flex gap-2">
-                  <Button size="sm" variant="hero" onClick={() => navigate("/auth")}>
+                  <Button size="sm" variant="hero" onClick={() => { track("guest_signin_required_alert_cta"); navigate("/auth"); }}>
                     <LogIn size={12} className="mr-1" /> Sign in / Sign up
                   </Button>
                   <Button size="sm" variant="ghost" onClick={() => setGuestBlockedAction(null)}>Dismiss</Button>
