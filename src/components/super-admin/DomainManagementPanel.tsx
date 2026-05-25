@@ -610,8 +610,8 @@ function buildWebsiteContent(config: DomainDnsConfig, settings: any, catalogue: 
     <div class="container">
       <h2>About Us</h2>
       <p>${heroDesc}</p>
-      ${settings?.vision_statement ? `<div class="vision"><h3>Our Vision</h3><p>${settings.vision_statement}</p></div>` : ""}
-      ${settings?.mission_statement ? `<div class="mission"><h3>Our Mission</h3><p>${settings.mission_statement}</p></div>` : ""}
+      ${settings?.vision_statement ? `<div class="vision"><h3>Our Vision</h3><p>${escapeHtml(settings.vision_statement)}</p></div>` : ""}
+      ${settings?.mission_statement ? `<div class="mission"><h3>Our Mission</h3><p>${escapeHtml(settings.mission_statement)}</p></div>` : ""}
     </div>
   </section>
 
