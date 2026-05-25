@@ -291,7 +291,6 @@ export function FSAWidget({ widgetKey }: { widgetKey: string }) {
 
             {/* API Reference */}
             <section id="api-reference" className="mb-12">
-              {/* Webhooks (inserted above) */}
               <h2 className="font-heading font-bold text-xl mb-4 flex items-center gap-2">
                 <Code2 size={20} className="text-primary" /> API Reference
               </h2>
