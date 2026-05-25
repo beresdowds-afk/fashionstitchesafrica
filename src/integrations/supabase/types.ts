@@ -10075,6 +10075,10 @@ export type Database = {
         }
         Returns: Json
       }
+      log_admin_access_violation: {
+        Args: { _function_name: string }
+        Returns: undefined
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
