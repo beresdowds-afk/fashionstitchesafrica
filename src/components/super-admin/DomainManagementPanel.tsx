@@ -460,40 +460,59 @@ const DomainDnsCard = ({ config, onUpdate }: { config: DomainDnsConfig; onUpdate
 
 // ── Build Website Content Helper ──────────────────────────────────────────────
 function buildWebsiteContent(config: DomainDnsConfig, settings: any, catalogue: any[]) {
-  const brandColor = settings?.brand_color || "#D4AF37";
-  const accentColor = settings?.accent_color || "#8B5CF6";
-  const orgName = config.label;
-  const tagline = settings?.tagline || "Premium Fashion & Tailoring";
-  const heroDesc = settings?.hero_description || `${orgName} delivers premium fashion and tailoring services. We combine traditional craftsmanship with modern design.`;
-  const heroImage = settings?.hero_image_url || "";
-  const fontHeading = settings?.font_heading || "Playfair Display";
-  const fontBody = settings?.font_body || "Inter";
+  // HTML-escape org-controlled values before interpolation to prevent stored XSS
+  // on every visitor of the published tenant site.
+  const escapeHtml = (s: string) => (s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+  const sanitizeUrl = (raw: string) => {
+    const u = (raw ?? "").trim();
+    if (!u) return "";
+    if (/^(https?:|mailto:|tel:|\/|#)/i.test(u)) return escapeHtml(u);
+    return "";
+  };
+  const sanitizeColor = (c: string, fallback: string) =>
+    /^#[0-9a-fA-F]{3,8}$/.test(c || "") ? c : fallback;
+  const sanitizeFont = (f: string, fallback: string) =>
+    /^[A-Za-z0-9 \-]{1,60}$/.test(f || "") ? f : fallback;
+
+  const brandColor = sanitizeColor(settings?.brand_color, "#D4AF37");
+  const accentColor = sanitizeColor(settings?.accent_color, "#8B5CF6");
+  const orgName = escapeHtml(config.label);
+  const tagline = escapeHtml(settings?.tagline || "Premium Fashion & Tailoring");
+  const heroDesc = escapeHtml(settings?.hero_description || `${config.label} delivers premium fashion and tailoring services. We combine traditional craftsmanship with modern design.`);
+  const heroImage = sanitizeUrl(settings?.hero_image_url || "");
+  const fontHeading = sanitizeFont(settings?.font_heading, "Playfair Display");
+  const fontBody = sanitizeFont(settings?.font_body, "Inter");
   const palette = settings?.color_palette || {};
-  const bgColor = palette.background || "#0a0a0a";
-  const surfaceColor = palette.surface || "#141414";
-  const textColor = palette.text_color || "#f5f0e8";
-  const mutedColor = palette.muted || "#a0977d";
+  const bgColor = sanitizeColor(palette.background, "#0a0a0a");
+  const surfaceColor = sanitizeColor(palette.surface, "#141414");
+  const textColor = sanitizeColor(palette.text_color, "#f5f0e8");
+  const mutedColor = sanitizeColor(palette.muted, "#a0977d");
 
   // Social links
   const socialLinks = [
-    { url: settings?.instagram_url, icon: "Instagram", label: "Instagram" },
-    { url: settings?.facebook_url, icon: "Facebook", label: "Facebook" },
-    { url: settings?.twitter_url, icon: "X / Twitter", label: "Twitter" },
-    { url: settings?.tiktok_url, icon: "TikTok", label: "TikTok" },
-    { url: settings?.youtube_url, icon: "YouTube", label: "YouTube" },
-    { url: settings?.linkedin_url, icon: "LinkedIn", label: "LinkedIn" },
-    { url: settings?.whatsapp_number ? `https://wa.me/${settings.whatsapp_number.replace(/[^0-9]/g, "")}` : "", icon: "WhatsApp", label: "WhatsApp" },
+    { url: sanitizeUrl(settings?.instagram_url), icon: "Instagram", label: "Instagram" },
+    { url: sanitizeUrl(settings?.facebook_url), icon: "Facebook", label: "Facebook" },
+    { url: sanitizeUrl(settings?.twitter_url), icon: "X / Twitter", label: "Twitter" },
+    { url: sanitizeUrl(settings?.tiktok_url), icon: "TikTok", label: "TikTok" },
+    { url: sanitizeUrl(settings?.youtube_url), icon: "YouTube", label: "YouTube" },
+    { url: sanitizeUrl(settings?.linkedin_url), icon: "LinkedIn", label: "LinkedIn" },
+    { url: settings?.whatsapp_number ? `https://wa.me/${String(settings.whatsapp_number).replace(/[^0-9]/g, "")}` : "", icon: "WhatsApp", label: "WhatsApp" },
   ].filter(s => s.url);
 
   const socialHtml = socialLinks.length > 0 ? `
       <div class="social-links">
-        ${socialLinks.map(s => `<a href="${s.url}" target="_blank" rel="noopener" title="${s.label}">${s.label}</a>`).join("\n        ")}
+        ${socialLinks.map(s => `<a href="${s.url}" target="_blank" rel="noopener" title="${escapeHtml(s.label)}">${escapeHtml(s.label)}</a>`).join("\n        ")}
       </div>` : "";
 
   // Contact info
-  const orgEmail = settings?.email || "";
-  const orgPhone = settings?.phone || "";
-  const orgAddress = settings?.address || "";
+  const orgEmail = escapeHtml(settings?.email || "");
+  const orgPhone = escapeHtml(settings?.phone || "");
+  const orgAddress = escapeHtml(settings?.address || "");
 
   const contactHtml = (orgEmail || orgPhone || orgAddress) ? `
       <div class="contact-info">
@@ -502,16 +521,28 @@ function buildWebsiteContent(config: DomainDnsConfig, settings: any, catalogue: 
         ${orgAddress ? `<p>Address: ${orgAddress}</p>` : ""}
       </div>` : "";
 
-  const catalogueHtml = catalogue.map((item: any) => `
-    <div class="product-card" data-id="${item.id}" data-name="${item.name}" data-price="${item.price || 0}" data-currency="${item.currency || 'NGN'}">
-      <img src="${item.image_url || 'https://images.unsplash.com/photo-1558171813-4c088753af8f?w=400'}" alt="${item.name}" loading="lazy" />
+  const catalogueHtml = catalogue.map((item: any) => {
+    const itemId = escapeHtml(String(item.id || ""));
+    const itemName = escapeHtml(item.name || "");
+    const itemDesc = escapeHtml(item.description || "");
+    const itemImg = sanitizeUrl(item.image_url || "") || "https://images.unsplash.com/photo-1558171813-4c088753af8f?w=400";
+    const itemCurrency = escapeHtml(item.currency || "NGN");
+    const itemPrice = Number(item.price) || 0;
+    // JSON.stringify with replace(/</) protects against </script> breakouts in inline onclick attrs.
+    const jsName = JSON.stringify(item.name || "").replace(/</g, "\\u003c").replace(/"/g, "&quot;");
+    const jsId = JSON.stringify(String(item.id || "")).replace(/</g, "\\u003c").replace(/"/g, "&quot;");
+    const jsCur = JSON.stringify(item.currency || "NGN").replace(/</g, "\\u003c").replace(/"/g, "&quot;");
+    return `
+    <div class="product-card" data-id="${itemId}" data-name="${itemName}" data-price="${itemPrice}" data-currency="${itemCurrency}">
+      <img src="${itemImg}" alt="${itemName}" loading="lazy" />
       <div class="product-info">
-        <h3>${item.name}</h3>
-        ${item.description ? `<p class="product-desc">${item.description}</p>` : ""}
-        <p class="price">${item.currency || 'NGN'} ${(item.price || 0).toLocaleString()}</p>
-        <button class="add-to-cart-btn" onclick="addToCart('${item.id}','${item.name.replace(/'/g, "\\'")}',${item.price || 0},'${item.currency || 'NGN'}')">Add to Cart</button>
+        <h3>${itemName}</h3>
+        ${itemDesc ? `<p class="product-desc">${itemDesc}</p>` : ""}
+        <p class="price">${itemCurrency} ${itemPrice.toLocaleString()}</p>
+        <button class="add-to-cart-btn" onclick="addToCart(${jsId},${jsName},${itemPrice},${jsCur})">Add to Cart</button>
       </div>
-    </div>`).join("\n");
+    </div>`;
+  }).join("\n");
 
   const heroStyle = heroImage ? `background:linear-gradient(rgba(0,0,0,0.6),rgba(0,0,0,0.8)),url('${heroImage}') center/cover;` : `background:linear-gradient(135deg,var(--bg),var(--surface));`;
 
@@ -579,8 +610,8 @@ function buildWebsiteContent(config: DomainDnsConfig, settings: any, catalogue: 
     <div class="container">
       <h2>About Us</h2>
       <p>${heroDesc}</p>
-      ${settings?.vision_statement ? `<div class="vision"><h3>Our Vision</h3><p>${settings.vision_statement}</p></div>` : ""}
-      ${settings?.mission_statement ? `<div class="mission"><h3>Our Mission</h3><p>${settings.mission_statement}</p></div>` : ""}
+      ${settings?.vision_statement ? `<div class="vision"><h3>Our Vision</h3><p>${escapeHtml(settings.vision_statement)}</p></div>` : ""}
+      ${settings?.mission_statement ? `<div class="mission"><h3>Our Mission</h3><p>${escapeHtml(settings.mission_statement)}</p></div>` : ""}
     </div>
   </section>
 

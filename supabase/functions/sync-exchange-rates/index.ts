@@ -16,6 +16,17 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Only allow callers presenting the platform service-role key (pg_cron / internal scheduler).
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const authHeader = req.headers.get("Authorization") || "";
+    const token = authHeader.replace(/^Bearer\s+/i, "");
+    if (token !== serviceKey) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Use free exchangerate.host API (no key required)
     const apiUrl = `https://api.exchangerate.host/latest?base=${BASE_CURRENCY}&symbols=${TARGET_CURRENCIES.join(",")}`;
     let rates: Record<string, number> = {};
