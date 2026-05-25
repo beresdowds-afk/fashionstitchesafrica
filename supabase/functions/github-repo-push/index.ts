@@ -308,6 +308,45 @@ serve(async (req) => {
   try {
     const body = await req.json();
     const { action, org_name, repo_name, website_content, description, org_id } = body;
+
+    // Auth: accept either the platform service-role key (used by deployment-worker / pg_cron)
+    // OR a signed-in org_admin / super_admin JWT for the given org_id.
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const authHeader = req.headers.get("Authorization") || "";
+    const token = authHeader.replace(/^Bearer\s+/i, "");
+
+    const isServiceCall = !!token && token === serviceKey;
+    if (!isServiceCall) {
+      if (!token) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const adminClient = createClient(supabaseUrl, serviceKey);
+      const { data: userRes, error: userErr } = await adminClient.auth.getUser(token);
+      if (userErr || !userRes?.user) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const { data: isSuper } = await adminClient.rpc("has_role", {
+        _user_id: userRes.user.id, _role: "super_admin",
+      });
+      let allowed = !!isSuper;
+      if (!allowed && org_id) {
+        const { data: isAdmin } = await adminClient.rpc("is_org_admin", {
+          _user_id: userRes.user.id, _org_id: org_id,
+        });
+        allowed = !!isAdmin;
+      }
+      if (!allowed) {
+        return new Response(JSON.stringify({ error: "Forbidden: org_admin or super_admin required" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
     const auth = await getAuthHeaders(org_id);
     const headers = auth.headers;
     const ownerOverride = auth.ownerOverride;
