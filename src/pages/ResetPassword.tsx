@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { motion } from "framer-motion";
 import { Lock, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { resolveHomeRoute } from "@/lib/roleHome";
 
 const ResetPassword = () => {
   const [password, setPassword] = useState("");
@@ -55,7 +56,10 @@ const ResetPassword = () => {
     } else {
       setSuccess(true);
       toast({ title: "Password updated successfully" });
-      setTimeout(() => navigate("/dashboard"), 2000);
+      const { data: sess } = await supabase.auth.getSession();
+      const uid = sess?.session?.user?.id;
+      const home = uid ? await resolveHomeRoute(uid) : "/auth";
+      setTimeout(() => navigate(home), 1500);
     }
   };
 
