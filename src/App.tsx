@@ -27,6 +27,9 @@ import PlatformCataloguePage from "./pages/PlatformCataloguePage";
 import PlatformTour from "./pages/PlatformTour";
 import PaymentsPortal from "./pages/PaymentsPortal";
 import OrgCustomerInstall from "./pages/OrgCustomerInstall";
+import FeaturesPage from "./pages/FeaturesPage";
+import PricingPage from "./pages/PricingPage";
+import AboutPage from "./pages/AboutPage";
 import NotFound from "./pages/NotFound";
 import PlatformUpdateWatcher from "@/components/platform/PlatformUpdateWatcher";
 import TourSyncWorker from "@/components/platform/TourSyncWorker";
@@ -68,6 +71,9 @@ const App = () => (
             <Route path="/payments" element={<PaymentsPortal />} />
             <Route path="/docs/api" element={<ApiDocs />} />
             <Route path="/legal" element={<LegalDocs />} />
+            <Route path="/features" element={<FeaturesPage />} />
+            <Route path="/pricing" element={<PricingPage />} />
+            <Route path="/about" element={<AboutPage />} />
             <Route path="/demo-org" element={<DemoOrgWebsite />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
