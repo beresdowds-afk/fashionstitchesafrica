@@ -5,12 +5,16 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import {
   ArrowLeft, FileText, Globe, Download, Loader2, Copy, Check,
-  Scale, Shield, RefreshCw, Building2
+  Scale, Shield, RefreshCw, Building2, Cookie, Lock, Database
 } from "lucide-react";
+import Navbar from "@/components/landing/Navbar";
+import Footer from "@/components/landing/Footer";
+import { Helmet } from "react-helmet-async";
 
 const REGIONS = [
   { code: "NG", name: "Nigeria", flag: "🇳🇬" },
