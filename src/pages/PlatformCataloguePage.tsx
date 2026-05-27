@@ -4,10 +4,10 @@ import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import IdentityVerificationGate from "@/components/shared/IdentityVerificationGate";
-import FreeTourConsentDialog from "@/components/shared/FreeTourConsentDialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -20,7 +20,7 @@ import {
 import { motion } from "framer-motion";
 import {
   ArrowLeft, Search, ShoppingBag, Tag, Building2, LogIn, Eye, Lock,
-  Info, Check, X, ShieldCheck, Star, Sparkles, UserPlus,
+  Info, Check, X, ShieldCheck, Star, Sparkles, UserPlus, Mail, Bell, Crown,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
