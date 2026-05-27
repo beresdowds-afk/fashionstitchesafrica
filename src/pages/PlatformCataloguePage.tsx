@@ -4,10 +4,10 @@ import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import IdentityVerificationGate from "@/components/shared/IdentityVerificationGate";
-import FreeTourConsentDialog from "@/components/shared/FreeTourConsentDialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -20,7 +20,7 @@ import {
 import { motion } from "framer-motion";
 import {
   ArrowLeft, Search, ShoppingBag, Tag, Building2, LogIn, Eye, Lock,
-  Info, Check, X, ShieldCheck, Star, Sparkles, UserPlus,
+  Info, Check, X, ShieldCheck, Star, Sparkles, UserPlus, Mail, Bell, Crown,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -580,18 +580,139 @@ const PlatformCataloguePage = () => {
   // Customers on an active free tour session: read-only view
   if (isOnFreeTour) return catalogueContent(true);
 
-  // Customers who haven't started a tour or need consent: show consent/exhausted dialog
+  // Customers who haven't started a tour or need consent: show read-only
+  // catalogue with a floating consent/subscribe bubble (no full-page gate).
+  const toursRemaining = Math.max(0, MAX_FREE_TOURS - toursUsed);
+  const exhausted = toursRemaining <= 0;
   return (
-    <FreeTourConsentDialog
-      toursUsed={toursUsed}
-      maxTours={MAX_FREE_TOURS}
-      onConsentGiven={() => {
-        setToursUsed(prev => prev + 1);
-        setTourActive(true);
-      }}
-      onSubscribe={() => navigate("/portal")}
-    />
+    <>
+      {catalogueContent(true)}
+      <div
+        className="fixed right-3 sm:right-6 z-40 max-w-[calc(100vw-1.5rem)] pointer-events-none"
+        style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 1rem)" }}
+      >
+        <Dialog>
+          <motion.div
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ delay: 0.3, type: "spring", stiffness: 220, damping: 22 }}
+            className="pointer-events-auto flex flex-wrap items-center gap-2 rounded-full border border-primary/30 bg-card/95 backdrop-blur shadow-gold pl-3 pr-1.5 py-1.5"
+          >
+            <ShieldCheck size={14} className="text-primary shrink-0" />
+            <span className="text-[11px] sm:text-xs text-muted-foreground hidden sm:inline">
+              {exhausted
+                ? "Previews exhausted"
+                : `${toursRemaining} free preview${toursRemaining === 1 ? "" : "s"} left`}
+            </span>
+            <DialogTrigger asChild>
+              <Button variant="hero" size="sm" className="h-7 rounded-full px-3 text-[11px]">
+                {exhausted ? (<><Crown size={12} className="mr-1" /> Subscribe</>) : (<><Eye size={12} className="mr-1" /> Start Preview</>)}
+              </Button>
+            </DialogTrigger>
+          </motion.div>
+          <DialogContent className="max-w-md">
+            <FreeTourConsentInline
+              toursUsed={toursUsed}
+              maxTours={MAX_FREE_TOURS}
+              onConsentGiven={() => {
+                setToursUsed(prev => prev + 1);
+                setTourActive(true);
+              }}
+              onSubscribe={() => navigate("/portal")}
+            />
+          </DialogContent>
+        </Dialog>
+      </div>
+    </>
   );
 };
+
+// Compact inline consent card used inside the floating-bubble dialog so the
+// catalogue stays visible behind it (no full-page gate).
+function FreeTourConsentInline({
+  toursUsed,
+  maxTours,
+  onConsentGiven,
+  onSubscribe,
+}: {
+  toursUsed: number;
+  maxTours: number;
+  onConsentGiven: () => void;
+  onSubscribe: () => void;
+}) {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [agreed, setAgreed] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const toursRemaining = Math.max(0, maxTours - toursUsed);
+
+  if (toursRemaining <= 0) {
+    return (
+      <div className="text-center">
+        <Lock size={32} className="mx-auto text-muted-foreground mb-2" />
+        <h3 className="font-heading font-bold text-base mb-1">Free Previews Exhausted</h3>
+        <p className="text-xs text-muted-foreground mb-4">
+          Subscribe to the <span className="font-semibold text-primary">$10/year Premium plan</span> and verify
+          your identity for full unrestricted access.
+        </p>
+        <Button onClick={onSubscribe} className="w-full" size="sm">
+          <Crown size={14} className="mr-2" /> Subscribe Now
+        </Button>
+      </div>
+    );
+  }
+
+  const handleStart = async () => {
+    if (!user || !agreed) return;
+    setSubmitting(true);
+    await supabase
+      .from("profiles")
+      .update({
+        promo_consent: true,
+        promo_consent_at: new Date().toISOString(),
+        free_tours_used: toursUsed + 1,
+      } as any)
+      .eq("id", user.id);
+    toast({
+      title: "Catalogue preview unlocked",
+      description: `You have ${toursRemaining - 1} free preview${toursRemaining - 1 === 1 ? "" : "s"} remaining.`,
+    });
+    setSubmitting(false);
+    onConsentGiven();
+  };
+
+  return (
+    <div>
+      <div className="text-center mb-4">
+        <ShoppingBag size={28} className="mx-auto text-primary mb-2" />
+        <h3 className="font-heading font-bold text-base mb-1">Free Catalogue Preview</h3>
+        <Badge variant="outline" className="text-[10px]">
+          {toursRemaining} of {maxTours} previews remaining
+        </Badge>
+      </div>
+      <div className="rounded-lg bg-muted/50 border border-border p-3 mb-4 space-y-2 text-xs text-muted-foreground">
+        <div className="flex items-start gap-2">
+          <Eye size={12} className="mt-0.5 text-primary shrink-0" />
+          <span>Browse the full platform catalogue in <span className="font-medium text-foreground">read-only mode</span>.</span>
+        </div>
+        <div className="flex items-start gap-2">
+          <Lock size={12} className="mt-0.5 text-destructive shrink-0" />
+          <span>Ordering, wishlists, and try-on remain disabled until you subscribe.</span>
+        </div>
+      </div>
+      <label className="flex items-start gap-2 mb-4 p-2 rounded-lg border border-primary/20 bg-primary/5 cursor-pointer">
+        <Checkbox checked={agreed} onCheckedChange={(v) => setAgreed(!!v)} className="mt-0.5" />
+        <span className="text-[11px] leading-relaxed">
+          <span className="font-medium">I agree</span> to receive promotional emails
+          <Mail size={10} className="inline mx-1" /> and notifications
+          <Bell size={10} className="inline mx-1" /> from FYSORA FASHN.
+        </span>
+      </label>
+      <Button className="w-full" size="sm" disabled={!agreed || submitting} onClick={handleStart}>
+        {submitting ? "Starting..." : `Start Free Preview (${toursRemaining} left)`}
+      </Button>
+    </div>
+  );
+}
 
 export default PlatformCataloguePage;
