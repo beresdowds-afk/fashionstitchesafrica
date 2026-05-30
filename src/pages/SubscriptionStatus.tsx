@@ -10,7 +10,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useOrganization } from "@/hooks/useOrganization";
+import { useCurrentOrg } from "@/hooks/useOrganization";
 import { useOrgSubscription, useSubscriptionPlans } from "@/hooks/useSubscription";
 import { toast } from "sonner";
 import Navbar from "@/components/landing/Navbar";
@@ -36,7 +36,7 @@ const statusVariant = (s: string) =>
 const SubscriptionStatus = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  const { currentOrg } = useOrganization();
+  const { currentOrg } = useCurrentOrg();
   const { subscription: orgSub, loading: orgLoading, refetch: refetchOrg } = useOrgSubscription(currentOrg?.id);
   const { plans } = useSubscriptionPlans();
 
