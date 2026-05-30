@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router-dom";
 import {
   Code2, Copy, Check, ArrowLeft, Zap, Shield, Globe, Palette,
-  BookOpen, Terminal, Settings, ChevronRight, ExternalLink, Webhook, Search
+  BookOpen, Terminal, Settings, ChevronRight, ExternalLink, Webhook, Search, KeyRound, Gauge
 } from "lucide-react";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -15,6 +15,8 @@ const APP_URL = "https://fashionstitchesafrica.lovable.app";
 const sections = [
   { id: "quickstart", label: "Quick Start", icon: Zap },
   { id: "installation", label: "Installation", icon: Terminal },
+  { id: "authentication", label: "Authentication", icon: KeyRound },
+  { id: "rate-limits", label: "Rate Limits", icon: Gauge },
   { id: "configuration", label: "Configuration", icon: Settings },
   { id: "features", label: "Features", icon: BookOpen },
   { id: "theming", label: "Theming", icon: Palette },
