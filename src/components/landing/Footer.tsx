@@ -10,6 +10,7 @@ const footerLinks: Record<string, FooterLink[]> = {
   Platform: [
     { label: "Features", to: "/features" },
     { label: "Pricing", to: "/pricing" },
+    { label: "Subscription", to: "/subscription" },
     { label: "API Docs", to: "/docs/api" },
     { label: "Website Builder" },
     { label: "Integrations" },

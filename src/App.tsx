@@ -30,10 +30,12 @@ import OrgCustomerInstall from "./pages/OrgCustomerInstall";
 import FeaturesPage from "./pages/FeaturesPage";
 import PricingPage from "./pages/PricingPage";
 import AboutPage from "./pages/AboutPage";
+import SubscriptionStatus from "./pages/SubscriptionStatus";
 import NotFound from "./pages/NotFound";
 import PlatformUpdateWatcher from "@/components/platform/PlatformUpdateWatcher";
 import TourSyncWorker from "@/components/platform/TourSyncWorker";
 import PaymentReturnHandler from "@/components/payments/PaymentReturnHandler";
+import CookieConsent from "@/components/landing/CookieConsent";
 
 const queryClient = new QueryClient();
 
@@ -74,9 +76,11 @@ const App = () => (
             <Route path="/features" element={<FeaturesPage />} />
             <Route path="/pricing" element={<PricingPage />} />
             <Route path="/about" element={<AboutPage />} />
+            <Route path="/subscription" element={<SubscriptionStatus />} />
             <Route path="/demo-org" element={<DemoOrgWebsite />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <CookieConsent />
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
