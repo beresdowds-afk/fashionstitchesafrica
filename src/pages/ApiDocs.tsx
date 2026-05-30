@@ -460,6 +460,137 @@ export function FSAWidget({ widgetKey }: { widgetKey: string }) {
               </div>
             </section>
 
+            {/* Authentication */}
+            <section id="authentication" className="mb-12">
+              <h2 className="font-heading font-bold text-xl mb-4 flex items-center gap-2">
+                <KeyRound size={20} className="text-primary" /> Authentication
+              </h2>
+              <p className="text-muted-foreground text-sm mb-4">
+                Every privileged endpoint requires a Supabase user JWT in the <code className="bg-muted px-1 py-0.5 rounded">Authorization</code> header.
+                Public endpoints (widget config, webhooks) accept the anon publishable key via <code className="bg-muted px-1 py-0.5 rounded">apikey</code>.
+              </p>
+
+              <div className="rounded-xl bg-card border border-border overflow-hidden mb-4">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/30">
+                      <th className="text-left px-3 py-2 font-medium">Header</th>
+                      <th className="text-left px-3 py-2 font-medium">Value</th>
+                      <th className="text-left px-3 py-2 font-medium">Required for</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      ["Authorization", "Bearer <user_jwt>", "All user-scoped endpoints"],
+                      ["apikey", "<supabase_anon_key>", "Anon / widget / webhook endpoints"],
+                      ["Content-Type", "application/json", "POST endpoints"],
+                      ["x-fsa-org-id", "<org-uuid>", "Org-scoped reads (optional override)"],
+                      ["Idempotency-Key", "<uuid>", "Payment + write retries (recommended)"],
+                    ].map(([h, v, r]) => (
+                      <tr key={h} className="border-b border-border last:border-0">
+                        <td className="px-3 py-2 font-mono text-primary">{h}</td>
+                        <td className="px-3 py-2 font-mono text-muted-foreground">{v}</td>
+                        <td className="px-3 py-2">{r}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <h3 className="font-heading font-semibold text-base mb-2 mt-6">1. Email &amp; password sign-in</h3>
+              <p className="text-muted-foreground text-sm mb-2">
+                Exchange credentials for a session JWT, then forward it on subsequent calls.
+              </p>
+              <CodeBlock language="bash" code={`curl -X POST "${SUPABASE_URL}/auth/v1/token?grant_type=password" \\
+  -H "apikey: <SUPABASE_ANON_KEY>" \\
+  -H "Content-Type: application/json" \\
+  -d '{"email":"you@example.com","password":"••••••••"}'
+
+# response → { access_token, refresh_token, expires_in, user }`} />
+
+              <h3 className="font-heading font-semibold text-base mb-2 mt-6">2. Refresh an expiring token</h3>
+              <CodeBlock language="bash" code={`curl -X POST "${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token" \\
+  -H "apikey: <SUPABASE_ANON_KEY>" \\
+  -H "Content-Type: application/json" \\
+  -d '{"refresh_token":"<refresh>"}'`} />
+
+              <h3 className="font-heading font-semibold text-base mb-2 mt-6">3. Call a privileged endpoint</h3>
+              <CodeBlock language="bash" code={`curl -X POST "${SUPABASE_URL}/functions/v1/initialize-payment" \\
+  -H "Authorization: Bearer <access_token>" \\
+  -H "apikey: <SUPABASE_ANON_KEY>" \\
+  -H "Content-Type: application/json" \\
+  -d '{"order_id":"<uuid>"}'`} />
+
+              <h3 className="font-heading font-semibold text-base mb-2 mt-6">Error codes</h3>
+              <div className="rounded-xl bg-card border border-border p-4 text-xs space-y-1.5">
+                {[
+                  ["401", "Missing or expired Authorization header"],
+                  ["403", "Token valid but role/org membership rejects the action (RLS)"],
+                  ["422", "Validation failed on request body"],
+                  ["429", "Rate limit exceeded — see the Rate Limits section"],
+                ].map(([code, desc]) => (
+                  <div key={code} className="flex items-start gap-3">
+                    <Badge variant="destructive" className="text-[10px]">{code}</Badge>
+                    <span className="text-muted-foreground">{desc}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Rate Limits */}
+            <section id="rate-limits" className="mb-12">
+              <h2 className="font-heading font-bold text-xl mb-4 flex items-center gap-2">
+                <Gauge size={20} className="text-primary" /> Rate Limits
+              </h2>
+              <p className="text-muted-foreground text-sm mb-4">
+                Limits are applied per-user (JWT) for authenticated endpoints and per-IP for anon endpoints. When you exceed
+                a limit the API returns <code className="bg-muted px-1 py-0.5 rounded">429 Too Many Requests</code> with
+                <code className="bg-muted px-1 py-0.5 rounded mx-1">Retry-After</code> seconds.
+              </p>
+              <div className="rounded-xl bg-card border border-border overflow-hidden mb-4">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/30">
+                      <th className="text-left px-3 py-2 font-medium">Endpoint group</th>
+                      <th className="text-left px-3 py-2 font-medium">Burst</th>
+                      <th className="text-left px-3 py-2 font-medium">Sustained</th>
+                      <th className="text-left px-3 py-2 font-medium">Scope</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      ["Auth (sign-in, refresh)", "10 / min", "60 / hour", "IP"],
+                      ["Widget (embed-widget)", "120 / min", "5 000 / hour", "IP + widget key"],
+                      ["Payments (initialize / verify)", "20 / min", "300 / hour", "User JWT"],
+                      ["AI (virtual-tryon, ai-measure-detect)", "10 / min", "100 / hour", "User JWT (also token-billed)"],
+                      ["Communications (send-email, smart-route-message)", "30 / min", "1 000 / hour", "User JWT + org"],
+                      ["Logistics (carrier-rates)", "30 / min", "500 / hour", "User JWT + org"],
+                      ["Webhooks (payment-webhook)", "Unlimited (signed)", "—", "PSP origin"],
+                    ].map(([g, b, s, sc]) => (
+                      <tr key={g} className="border-b border-border last:border-0">
+                        <td className="px-3 py-2 font-medium">{g}</td>
+                        <td className="px-3 py-2 font-mono text-primary">{b}</td>
+                        <td className="px-3 py-2 font-mono text-muted-foreground">{s}</td>
+                        <td className="px-3 py-2">{sc}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="rounded-xl bg-card border border-border p-4 text-xs">
+                <p className="font-semibold text-sm mb-1">Response headers on every call</p>
+                <ul className="text-muted-foreground space-y-1 list-disc pl-4">
+                  <li><code className="bg-muted px-1 rounded">X-RateLimit-Limit</code> — your bucket size</li>
+                  <li><code className="bg-muted px-1 rounded">X-RateLimit-Remaining</code> — calls left this window</li>
+                  <li><code className="bg-muted px-1 rounded">X-RateLimit-Reset</code> — unix seconds when the window resets</li>
+                  <li><code className="bg-muted px-1 rounded">Retry-After</code> — only sent on 429 responses</li>
+                </ul>
+                <p className="text-muted-foreground mt-2">
+                  Need higher quotas? Contact support — Enterprise plans negotiate per-endpoint limits.
+                </p>
+              </div>
+            </section>
+
             {/* Features */}
             <section id="features" className="mb-12">
               <h2 className="font-heading font-bold text-xl mb-4 flex items-center gap-2">
