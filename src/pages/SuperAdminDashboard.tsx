@@ -34,6 +34,8 @@ import TenantSitesPanel from "@/components/super-admin/TenantSitesPanel";
 import VerificationProvidersPanel from "@/components/super-admin/VerificationProvidersPanel";
 import PendingVerificationsPanel from "@/components/super-admin/PendingVerificationsPanel";
 import MonetizationSwitchesPanel from "@/components/super-admin/MonetizationSwitchesPanel";
+import FeeExemptionsPanel from "@/components/super-admin/FeeExemptionsPanel";
+import AccountsHealthPanel from "@/components/super-admin/AccountsHealthPanel";
 import CommunicationsFullPage from "@/components/communications/CommunicationsFullPage";
 import CarrierSettingsPanel from "@/components/logistics/CarrierSettingsPanel";
 import CustomerRegistrationsTab from "@/components/customers/CustomerRegistrationsTab";
@@ -90,7 +92,7 @@ import {
 
 import { cn } from "@/lib/utils";
 
-type TabId = "overview" | "platform_settings" | "carriers" | "organizations" | "users" | "accounts" | "pending_verifications" | "revenue" | "invoicing" | "invoice_manager" | "sub_rates" | "tax_compliance" | "regional_management" | "featured" | "keys" | "rates" | "websites" | "tenant_sites" | "pricing" | "unified_pricing" | "monetization_switches" | "backups" | "features" | "mobile" | "app_downloads" | "audit" | "support_requests" | "bank_accounts" | "message_center" | "phone_numbers" | "comms_oversight" | "video_billing" | "domain_management" | "identity_verification" | "communications" | "comms_hub_test" | "registrations" | "disputes" | "website_templates" | "platform_updates" | "voiced_tour_sync" | "sentinel_mcp";
+type TabId = "overview" | "platform_settings" | "carriers" | "organizations" | "users" | "accounts" | "accounts_health" | "pending_verifications" | "revenue" | "invoicing" | "invoice_manager" | "sub_rates" | "tax_compliance" | "regional_management" | "featured" | "keys" | "rates" | "websites" | "tenant_sites" | "pricing" | "unified_pricing" | "monetization_switches" | "fee_exemptions" | "backups" | "features" | "mobile" | "app_downloads" | "audit" | "support_requests" | "bank_accounts" | "message_center" | "phone_numbers" | "comms_oversight" | "video_billing" | "domain_management" | "identity_verification" | "communications" | "comms_hub_test" | "registrations" | "disputes" | "website_templates" | "platform_updates" | "voiced_tour_sync" | "sentinel_mcp";
 
 interface SidebarItem {
   id: TabId;
@@ -160,7 +162,7 @@ const SuperAdminDashboard = () => {
 
   if (!hasAccess) return null;
 
-  const restrictedTabs = new Set(["platform_settings", "sub_rates", "unified_pricing", "pricing", "features", "regional_management", "monetization_switches"]);
+  const restrictedTabs = new Set(["platform_settings", "sub_rates", "unified_pricing", "pricing", "features", "regional_management", "monetization_switches", "fee_exemptions"]);
 
   const allGroups: SidebarGroupDef[] = [
     {
@@ -177,6 +179,7 @@ const SuperAdminDashboard = () => {
         { id: "organizations", icon: Building2, label: "Organizations" },
         { id: "users", icon: Users, label: "Users & Roles" },
         { id: "accounts", icon: UserX, label: "Account Mgmt" },
+        { id: "accounts_health", icon: Activity, label: "Accounts Health" },
         { id: "pending_verifications", icon: ShieldCheck, label: "Pending Verifications" },
         { id: "registrations", icon: ClipboardList, label: "Registrations" },
         { id: "disputes", icon: Scale, label: "Disputes" },
@@ -199,6 +202,7 @@ const SuperAdminDashboard = () => {
       items: [
         { id: "unified_pricing", icon: DollarSign, label: "Pricing Center" },
         { id: "monetization_switches", icon: DollarSign, label: "Monetization Switches" },
+        { id: "fee_exemptions", icon: Crown, label: "Fee Exemptions" },
         { id: "pricing", icon: Globe, label: "Website Pricing" },
         { id: "featured", icon: Star, label: "Featured Products" },
         { id: "rates", icon: Globe, label: "Exchange Rates" },
@@ -315,6 +319,7 @@ const SuperAdminDashboard = () => {
             {activeTab === "organizations" && <OrganizationsPanel orgs={orgs} />}
             {activeTab === "users" && <UsersPanel />}
             {activeTab === "accounts" && <AccountManagementPanel />}
+            {activeTab === "accounts_health" && <AccountsHealthPanel />}
             {activeTab === "revenue" && <PlatformRevenuePanel />}
             {activeTab === "invoicing" && <AdminInvoicingPaymentsPanel />}
             {activeTab === "invoice_manager" && <InvoiceManagerPanel isSuperAdmin currency="USD" />}
@@ -326,6 +331,7 @@ const SuperAdminDashboard = () => {
             {activeTab === "tenant_sites" && <TenantSitesPanel />}
             {activeTab === "unified_pricing" && isSuperAdmin && <UnifiedPricingPanel />}
             {activeTab === "monetization_switches" && isSuperAdmin && <MonetizationSwitchesPanel />}
+            {activeTab === "fee_exemptions" && isSuperAdmin && <FeeExemptionsPanel />}
             {activeTab === "pricing" && isSuperAdmin && <WebsitePricingPanel />}
             {activeTab === "keys" && <KeysSecretsPanel />}
             {activeTab === "rates" && <ExchangeRatesPanel />}
