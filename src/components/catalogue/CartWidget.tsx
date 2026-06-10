@@ -36,7 +36,7 @@ const CartWidget = ({ orgId, brandColor = "#C9A84C", source }: CartWidgetProps) 
   const [phone, setPhone] = useState("");
   const [notes, setNotes] = useState("");
   const { toast } = useToast();
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
 
   useEffect(() => {
     setItems(getCart(orgId));
@@ -49,10 +49,12 @@ const CartWidget = ({ orgId, brandColor = "#C9A84C", source }: CartWidgetProps) 
 
   useEffect(() => {
     if (open) {
-      if (profile?.display_name && !name) setName(profile.display_name);
+      const meta = (user?.user_metadata ?? {}) as { display_name?: string; full_name?: string; name?: string };
+      const guessName = meta.display_name || meta.full_name || meta.name;
+      if (guessName && !name) setName(guessName);
       if (user?.email && !email) setEmail(user.email);
     }
-  }, [open, profile, user, name, email]);
+  }, [open, user, name, email]);
 
   const count = items.reduce((s, i) => s + i.quantity, 0);
   const total = cartTotal(items);
