@@ -10389,6 +10389,10 @@ export type Database = {
         Returns: boolean
       }
       is_own_profile: { Args: { profile_id: string }; Returns: boolean }
+      is_strict_org_admin: {
+        Args: { _org_id: string; _user_id: string }
+        Returns: boolean
+      }
       join_organization: {
         Args: {
           _org_id: string
