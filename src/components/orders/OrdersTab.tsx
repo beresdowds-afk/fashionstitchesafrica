@@ -16,6 +16,9 @@ import { motion } from "framer-motion";
 import { Plus, ShoppingBag, Filter, Trash2, Search, CalendarIcon, X, Download, CreditCard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import CurrencyDisplay from "@/components/shared/CurrencyDisplay";
+import CartSubmissionLog from "./CartSubmissionLog";
+import CatalogueCartGuide from "@/components/help/CatalogueCartGuide";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 const exportOrdersCSV = (orders: Order[], currency: string) => {
   const headers = ["Order Number", "Title", "Status", "Customer", "Tailor", "Due Date", "Amount", "Currency", "Created"];
@@ -65,6 +68,11 @@ const OrdersTab = ({ orgId, currency, role, orgName, orgSettings }: OrdersTabPro
   const [dateTo, setDateTo] = useState<Date | undefined>();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [guideOpen, setGuideOpen] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem("fsa_orders_guide_dismissed") !== "1";
+  });
+  const [cartLogOpen, setCartLogOpen] = useState(false);
   const { toast } = useToast();
 
   const canManage = role === "org_admin" || role === "manager" || role === "super_admin";
@@ -151,6 +159,43 @@ const OrdersTab = ({ orgId, currency, role, orgName, orgSettings }: OrdersTabPro
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+      <div className="mb-4 space-y-3">
+        <div className="rounded-lg border border-border bg-card">
+          <button
+            onClick={() => {
+              const next = !guideOpen;
+              setGuideOpen(next);
+              if (typeof window !== "undefined")
+                window.localStorage.setItem("fsa_orders_guide_dismissed", next ? "0" : "1");
+            }}
+            className="w-full flex items-center justify-between px-4 py-2 text-sm font-medium hover:bg-muted/30"
+          >
+            <span>Catalogue & Cart Guide</span>
+            {guideOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
+          {guideOpen && (
+            <div className="px-4 pb-4">
+              <CatalogueCartGuide role="organization" compact />
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-lg border border-border bg-card">
+          <button
+            onClick={() => setCartLogOpen((v) => !v)}
+            className="w-full flex items-center justify-between px-4 py-2 text-sm font-medium hover:bg-muted/30"
+          >
+            <span>Catalogue Cart Submissions</span>
+            {cartLogOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
+          {cartLogOpen && (
+            <div className="px-4 pb-4">
+              <CartSubmissionLog orgId={orgId} />
+            </div>
+          )}
+        </div>
+      </div>
+
       <div className="flex flex-col gap-3 mb-6">
         <div className="flex items-center justify-between">
           <h2 className="font-heading font-bold text-2xl">Orders</h2>
