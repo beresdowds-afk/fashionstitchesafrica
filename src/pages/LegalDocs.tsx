@@ -12,8 +12,6 @@ import {
   ArrowLeft, FileText, Globe, Download, Loader2, Copy, Check,
   Scale, Shield, RefreshCw, Building2, Cookie, Lock, Database
 } from "lucide-react";
-import Navbar from "@/components/landing/Navbar";
-import Footer from "@/components/landing/Footer";
 import { Helmet } from "react-helmet-async";
 
 const REGIONS = [
@@ -172,8 +170,6 @@ const LegalDocs = () => {
         <meta name="description" content="Privacy Policy, Terms of Service, Cookie Policy, GDPR rights and Data Protection commitments for FYSORA FASHN (Fashion Stitches Africa)." />
         <link rel="canonical" href="https://fs-africa.org.ng/legal" />
       </Helmet>
-      <Navbar />
-      <div className="h-16" />
       <div className="container mx-auto px-4 lg:px-8 py-8 max-w-5xl">
         <div className="mb-6">
           <h1 className="font-heading font-bold text-3xl mb-2">Legal &amp; Compliance</h1>
@@ -479,7 +475,6 @@ const LegalDocs = () => {
         </motion.div>
       </div>
       </div>
-      <Footer />
     </div>
   );
 };

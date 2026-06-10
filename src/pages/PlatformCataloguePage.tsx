@@ -28,8 +28,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { MOCK_CATALOGUE_ITEMS } from "@/data/mockCatalogueItems";
 import { track } from "@/lib/analytics";
 import { resolveHomeRoute } from "@/lib/roleHome";
-import Navbar from "@/components/landing/Navbar";
-import Footer from "@/components/landing/Footer";
 
 const MAX_FREE_TOURS = 2;
 const CANONICAL_URL = "https://fs-africa.org.ng/";
@@ -242,8 +240,6 @@ const PlatformCataloguePage = () => {
             })),
           })}</script>
         </Helmet>
-        <Navbar />
-        <div className="h-16" />
         <div className="container mx-auto px-4 lg:px-8 pt-4 flex items-center justify-between">
           <div>
             <h1 className="font-heading font-bold text-sm leading-tight">Platform Catalogue</h1>
@@ -430,7 +426,6 @@ const PlatformCataloguePage = () => {
             </DialogContent>
           </Dialog>
         </div>
-        <Footer />
       </div>
     );
   }
