@@ -3,8 +3,6 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { Download, Smartphone, Check, Share, ArrowRight, Apple, Chrome, Monitor, Plus, MoreVertical } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import Navbar from "@/components/landing/Navbar";
-import Footer from "@/components/landing/Footer";
 import { Helmet } from "react-helmet-async";
 
 interface BeforeInstallPromptEvent extends Event {
@@ -67,8 +65,6 @@ const Install = () => {
         <meta name="description" content="Step-by-step instructions to install the FYSORA FASHN (Fashion Stitches Africa) progressive web app on iPhone, Android, Windows, macOS and Linux." />
         <link rel="canonical" href="https://fs-africa.org.ng/install" />
       </Helmet>
-      <Navbar />
-      <div className="h-16" />
       <div className="container mx-auto px-4 py-12 max-w-3xl">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10">
           <div className="w-24 h-24 rounded-3xl bg-gradient-brand flex items-center justify-center mx-auto mb-6 shadow-gold">
@@ -193,7 +189,6 @@ const Install = () => {
           </div>
         </div>
       </div>
-      <Footer />
     </div>
   );
 };

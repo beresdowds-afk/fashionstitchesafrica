@@ -13,8 +13,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCurrentOrg } from "@/hooks/useOrganization";
 import { useOrgSubscription, useSubscriptionPlans } from "@/hooks/useSubscription";
 import { toast } from "sonner";
-import Navbar from "@/components/landing/Navbar";
-import Footer from "@/components/landing/Footer";
 
 type CustomerSub = {
   id: string;
@@ -190,7 +188,6 @@ const SubscriptionStatus = () => {
         <meta name="description" content="View and manage your subscription plan, billing interval, upgrades and cancellations across designer, customer and organization accounts." />
         <link rel="canonical" href="https://fs-africa.org.ng/subscription" />
       </Helmet>
-      <Navbar />
       <main className="container mx-auto px-4 lg:px-8 py-8 max-w-4xl">
         <Button variant="ghost" size="sm" onClick={() => navigate(-1)} className="mb-4">
           <ArrowLeft size={14} className="mr-1" /> Back
@@ -325,7 +322,6 @@ const SubscriptionStatus = () => {
           </Tabs>
         </motion.div>
       </main>
-      <Footer />
     </div>
   );
 };

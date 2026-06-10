@@ -1,7 +1,5 @@
 import { motion } from "framer-motion";
 import { Compass, Target, Sparkles, Heart } from "lucide-react";
-import Navbar from "@/components/landing/Navbar";
-import Footer from "@/components/landing/Footer";
 
 const pillars = [
   {
@@ -29,8 +27,7 @@ const pillars = [
 const AboutPage = () => {
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
-      <main className="pt-24 pb-20">
+      <main className="pt-8 pb-20">
         <div className="container mx-auto px-4 lg:px-8 max-w-5xl">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -82,7 +79,6 @@ const AboutPage = () => {
           </div>
         </div>
       </main>
-      <Footer />
     </div>
   );
 };

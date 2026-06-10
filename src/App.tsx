@@ -37,6 +37,7 @@ import PlatformUpdateWatcher from "@/components/platform/PlatformUpdateWatcher";
 import TourSyncWorker from "@/components/platform/TourSyncWorker";
 import PaymentReturnHandler from "@/components/payments/PaymentReturnHandler";
 import CookieConsent from "@/components/landing/CookieConsent";
+import PersistentChrome from "@/components/layout/PersistentChrome";
 
 const queryClient = new QueryClient();
 
@@ -50,6 +51,7 @@ const App = () => (
           <PlatformUpdateWatcher audience="all" />
           <TourSyncWorker />
           <PaymentReturnHandler />
+          <PersistentChrome>
           <Routes>
             <Route path="/" element={<PlatformCataloguePage />} />
             <Route path="/auth" element={<Auth />} />
@@ -82,6 +84,7 @@ const App = () => (
             <Route path="/help/catalogue" element={<HelpCatalogue />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </PersistentChrome>
           <CookieConsent />
         </AuthProvider>
       </BrowserRouter>
