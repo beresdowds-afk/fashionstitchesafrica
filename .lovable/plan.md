@@ -1,74 +1,47 @@
-# Catalogue Review + Admin Portals & Workers
+# Unify Catalogue & Cart Flows + Audit Logs + In-App Guide
 
-This is a large scope. I'll break it into 6 deliverables and ship them in order. Each item is independently verifiable.
+## 1. Unified Catalogue & Cart
 
-## 1. Catalogue & Cart Audit — Organizations (native + external sites)
+**Goal:** Identical item availability, pricing, and checkout behavior on the native org site (`/site/:slug`), the demo site, and the embed widget on external/non-native domains.
 
-**Goal:** Verify the flow matches the users-guide contract: Dashboard = full CRUD; Mobile App = quick edits; cart submissions land in Orders tab + multi-channel notifications.
+- Create `src/lib/catalogueResolver.ts` — single source of truth that returns published items for an org from `org_catalogue_items` (+ contracted tailors' `tailor_catalogue_items` where `org_id` matches and `is_published=true`), normalizes price/currency via the org's configured currency, and applies the same availability rules (stock flag, archived, exemption-aware pricing).
+- Create `src/lib/cartFlow.ts` — shared cart→order submission helper used by:
+  - `src/pages/OrgWebsite.tsx` (native)
+  - `src/pages/DemoOrgWebsite.tsx`
+  - `supabase/functions/embed-widget/index.ts` (external embed → posts to a new shared endpoint)
+- New edge function `supabase/functions/submit-cart-order/index.ts`:
+  - Accepts `{ org_id, items[], customer{name,email,phone}, source: 'native'|'embed'|'demo', origin_url }`.
+  - Re-prices server-side using the resolver (rejects client price tampering), creates the `orders` + `order_items` rows, dispatches notification to org via `notificationDispatcher`, and writes an audit log entry.
+- Update `embed-widget/index.ts` to call `submit-cart-order` instead of its inline cart pipe, so the external flow shares the exact same pricing + notification path as native.
 
-**Files to review (read-only audit, then patch gaps):**
-- `src/components/catalogue/TailorCatalogueManager.tsx` (also used by orgs)
-- `src/pages/CataloguePage.tsx`, `OrgWebsite.tsx`, `DemoOrgWebsite.tsx`
-- `src/components/orders/CreateOrderDialog.tsx`, `OrdersTab.tsx`
-- `supabase/functions/embed-widget/index.ts` (non-native sites)
-- Notification dispatch on new order (email/SMS/WhatsApp)
+## 2. Catalogue Cart Audit Logs
 
-**Output:** A short audit report + targeted patches for any missing pieces (e.g. mobile-app quick-edit guard, embed widget cart → order pipe, notification fan-out on cart submission).
+- Extend usage of existing `audit_logs` table (no schema change) with two new action keys:
+  - `catalogue_cart_submitted` — written by `submit-cart-order` with metadata `{ source, org_id, role, items: [{id, name, unit_price, qty}], total, currency, customer_email, origin_url, user_agent }`.
+  - `catalogue_item_priced` — written when resolver detects a client/server price mismatch (security signal).
+- Add a "Cart Submissions" filter chip + entity type `cart_submission` to `src/components/super-admin/AuditLogsPanel.tsx` so super admins can review who submitted what items at which prices, scoped by org.
+- Add an org-scoped read-only view in the org dashboard: new component `src/components/orders/CartSubmissionLog.tsx` rendered as a tab inside `OrdersTab.tsx`, fetching audit_logs filtered by `entity_type='cart_submission'` and `org_id`.
 
-## 2. Catalogue & Cart Audit — Tailors & Designers
+## 3. In-App User Guide
 
-Same pattern, scoped to:
-- Tailor: `TailorCataloguePage.tsx`, `OrgTailorPage.tsx`
-- Designer: `DesignerPortal.tsx` catalogue tab
-- Confirm contract-bound tailors only sell through their org (per role-constraints memory)
+- New component `src/components/help/CatalogueCartGuide.tsx` — concise, role-aware guide covering:
+  - Organizations: dashboard vs mobile editing, pricing rules, publish toggle, native site vs external embed parity, where cart submissions land, how notifications fan out (in-app, email, SMS/WhatsApp via routing rules).
+  - Designers: catalogue scope inside their personal org, publish flow.
+  - Tailors: contract-bound catalogue, org-scoped publishing.
+- Mount the guide:
+  - As a "Guide" tab inside `TailorCatalogueManager.tsx` (visible to tailors/designers).
+  - As an accordion section at the top of `OrdersTab.tsx` (collapsible, dismissible per user via `localStorage`).
+  - As a route `/help/catalogue` linked from the org dashboard sidebar under Help.
 
-## 3. Accounts Health Monitor Worker
+## Technical Notes
 
-New edge function `supabase/functions/accounts-health-monitor/index.ts`:
-- Iterate verified+activated tailors, designers, organizations
-- Probe: profile row exists, role row exists, org membership active, dashboard route resolves, at least one nav module enabled
-- Write findings to a new `account_health_reports` table
-- Schedule daily via pg_cron
+- No schema migrations required — reuses `audit_logs`, `org_catalogue_items`, `tailor_catalogue_items`, `orders`, `order_items`.
+- Edge function uses service role for inserts but only after re-pricing and validating org/customer fields with Zod.
+- Embed widget keeps its current iframe contract; only the submit endpoint changes.
+- All currency formatting goes through existing `CurrencyDisplay` / org currency helpers — no new pricing logic.
 
-Surfaced in Super Admin as a new "Accounts Health" panel.
+## File Summary
 
-## 4. Monetization Master Switches — finish + enforcement worker
+**New:** `src/lib/catalogueResolver.ts`, `src/lib/cartFlow.ts`, `src/components/orders/CartSubmissionLog.tsx`, `src/components/help/CatalogueCartGuide.tsx`, `src/pages/HelpCatalogue.tsx`, `supabase/functions/submit-cart-order/index.ts`
 
-- Frontend panel `MonetizationSwitchesPanel.tsx` already exists. Add: audit log on toggle, master-off banner across billing surfaces (`useMonetizationGate` hook), seed missing default switches.
-- Worker `supabase/functions/monetization-enforcement/index.ts`: sweeps pending fee ledger entries, voids charges where `is_monetization_enabled(...)` is false at charge time; logs to `audit_logs`.
-- Hook `useMonetizationGate(scope)` consumed by Pricing CTAs, billing panels, fee triggers.
-
-## 5. Website Builder Fee Exemptions Portal
-
-New super-admin page `src/pages/admin/FeeExemptionsPortal.tsx`:
-- Live list (realtime) of verified organizations + designers + registered tailors + customers
-- Per-row switch → toggles `org_fee_exemptions` / new `user_fee_exemptions` row for `website_builder`, `website_builder_pro`, `registration`, `mobile_app`, `custom_domain_external`
-- Search, filter by role, badge for GABULK FASHION STUDIO (locked exemptions)
-- Worker `supabase/functions/fee-exemption-enforcer/index.ts`: nightly sweep — for every active exemption, ensures matching `org_fee_exemptions` rows exist, voids any fee_ledger entries charged in error, re-applies the GABULK auto-grant if missing.
-
-## 6. Zero-Value Invoice Worker for Exemptions
-
-New edge function `supabase/functions/exemption-invoice-generator/index.ts`:
-- Triggered when an exemption is granted (DB trigger → pg_net call) and nightly fallback
-- Creates a `subscription_invoices` row: amount=0, currency=org currency (NGN/USD), status=`paid`, payment_method=`exemption_grant`, description=`Complimentary <exemption_type>`
-- Inserts a `platform_fee_ledger` entry with status=`waived` so revenue analytics shows the foregone amount
-- Updates `payments`/`revenue` dashboards (they already read from these tables — no schema changes needed)
-
-## Technical notes
-
-- New tables: `account_health_reports`, `user_fee_exemptions` — both with GRANT + RLS (super_admin only).
-- New edge functions deploy automatically; cron via `supabase--insert` after deploy.
-- Workers use service role and respect `is_monetization_enabled()`.
-- Reuses `runPostVerificationFlow` patterns from `_shared/post-verification-flow.ts` where relevant.
-
-## Order of execution
-
-1. Audit (1+2) → small patches only where gaps exist
-2. New tables migration (health reports + user exemptions)
-3. Fee Exemptions Portal UI + worker
-4. Zero-value invoice worker + DB trigger
-5. Monetization enforcement worker + gate hook
-6. Accounts Health worker + super-admin panel
-7. Cron schedules + smoke test edge function curls
-
-Estimated: large change set (~15-20 new/edited files). I'll proceed straight through once approved.
+**Edited:** `src/pages/OrgWebsite.tsx`, `src/pages/DemoOrgWebsite.tsx`, `supabase/functions/embed-widget/index.ts`, `src/components/orders/OrdersTab.tsx`, `src/components/super-admin/AuditLogsPanel.tsx`, `src/components/catalogue/TailorCatalogueManager.tsx`, `src/App.tsx` (route), `src/components/dashboard/OrgDashboardSidebar.tsx` (link)
