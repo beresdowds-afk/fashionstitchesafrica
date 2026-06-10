@@ -463,6 +463,14 @@ const OrgIntegrationsPanel = ({ orgId }: Props) => {
                           <span className="text-[10px] text-muted-foreground">try {d.attempt ?? 1}/{d.max_attempts ?? 1}</span>
                           <span className="text-muted-foreground flex-1">{new Date(d.attempted_at).toLocaleString()}</span>
                           <span className="text-muted-foreground">{d.duration_ms ?? 0}ms</span>
+                          {d.idempotency_key && (
+                            <button type="button"
+                              title={`Idempotency-Key: ${d.idempotency_key}`}
+                              onClick={() => copy(d.idempotency_key!, "Idempotency key copied")}
+                              className="text-[10px] font-mono bg-muted px-1.5 py-0.5 rounded hover:bg-accent">
+                              idem:{d.idempotency_key.slice(-6)}
+                            </button>
+                          )}
                           {d.next_retry_at && (st === "pending_retry" || st === "retrying") && (
                             <span className="text-[10px] text-amber-600">next {new Date(d.next_retry_at).toLocaleTimeString()}</span>
                           )}
