@@ -7,12 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Scissors, Globe, Trash2, ExternalLink } from "lucide-react";
+import { Plus, Scissors, Globe, Trash2, ExternalLink, BookOpen } from "lucide-react";
 import { useTailorCatalogue } from "@/hooks/useTailorCatalogue";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import SocialSyncPanel from "./SocialSyncPanel";
 import MediaDropzone from "@/components/shared/MediaDropzone";
+import CatalogueCartGuide from "@/components/help/CatalogueCartGuide";
 
 interface TailorCatalogueManagerProps {
   tailorId: string;
@@ -26,7 +27,7 @@ const TailorCatalogueManager = ({ tailorId, orgId }: TailorCatalogueManagerProps
   const { toast } = useToast();
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ name: "", description: "", category: "General", price: "", tags: "" });
-  const [activeTab, setActiveTab] = useState<"items" | "sync">("items");
+  const [activeTab, setActiveTab] = useState<"items" | "sync" | "guide">("items");
 
   const handleAdd = async () => {
     if (!form.name.trim()) return;
@@ -76,10 +77,15 @@ const TailorCatalogueManager = ({ tailorId, orgId }: TailorCatalogueManagerProps
         <Button size="sm" variant={activeTab === "sync" ? "default" : "outline"} onClick={() => setActiveTab("sync")}>
           <Globe size={14} className="mr-1" /> Social Sync
         </Button>
+        <Button size="sm" variant={activeTab === "guide" ? "default" : "outline"} onClick={() => setActiveTab("guide")}>
+          <BookOpen size={14} className="mr-1" /> Guide
+        </Button>
       </div>
 
       {activeTab === "sync" ? (
         <SocialSyncPanel ownerId={tailorId} ownerType="tailor" orgId={orgId} />
+      ) : activeTab === "guide" ? (
+        <CatalogueCartGuide role="tailor" compact />
       ) : (
         <Card className="p-6">
           <div className="flex items-center justify-between mb-4">
