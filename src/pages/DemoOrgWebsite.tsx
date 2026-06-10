@@ -219,6 +219,7 @@ const DemoOrgWebsite = () => {
       </div>
 
       <FloatingCTA brandColor={brandColor} />
+      <CartWidget orgId={DEMO_ORG_ID} brandColor={brandColor} source="demo" />
 
       {/* ─── Footer ─── */}
       <footer className="border-t border-white/10 pt-16 pb-8 mt-16">
