@@ -6,6 +6,10 @@ import {
   Home, Menu, X, Sparkles, Lock, Facebook, Twitter, Linkedin, Youtube, Users, Download,
   PhoneCall, MessageSquare, Send, Map, ChevronUp, Info, Globe, Star
 } from "lucide-react";
+import CartWidget from "@/components/catalogue/CartWidget";
+import { addToCart } from "@/lib/cartFlow";
+
+const DEMO_ORG_ID = "demo-org-fixed-id";
 
 // ─── Demo Data ───────────────────────────────────────────────────────────────
 const DEMO_ORG = {
