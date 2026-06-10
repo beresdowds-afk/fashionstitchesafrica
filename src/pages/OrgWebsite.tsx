@@ -484,7 +484,7 @@ const OrgWebsite = () => {
           <AboutPage org={org} website={website} brandColor={brandColor} accentColor={accentColor} fontHeading={fontHeading} officers={officers} template={template} isLight={isLight} />
         )}
         {activePage === "catalogue" && (
-          <CataloguePage items={catalogue} currency={currency} brandColor={brandColor} accentColor={accentColor} user={user} requireAuth={requireAuth} template={template} isLight={isLight} fontHeading={fontHeading} />
+          <CataloguePage orgId={org.id} items={catalogue} currency={currency} brandColor={brandColor} accentColor={accentColor} user={user} requireAuth={requireAuth} template={template} isLight={isLight} fontHeading={fontHeading} />
         )}
         {activePage === "tailors" && (
           <TailorsPage tailors={tailors} brandColor={brandColor} accentColor={accentColor} fontHeading={fontHeading} slug={slug!} template={template} isLight={isLight} />
