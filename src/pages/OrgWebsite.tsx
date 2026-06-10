@@ -496,6 +496,14 @@ const OrgWebsite = () => {
 
       <FloatingCTA org={org} website={website} brandColor={brandColor} isLight={isLight} />
 
+      {org?.id && (
+        <CartWidget
+          orgId={org.id}
+          brandColor={brandColor}
+          source={typeof window !== "undefined" && window.self !== window.top ? "embed" : "native"}
+        />
+      )}
+
       {/* ─── Luxe Footer ─── */}
       <footer className={`border-t ${borderStyle} pt-20 pb-10 mt-20`} style={{ backgroundColor: td.bgSurface }}>
         <div className={`${td.containerMaxWidth} mx-auto px-6 lg:px-12`}>
