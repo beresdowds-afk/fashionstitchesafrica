@@ -1,6 +1,6 @@
 import {
   BarChart3, Package, UserCheck, Video, Sparkles, Star, Truck,
-  FileText, Users, CreditCard, Receipt, Wallet, Globe, Settings, Search
+  FileText, Users, CreditCard, Receipt, Wallet, Globe, Settings, Search, HelpCircle
 } from "lucide-react";
 import {
   Sidebar,
