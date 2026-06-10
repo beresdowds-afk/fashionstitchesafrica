@@ -362,9 +362,41 @@ const OrgIntegrationsPanel = ({ orgId }: Props) => {
                         <Button size="sm" variant="ghost" onClick={() => deleteHook(h.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
                       </div>
                       {h.description && <p className="text-xs text-muted-foreground">{h.description}</p>}
-                      <div className="flex flex-wrap gap-1">
-                        {h.events.map((e) => <Badge key={e} variant="secondary" className="text-[10px]">{e}</Badge>)}
-                      </div>
+                      {editingEventsFor === h.id ? (
+                        <div className="rounded-md border border-dashed border-border p-2 space-y-2">
+                          <p className="text-[11px] font-medium text-muted-foreground">Subscribe to events</p>
+                          <div className="grid gap-1.5">
+                            {EVENT_OPTIONS.map((ev) => {
+                              const active = draftEvents.includes(ev.id);
+                              return (
+                                <label key={ev.id} className="flex items-start gap-2 cursor-pointer">
+                                  <Checkbox checked={active} onCheckedChange={(v) =>
+                                    setDraftEvents((prev) => v ? [...prev, ev.id] : prev.filter((x) => x !== ev.id))} />
+                                  <div>
+                                    <p className="text-xs font-medium"><code>{ev.id}</code></p>
+                                    <p className="text-[11px] text-muted-foreground">{ev.desc}</p>
+                                  </div>
+                                </label>
+                              );
+                            })}
+                            <label className="flex items-center gap-2 cursor-pointer">
+                              <Checkbox checked={draftEvents.includes("*")} onCheckedChange={(v) =>
+                                setDraftEvents((prev) => v ? [...prev, "*"] : prev.filter((x) => x !== "*"))} />
+                              <span className="text-xs"><code>*</code> — receive every event</span>
+                            </label>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button size="sm" onClick={saveEventEdits} disabled={savingEvents}>Save scope</Button>
+                            <Button size="sm" variant="ghost" onClick={() => setEditingEventsFor(null)}>Cancel</Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex flex-wrap items-center gap-1">
+                          {h.events.length === 0 && <span className="text-[10px] text-muted-foreground italic">No events subscribed</span>}
+                          {h.events.map((e) => <Badge key={e} variant="secondary" className="text-[10px]">{e}</Badge>)}
+                          <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]" onClick={() => startEditEvents(h)}>Edit scope</Button>
+                        </div>
+                      )}
                       <div className="flex flex-wrap items-center gap-2 text-xs">
                         <span className="text-muted-foreground">Signing secret:</span>
                         <code className="bg-muted px-2 py-0.5 rounded">{revealSecret[h.id] ? h.secret : `${h.secret.slice(0, 10)}…`}</code>
