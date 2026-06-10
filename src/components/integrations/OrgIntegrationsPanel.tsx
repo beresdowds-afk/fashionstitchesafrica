@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Copy, Key, Webhook, Trash2, RefreshCw, ShieldCheck, Send, Plus, Eye, EyeOff } from "lucide-react";
+import { Copy, Key, Webhook, Trash2, RefreshCw, ShieldCheck, Send, Plus, Eye, EyeOff, PlayCircle, CheckCircle2, XCircle, Clock, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 
 interface Props { orgId: string }
@@ -36,6 +36,8 @@ type Hook = {
 type Delivery = {
   id: string; webhook_id: string; event: string; response_status: number | null;
   succeeded: boolean; duration_ms: number | null; attempted_at: string;
+  status?: string | null; attempt?: number | null; max_attempts?: number | null;
+  next_retry_at?: string | null; error?: string | null;
 };
 
 const OrgIntegrationsPanel = ({ orgId }: Props) => {
@@ -56,12 +58,25 @@ const OrgIntegrationsPanel = ({ orgId }: Props) => {
   const [creatingHook, setCreatingHook] = useState(false);
   const [revealSecret, setRevealSecret] = useState<Record<string, boolean>>({});
 
+  // Verify panel state
+  const [verifyKey, setVerifyKey] = useState("");
+  const [verifyHookId, setVerifyHookId] = useState<string>("");
+  const [verifying, setVerifying] = useState(false);
+  const [verifyResult, setVerifyResult] = useState<any>(null);
+
+  // Delivery filters / replay
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [hookFilter, setHookFilter] = useState<string>("all");
+  const [replaying, setReplaying] = useState<string | null>(null);
+
   const load = useCallback(async () => {
     setLoading(true);
     const [k, h, d] = await Promise.all([
       supabase.from("org_integration_api_keys").select("*").eq("org_id", orgId).order("created_at", { ascending: false }),
       supabase.from("org_outbound_webhooks").select("*").eq("org_id", orgId).order("created_at", { ascending: false }),
-      supabase.from("org_webhook_deliveries").select("id, webhook_id, event, response_status, succeeded, duration_ms, attempted_at").eq("org_id", orgId).order("attempted_at", { ascending: false }).limit(50),
+      supabase.from("org_webhook_deliveries")
+        .select("id, webhook_id, event, response_status, succeeded, duration_ms, attempted_at, status, attempt, max_attempts, next_retry_at, error")
+        .eq("org_id", orgId).order("attempted_at", { ascending: false }).limit(100),
     ]);
     setKeys((k.data as ApiKey[]) ?? []);
     setHooks((h.data as Hook[]) ?? []);
@@ -123,6 +138,43 @@ const OrgIntegrationsPanel = ({ orgId }: Props) => {
     const res = await call({ action: "rotate_webhook_secret", webhook_id: id });
     if (res) { toast.success("Secret rotated"); load(); }
   };
+  const rotateKey = async (id: string) => {
+    if (!confirm("Rotate this API key? A new secret will be issued, linked webhooks will be re-pointed, and the old key will be revoked atomically.")) return;
+    const res = await call({ action: "rotate_api_key", key_id: id });
+    if (res) {
+      setCreatedKey({ prefix: res.prefix, plaintext: res.plaintext });
+      toast.success(`Rotated. ${res.rotation?.webhooks_relinked ?? 0} webhook(s) re-linked.`);
+      load();
+    }
+  };
+  const replayDelivery = async (id: string) => {
+    setReplaying(id);
+    const res = await call({ action: "replay_delivery", delivery_id: id });
+    setReplaying(null);
+    if (res) {
+      const r = res.dispatch?.results?.[0];
+      if (r?.ok) toast.success(`Replayed (HTTP ${r.status})`);
+      else toast.error(`Replay failed${r?.status ? ` (HTTP ${r.status})` : ""}`);
+      load();
+    }
+  };
+  const processRetries = async () => {
+    const res = await call({ action: "process_retries" });
+    if (res) { toast.success(`Processed ${res.result?.processed ?? 0} pending retries`); load(); }
+  };
+  const runVerify = async () => {
+    if (verifyKey.trim().length < 16) return toast.error("Paste a full API key");
+    setVerifying(true);
+    setVerifyResult(null);
+    const { data, error } = await supabase.functions.invoke("verify-org-integration", {
+      body: { org_id: orgId, api_key: verifyKey.trim(), webhook_id: verifyHookId || undefined },
+    });
+    setVerifying(false);
+    if (error) { toast.error(error.message); return; }
+    setVerifyResult(data);
+    if ((data as any)?.ok) toast.success("Integration verified end-to-end");
+    else toast.error("Verification failed — see details below");
+  };
   const deleteHook = async (id: string) => {
     if (!confirm("Delete this webhook endpoint?")) return;
     if (await call({ action: "delete_webhook", webhook_id: id })) { toast.success("Deleted"); load(); }
@@ -152,6 +204,7 @@ const OrgIntegrationsPanel = ({ orgId }: Props) => {
         <TabsList>
           <TabsTrigger value="keys"><Key className="w-4 h-4 mr-1" />API Keys</TabsTrigger>
           <TabsTrigger value="webhooks"><Webhook className="w-4 h-4 mr-1" />Webhooks</TabsTrigger>
+          <TabsTrigger value="verify"><ShieldCheck className="w-4 h-4 mr-1" />Verify</TabsTrigger>
           <TabsTrigger value="logs"><Send className="w-4 h-4 mr-1" />Delivery Logs</TabsTrigger>
         </TabsList>
 
@@ -216,6 +269,7 @@ const OrgIntegrationsPanel = ({ orgId }: Props) => {
                         </p>
                       </div>
                       <div className="flex gap-2">
+                        {!k.revoked_at && <Button size="sm" variant="outline" onClick={() => rotateKey(k.id)}><RefreshCw className="w-3.5 h-3.5 mr-1" />Rotate</Button>}
                         {!k.revoked_at && <Button size="sm" variant="outline" onClick={() => revokeKey(k.id)}><ShieldCheck className="w-3.5 h-3.5 mr-1" />Revoke</Button>}
                         <Button size="sm" variant="ghost" onClick={() => deleteKey(k.id)}><Trash2 className="w-3.5 h-3.5" /></Button>
                       </div>
