@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getTemplate, isLightTemplate } from "@/config/websiteTemplates";
+import CartWidget from "@/components/catalogue/CartWidget";
+import { addToCart } from "@/lib/cartFlow";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface OrgWebsiteData {
@@ -482,7 +484,7 @@ const OrgWebsite = () => {
           <AboutPage org={org} website={website} brandColor={brandColor} accentColor={accentColor} fontHeading={fontHeading} officers={officers} template={template} isLight={isLight} />
         )}
         {activePage === "catalogue" && (
-          <CataloguePage items={catalogue} currency={currency} brandColor={brandColor} accentColor={accentColor} user={user} requireAuth={requireAuth} template={template} isLight={isLight} fontHeading={fontHeading} />
+          <CataloguePage orgId={org.id} items={catalogue} currency={currency} brandColor={brandColor} accentColor={accentColor} user={user} requireAuth={requireAuth} template={template} isLight={isLight} fontHeading={fontHeading} />
         )}
         {activePage === "tailors" && (
           <TailorsPage tailors={tailors} brandColor={brandColor} accentColor={accentColor} fontHeading={fontHeading} slug={slug!} template={template} isLight={isLight} />
@@ -493,6 +495,14 @@ const OrgWebsite = () => {
       </div>
 
       <FloatingCTA org={org} website={website} brandColor={brandColor} isLight={isLight} />
+
+      {org?.id && (
+        <CartWidget
+          orgId={org.id}
+          brandColor={brandColor}
+          source={typeof window !== "undefined" && window.self !== window.top ? "embed" : "native"}
+        />
+      )}
 
       {/* ─── Luxe Footer ─── */}
       <footer className={`border-t ${borderStyle} pt-20 pb-10 mt-20`} style={{ backgroundColor: td.bgSurface }}>
@@ -1018,8 +1028,8 @@ const AboutPage = ({ org, website, brandColor, accentColor, fontHeading, officer
 // ═══════════════════════════════════════════════════════════════════════════════
 // CATALOGUE PAGE — Editorial Grid (Hertunba Aka Olu Style)
 // ═══════════════════════════════════════════════════════════════════════════════
-const CataloguePage = ({ items, currency, brandColor, accentColor, user, requireAuth, template, isLight, fontHeading }: {
-  items: CatalogueItem[]; currency: string; brandColor: string; accentColor: string;
+const CataloguePage = ({ orgId, items, currency, brandColor, accentColor, user, requireAuth, template, isLight, fontHeading }: {
+  orgId: string; items: CatalogueItem[]; currency: string; brandColor: string; accentColor: string;
   user: any; requireAuth: (action: string) => boolean;
   template: any; isLight: boolean; fontHeading: string;
 }) => {
@@ -1128,6 +1138,26 @@ const CataloguePage = ({ items, currency, brandColor, accentColor, user, require
                           >
                             Try On
                           </button>
+                          {item.price && !item.tags?.includes("sold-out") && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                addToCart(orgId, {
+                                  id: item.id,
+                                  name: item.name,
+                                  unit_price: Number(item.price) || 0,
+                                  currency: item.currency || currency,
+                                  image_url: item.image_url,
+                                  category: item.category,
+                                  source: "org_catalogue",
+                                });
+                              }}
+                              className="px-4 py-2 text-[10px] font-medium uppercase tracking-[0.12em] hover:opacity-90 transition-opacity"
+                              style={{ background: brandColor, color: "#fff" }}
+                            >
+                              Add to Cart
+                            </button>
+                          )}
                           <button className="w-9 h-9 bg-white/90 flex items-center justify-center hover:bg-white transition-colors">
                             <Heart size={14} className="text-black" />
                           </button>

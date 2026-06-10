@@ -31,6 +31,7 @@ import FeaturesPage from "./pages/FeaturesPage";
 import PricingPage from "./pages/PricingPage";
 import AboutPage from "./pages/AboutPage";
 import SubscriptionStatus from "./pages/SubscriptionStatus";
+import HelpCatalogue from "./pages/HelpCatalogue";
 import NotFound from "./pages/NotFound";
 import PlatformUpdateWatcher from "@/components/platform/PlatformUpdateWatcher";
 import TourSyncWorker from "@/components/platform/TourSyncWorker";
@@ -78,6 +79,7 @@ const App = () => (
             <Route path="/about" element={<AboutPage />} />
             <Route path="/subscription" element={<SubscriptionStatus />} />
             <Route path="/demo-org" element={<DemoOrgWebsite />} />
+            <Route path="/help/catalogue" element={<HelpCatalogue />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <CookieConsent />

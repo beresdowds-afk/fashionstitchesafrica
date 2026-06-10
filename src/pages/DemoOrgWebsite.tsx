@@ -6,6 +6,10 @@ import {
   Home, Menu, X, Sparkles, Lock, Facebook, Twitter, Linkedin, Youtube, Users, Download,
   PhoneCall, MessageSquare, Send, Map, ChevronUp, Info, Globe, Star
 } from "lucide-react";
+import CartWidget from "@/components/catalogue/CartWidget";
+import { addToCart } from "@/lib/cartFlow";
+
+const DEMO_ORG_ID = "demo-org-fixed-id";
 
 // ─── Demo Data ───────────────────────────────────────────────────────────────
 const DEMO_ORG = {
@@ -215,6 +219,7 @@ const DemoOrgWebsite = () => {
       </div>
 
       <FloatingCTA brandColor={brandColor} />
+      <CartWidget orgId={DEMO_ORG_ID} brandColor={brandColor} source="demo" />
 
       {/* ─── Footer ─── */}
       <footer className="border-t border-white/10 pt-16 pb-8 mt-16">
@@ -513,7 +518,20 @@ const DemoCataloguePage = ({ brandColor, accentColor }: { brandColor: string; ac
                   <span className="font-bold text-xl" style={{ color: accentColor }}>
                     ₦{item.price.toLocaleString()} <span className="text-sm font-normal text-gray-400">{item.currency}</span>
                   </span>
-                  <span className="flex items-center gap-1 text-xs font-medium text-purple-400"><Lock size={10} /> Try On</span>
+                  <button
+                    onClick={() => addToCart(DEMO_ORG_ID, {
+                      id: item.id,
+                      name: item.name,
+                      unit_price: item.price,
+                      currency: item.currency,
+                      category: item.category,
+                      source: "org_catalogue",
+                    })}
+                    className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white hover:opacity-90"
+                    style={{ background: brandColor }}
+                  >
+                    Add to Cart
+                  </button>
                 </div>
               </div>
             </motion.div>
