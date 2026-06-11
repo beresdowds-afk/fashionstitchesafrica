@@ -4503,6 +4503,61 @@ export type Database = {
           },
         ]
       }
+      org_albums: {
+        Row: {
+          cover_url: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          name: string
+          org_id: string
+          updated_at: string
+        }
+        Insert: {
+          cover_url?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          name: string
+          org_id: string
+          updated_at?: string
+        }
+        Update: {
+          cover_url?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          name?: string
+          org_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_albums_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_albums_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_albums_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_summary"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       org_api_keys: {
         Row: {
           created_at: string
@@ -4785,50 +4840,76 @@ export type Database = {
       org_catalogue_items: {
         Row: {
           category: string | null
+          category_id: string | null
           created_at: string
           currency: string | null
           description: string | null
           id: string
           image_url: string | null
           is_available: boolean
+          media_url: string | null
           name: string
           org_id: string
           price: number | null
+          published_at: string
           sort_order: number
+          source_id: string | null
+          source_type: Database["public"]["Enums"]["catalogue_node_type"] | null
           tags: string[] | null
           updated_at: string
         }
         Insert: {
           category?: string | null
+          category_id?: string | null
           created_at?: string
           currency?: string | null
           description?: string | null
           id?: string
           image_url?: string | null
           is_available?: boolean
+          media_url?: string | null
           name: string
           org_id: string
           price?: number | null
+          published_at?: string
           sort_order?: number
+          source_id?: string | null
+          source_type?:
+            | Database["public"]["Enums"]["catalogue_node_type"]
+            | null
           tags?: string[] | null
           updated_at?: string
         }
         Update: {
           category?: string | null
+          category_id?: string | null
           created_at?: string
           currency?: string | null
           description?: string | null
           id?: string
           image_url?: string | null
           is_available?: boolean
+          media_url?: string | null
           name?: string
           org_id?: string
           price?: number | null
+          published_at?: string
           sort_order?: number
+          source_id?: string | null
+          source_type?:
+            | Database["public"]["Enums"]["catalogue_node_type"]
+            | null
           tags?: string[] | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "org_catalogue_items_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "platform_catalogue_categories"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "org_catalogue_items_org_id_fkey"
             columns: ["org_id"]
@@ -4845,6 +4926,61 @@ export type Database = {
           },
           {
             foreignKeyName: "org_catalogue_items_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_summary"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      org_collections: {
+        Row: {
+          cover_url: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          name: string
+          org_id: string
+          updated_at: string
+        }
+        Insert: {
+          cover_url?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          name: string
+          org_id: string
+          updated_at?: string
+        }
+        Update: {
+          cover_url?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          name?: string
+          org_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_collections_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_collections_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_collections_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations_summary"
@@ -4989,6 +5125,61 @@ export type Database = {
           },
         ]
       }
+      org_design_sets: {
+        Row: {
+          cover_url: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          name: string
+          org_id: string
+          updated_at: string
+        }
+        Insert: {
+          cover_url?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          name: string
+          org_id: string
+          updated_at?: string
+        }
+        Update: {
+          cover_url?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          name?: string
+          org_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_design_sets_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_design_sets_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_design_sets_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_summary"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       org_fee_exemptions: {
         Row: {
           created_at: string | null
@@ -5046,6 +5237,61 @@ export type Database = {
           },
           {
             foreignKeyName: "org_fee_exemptions_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_summary"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      org_grouping_items: {
+        Row: {
+          child_id: string
+          child_type: Database["public"]["Enums"]["catalogue_node_type"]
+          created_at: string
+          id: string
+          org_id: string
+          parent_id: string
+          parent_type: Database["public"]["Enums"]["catalogue_node_type"]
+          sort_order: number
+        }
+        Insert: {
+          child_id: string
+          child_type: Database["public"]["Enums"]["catalogue_node_type"]
+          created_at?: string
+          id?: string
+          org_id: string
+          parent_id: string
+          parent_type: Database["public"]["Enums"]["catalogue_node_type"]
+          sort_order?: number
+        }
+        Update: {
+          child_id?: string
+          child_type?: Database["public"]["Enums"]["catalogue_node_type"]
+          created_at?: string
+          id?: string
+          org_id?: string
+          parent_id?: string
+          parent_type?: Database["public"]["Enums"]["catalogue_node_type"]
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_grouping_items_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_grouping_items_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_grouping_items_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations_summary"
@@ -5113,6 +5359,70 @@ export type Database = {
           },
           {
             foreignKeyName: "org_integration_api_keys_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_summary"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      org_media_assets: {
+        Row: {
+          alt_text: string | null
+          created_at: string
+          id: string
+          media_type: string
+          media_url: string
+          metadata: Json
+          name: string
+          org_id: string
+          tags: string[]
+          updated_at: string
+          uploaded_by: string
+        }
+        Insert: {
+          alt_text?: string | null
+          created_at?: string
+          id?: string
+          media_type?: string
+          media_url: string
+          metadata?: Json
+          name?: string
+          org_id: string
+          tags?: string[]
+          updated_at?: string
+          uploaded_by: string
+        }
+        Update: {
+          alt_text?: string | null
+          created_at?: string
+          id?: string
+          media_type?: string
+          media_url?: string
+          metadata?: Json
+          name?: string
+          org_id?: string
+          tags?: string[]
+          updated_at?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "org_media_assets_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_media_assets_org_id_fkey"
+            columns: ["org_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "org_media_assets_org_id_fkey"
             columns: ["org_id"]
             isOneToOne: false
             referencedRelation: "organizations_summary"
@@ -6338,6 +6648,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      platform_catalogue_categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          is_active: boolean
+          label: string
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          label: string
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       platform_dns_records: {
         Row: {
@@ -10440,6 +10786,7 @@ export type Database = {
         | "customer"
         | "designer"
         | "platform_management"
+      catalogue_node_type: "image" | "design_set" | "collection" | "album"
       order_status:
         | "pending"
         | "confirmed"
@@ -10587,6 +10934,7 @@ export const Constants = {
         "designer",
         "platform_management",
       ],
+      catalogue_node_type: ["image", "design_set", "collection", "album"],
       order_status: [
         "pending",
         "confirmed",
