@@ -43,13 +43,17 @@ interface CatalogueItem {
   name: string;
   description: string | null;
   category: string | null;
+  category_id?: string | null;
   image_url: string | null;
   price: number | null;
   currency: string | null;
   tags: string[] | null;
   is_available: boolean;
   org_name?: string;
+  published_at?: string | null;
 }
+
+interface PlatformCategory { id: string; slug: string; label: string }
 
 const PlatformCataloguePage = () => {
   const navigate = useNavigate();
@@ -62,6 +66,7 @@ const PlatformCataloguePage = () => {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [platformCategories, setPlatformCategories] = useState<PlatformCategory[]>([]);
 
   // Free tour state
   const [toursUsed, setToursUsed] = useState(0);
@@ -115,7 +120,8 @@ const PlatformCataloguePage = () => {
         .from("org_catalogue_items")
         .select("*, organizations(name)")
         .eq("is_available", true)
-        .order("name");
+        .order("published_at", { ascending: false, nullsFirst: false })
+        .order("created_at", { ascending: false });
 
       const live = (data || []).map((item: any) => ({
         ...item,
@@ -127,6 +133,9 @@ const PlatformCataloguePage = () => {
       setLoading(false);
     };
     load();
+    (supabase as any).from("platform_catalogue_categories")
+      .select("id,slug,label").eq("is_active", true).order("sort_order")
+      .then(({ data }: any) => setPlatformCategories(data || []));
   }, []);
 
   // Featured products (weekly promotion slots) — surfaced at the top of the catalogue.
@@ -151,12 +160,23 @@ const PlatformCataloguePage = () => {
     loadFeatured();
   }, []);
 
-  const categories = ["all", ...new Set(items.map(i => i.category || "general"))];
+  // Platform-defined categories drive the filter chips. Fallback to per-item
+  // category strings when the platform list is empty (offline / pre-seed).
+  const categories = platformCategories.length > 0
+    ? ["all", ...platformCategories.map(c => c.slug)]
+    : ["all", ...new Set(items.map(i => (i.category || "general").toLowerCase()))];
+  const categoryLabel = (slug: string) => {
+    if (slug === "all") return "All";
+    const hit = platformCategories.find(c => c.slug === slug);
+    return hit ? hit.label : slug.charAt(0).toUpperCase() + slug.slice(1);
+  };
   const filtered = items.filter(i => {
     const matchSearch = i.name.toLowerCase().includes(search.toLowerCase()) ||
       (i.org_name || "").toLowerCase().includes(search.toLowerCase());
-    const matchCat = selectedCategory === "all" || (i.category || "general") === selectedCategory;
-    return matchSearch && matchCat;
+    if (selectedCategory === "all") return matchSearch;
+    const catSlug = (platformCategories.find(c => c.id === i.category_id)?.slug)
+      || (i.category || "general").toLowerCase();
+    return matchSearch && catSlug === selectedCategory;
   });
 
   const featuredStrip = featured.length > 0 ? (
