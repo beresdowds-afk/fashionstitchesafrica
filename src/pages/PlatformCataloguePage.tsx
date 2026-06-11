@@ -302,7 +302,7 @@ const PlatformCataloguePage = () => {
                     selectedCategory === cat ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
                   }`}
                 >
-                  {cat === "all" ? "All" : cat.charAt(0).toUpperCase() + cat.slice(1)}
+                  {categoryLabel(cat)}
                 </button>
               ))}
             </div>
@@ -510,7 +510,7 @@ const PlatformCataloguePage = () => {
                   selectedCategory === cat ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
                 }`}
               >
-                {cat === "all" ? "All" : cat.charAt(0).toUpperCase() + cat.slice(1)}
+                {categoryLabel(cat)}
               </button>
             ))}
           </div>
