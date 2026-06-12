@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -57,6 +57,7 @@ interface PlatformCategory { id: string; slug: string; label: string }
 
 const PlatformCataloguePage = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [userRole, setUserRole] = useState<string | null>(null);
@@ -67,6 +68,9 @@ const PlatformCataloguePage = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [loading, setLoading] = useState(true);
   const [platformCategories, setPlatformCategories] = useState<PlatformCategory[]>([]);
+  const [similarOpen, setSimilarOpen] = useState(false);
+  const [similarFocus, setSimilarFocus] = useState<CatalogueItem | null>(null);
+  const [similarItems, setSimilarItems] = useState<CatalogueItem[]>([]);
 
   // Free tour state
   const [toursUsed, setToursUsed] = useState(0);
@@ -137,6 +141,59 @@ const PlatformCataloguePage = () => {
       .select("id,slug,label").eq("is_active", true).order("sort_order")
       .then(({ data }: any) => setPlatformCategories(data || []));
   }, []);
+
+  // Open similar-products modal when ?source_type/source_id present (from Featured strip)
+  useEffect(() => {
+    if (items.length === 0) return;
+    const st = searchParams.get("source_type");
+    const sid = searchParams.get("source_id");
+    const focusId = searchParams.get("focus");
+    if (st && sid) {
+      openSimilarFromSource(st, sid, focusId || undefined);
+    } else if (focusId) {
+      const it = items.find((i) => i.id === focusId);
+      if (it) openSimilar(it);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items, searchParams]);
+
+  const openSimilar = async (it: CatalogueItem) => {
+    setSimilarFocus(it);
+    setSimilarOpen(true);
+    const st = (it as any).source_type;
+    const sid = (it as any).source_id;
+    if (st && sid) {
+      await openSimilarFromSource(st, sid, it.id, false);
+    } else {
+      setSimilarItems([it]);
+    }
+  };
+
+  const openSimilarFromSource = async (st: string, sid: string, focusId?: string, openModal = true) => {
+    const { data } = await supabase
+      .from("org_catalogue_items")
+      .select("*, organizations(name)")
+      .eq("source_type", st as any)
+      .eq("source_id", sid)
+      .eq("is_available", true)
+      .order("published_at", { ascending: true });
+    const list = (data || []).map((d: any) => ({ ...d, org_name: d.organizations?.name || "Unknown" }));
+    setSimilarItems(list);
+    const focus = focusId ? list.find((d) => d.id === focusId) : list[0];
+    if (focus) setSimilarFocus(focus as any);
+    if (openModal) setSimilarOpen(true);
+  };
+
+  const closeSimilar = () => {
+    setSimilarOpen(false);
+    setSimilarFocus(null);
+    setSimilarItems([]);
+    if (searchParams.get("source_type") || searchParams.get("focus")) {
+      const next = new URLSearchParams(searchParams);
+      next.delete("source_type"); next.delete("source_id"); next.delete("focus");
+      setSearchParams(next, { replace: true });
+    }
+  };
 
   // Featured products (weekly promotion slots) — surfaced at the top of the catalogue.
   useEffect(() => {
