@@ -586,8 +586,12 @@ const PlatformCataloguePage = () => {
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.02 }}
+                role={readOnly ? undefined : "button"}
+                tabIndex={readOnly ? undefined : 0}
+                onClick={readOnly ? undefined : () => openSimilar(item)}
+                onKeyDown={readOnly ? undefined : (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openSimilar(item); } }}
                 className={`rounded-xl bg-card border border-border overflow-hidden group transition-all duration-300 ${
-                  readOnly ? "opacity-90" : "hover:border-primary/30 hover:shadow-gold"
+                  readOnly ? "opacity-90" : "hover:border-primary/30 hover:shadow-gold cursor-pointer"
                 }`}
               >
                 <div className="aspect-[3/4] bg-muted relative overflow-hidden">
@@ -640,6 +644,61 @@ const PlatformCataloguePage = () => {
           </div>
         )}
       </div>
+
+      <Dialog open={similarOpen} onOpenChange={(o) => { if (!o) closeSimilar(); }}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles size={16} className="text-primary" />
+              {similarFocus?.name || "Similar Products"}
+            </DialogTitle>
+            <DialogDescription>
+              {similarItems.length > 1
+                ? `${similarItems.length} products from the same source folder`
+                : "Product details"}
+            </DialogDescription>
+          </DialogHeader>
+          {similarFocus && (
+            <div className="rounded-lg border border-primary/20 overflow-hidden mb-3">
+              <div className="aspect-[16/9] bg-muted">
+                {similarFocus.image_url ? (
+                  <img src={similarFocus.image_url} alt={similarFocus.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center"><ShoppingBag size={32} className="text-muted-foreground" /></div>
+                )}
+              </div>
+              <div className="p-3">
+                <p className="font-heading font-bold text-sm">{similarFocus.name}</p>
+                <p className="text-xs text-muted-foreground">{similarFocus.org_name}</p>
+                {similarFocus.price != null && (
+                  <p className="text-primary font-bold text-sm mt-1">{similarFocus.currency || "USD"} {Number(similarFocus.price).toLocaleString()}</p>
+                )}
+              </div>
+            </div>
+          )}
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Similar Products</h4>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {similarItems.filter((s) => s.id !== similarFocus?.id).map((s) => (
+              <button
+                key={s.id}
+                onClick={() => setSimilarFocus(s)}
+                className="rounded-lg border border-border bg-card overflow-hidden hover:border-primary text-left"
+              >
+                <div className="aspect-square bg-muted">
+                  {s.image_url ? <img src={s.image_url} alt={s.name} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><ShoppingBag size={20} className="text-muted-foreground" /></div>}
+                </div>
+                <div className="p-2">
+                  <p className="text-xs font-medium truncate">{s.name}</p>
+                  <p className="text-[10px] text-muted-foreground truncate">{s.org_name}</p>
+                </div>
+              </button>
+            ))}
+            {similarItems.filter((s) => s.id !== similarFocus?.id).length === 0 && (
+              <p className="text-xs text-muted-foreground col-span-full text-center py-4">No other products in this folder.</p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 
