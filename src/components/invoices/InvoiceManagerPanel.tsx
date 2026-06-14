@@ -425,6 +425,11 @@ const InvoiceManagerPanel = ({ orgId, orgName, currency = "NGN", isSuperAdmin = 
                         {inv.recipient_email && (
                           <p className="text-[10px] text-muted-foreground">{inv.recipient_email}</p>
                         )}
+                        {inv.recipient_user_id && (
+                          <p className="text-[10px] font-mono text-muted-foreground" title="Recipient user id">
+                            uid: {inv.recipient_user_id.slice(0, 8)}…
+                          </p>
+                        )}
                       </td>
                       {isSuperAdmin && (
                         <td className="px-4 py-3 text-sm text-muted-foreground">
