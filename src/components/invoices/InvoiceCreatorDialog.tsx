@@ -342,6 +342,44 @@ const InvoiceCreatorDialog = ({
             </div>
           </div>
 
+          {/* Link to a platform user (so the invoice bears the recipient's user identity) */}
+          <div>
+            <Label>Link to platform user (optional)</Label>
+            <Input
+              value={userSearch}
+              onChange={(e) => setUserSearch(e.target.value)}
+              placeholder="Search users by name…"
+            />
+            {form.recipient_user_id && (
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Linked user id: <span className="font-mono">{form.recipient_user_id}</span>{" "}
+                <button type="button" className="underline" onClick={() => setForm((p) => ({ ...p, recipient_user_id: undefined }))}>clear</button>
+              </p>
+            )}
+            {recipientUsers.length > 0 && !form.recipient_user_id && (
+              <div className="mt-1 border border-border rounded-md max-h-40 overflow-auto bg-popover">
+                {recipientUsers.map((u) => (
+                  <button
+                    key={u.id}
+                    type="button"
+                    onClick={() => {
+                      setForm((p) => ({
+                        ...p,
+                        recipient_user_id: u.id,
+                        recipient_name: p.recipient_name || u.display_name || "",
+                      }));
+                      setRecipientUsers([]); setUserSearch("");
+                    }}
+                    className="w-full text-left px-3 py-1.5 text-sm hover:bg-muted/60 flex justify-between gap-2"
+                  >
+                    <span>{u.display_name || "Unnamed"}</span>
+                    <span className="text-[10px] font-mono text-muted-foreground">{u.id.slice(0, 8)}…</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label>Due Date</Label>
