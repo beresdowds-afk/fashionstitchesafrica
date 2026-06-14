@@ -36,6 +36,7 @@ export interface InvoiceFormData {
   recipient_name: string;
   recipient_email: string;
   recipient_org_id?: string;
+  recipient_user_id?: string;
   currency: string;
   due_date: string;
   notes: string;
@@ -72,6 +73,8 @@ const InvoiceCreatorDialog = ({
   const [saving, setSaving] = useState(false);
   const [orgs, setOrgs] = useState<{ id: string; name: string }[]>([]);
   const [selectedOrgId, setSelectedOrgId] = useState(orgId || "");
+  const [recipientUsers, setRecipientUsers] = useState<{ id: string; display_name: string | null }[]>([]);
+  const [userSearch, setUserSearch] = useState("");
 
   const [form, setForm] = useState<InvoiceFormData>({
     recipient_type: "organization",
@@ -116,6 +119,22 @@ const InvoiceCreatorDialog = ({
       .then(({ data }) => setOrgs(data || []));
   }, [isSuperAdmin, open]);
 
+  // Lookup users by name for the recipient_user_id picker
+  useEffect(() => {
+    if (!open) return;
+    const q = userSearch.trim();
+    if (q.length < 2) { setRecipientUsers([]); return; }
+    const t = setTimeout(async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, display_name")
+        .ilike("display_name", `%${q}%`)
+        .limit(10);
+      setRecipientUsers(data || []);
+    }, 250);
+    return () => clearTimeout(t);
+  }, [userSearch, open]);
+
   const updateItem = (index: number, field: keyof LineItem, value: string | number) => {
     setForm((prev) => {
       const items = [...prev.items];
@@ -158,13 +177,20 @@ const InvoiceCreatorDialog = ({
     const invoiceOrgId = isSuperAdmin ? (selectedOrgId || null) : orgId;
     const invoiceNumber = `INV-${Date.now().toString(36).toUpperCase()}`;
 
+    // Capture issuer display name
+    const { data: issuerProfile } = await supabase
+      .from("profiles").select("display_name").eq("id", user.id).maybeSingle();
+    const creatorName = issuerProfile?.display_name || user.email || null;
+
     const invoiceData = {
       org_id: invoiceOrgId,
       created_by: user.id,
+      creator_name: creatorName,
       recipient_type: form.recipient_type,
       recipient_name: form.recipient_name.trim(),
       recipient_email: form.recipient_email.trim() || null,
       recipient_org_id: form.recipient_org_id || null,
+      recipient_user_id: form.recipient_user_id || null,
       invoice_number: editInvoice?.id ? undefined : invoiceNumber,
       status,
       subtotal,
