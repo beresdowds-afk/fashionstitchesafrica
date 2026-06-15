@@ -16,3 +16,7 @@ verify_jwt = false
 
 [functions.payment-webhook]
 verify_jwt = false
+
+# Inbound webhook from FYSORA Companion PWA backend; HMAC-verified in code.
+[functions.fysora-companion-webhook]
+verify_jwt = false

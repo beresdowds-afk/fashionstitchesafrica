@@ -2720,6 +2720,116 @@ export type Database = {
         }
         Relationships: []
       }
+      external_inbound_webhooks: {
+        Row: {
+          error: string | null
+          event_type: string
+          id: string
+          integration_id: string | null
+          payload: Json
+          processed: boolean
+          processed_at: string | null
+          received_at: string
+          signature: string | null
+          signature_valid: boolean | null
+          source: string
+        }
+        Insert: {
+          error?: string | null
+          event_type: string
+          id?: string
+          integration_id?: string | null
+          payload: Json
+          processed?: boolean
+          processed_at?: string | null
+          received_at?: string
+          signature?: string | null
+          signature_valid?: boolean | null
+          source: string
+        }
+        Update: {
+          error?: string | null
+          event_type?: string
+          id?: string
+          integration_id?: string | null
+          payload?: Json
+          processed?: boolean
+          processed_at?: string | null
+          received_at?: string
+          signature?: string | null
+          signature_valid?: boolean | null
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "external_inbound_webhooks_integration_id_fkey"
+            columns: ["integration_id"]
+            isOneToOne: false
+            referencedRelation: "external_integrations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      external_integrations: {
+        Row: {
+          allowed_origins: string[]
+          auth_passthrough: boolean
+          base_url: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          health_status: string
+          hmac_secret_name: string | null
+          id: string
+          is_active: boolean
+          kind: string
+          last_health_check_at: string | null
+          metadata: Json
+          name: string
+          proxy_enabled: boolean
+          rate_limit_per_minute: number | null
+          updated_at: string
+        }
+        Insert: {
+          allowed_origins?: string[]
+          auth_passthrough?: boolean
+          base_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          health_status?: string
+          hmac_secret_name?: string | null
+          id?: string
+          is_active?: boolean
+          kind: string
+          last_health_check_at?: string | null
+          metadata?: Json
+          name: string
+          proxy_enabled?: boolean
+          rate_limit_per_minute?: number | null
+          updated_at?: string
+        }
+        Update: {
+          allowed_origins?: string[]
+          auth_passthrough?: boolean
+          base_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          health_status?: string
+          hmac_secret_name?: string | null
+          id?: string
+          is_active?: boolean
+          kind?: string
+          last_health_check_at?: string | null
+          metadata?: Json
+          name?: string
+          proxy_enabled?: boolean
+          rate_limit_per_minute?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       feature_access_requests: {
         Row: {
           approved_at: string | null
