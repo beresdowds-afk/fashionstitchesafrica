@@ -38,7 +38,30 @@ export default function FeaturedCatalogueStrip() {
         .map((it: any) => ({ ...it, org_name: it.organizations?.name || "Unknown" }));
 
       const seen = new Set<string>();
-      setItems(mapped.filter((m) => (seen.has(m.id) ? false : (seen.add(m.id), true))));
+      let deduped = mapped.filter((m) => (seen.has(m.id) ? false : (seen.add(m.id), true)));
+
+      // Fallback: when there are no curated featured slots, surface the most
+      // recent published catalogue items so the marquee + pull-down still
+      // showcase products.
+      if (deduped.length === 0) {
+        const { data: recent } = await supabase
+          .from("org_catalogue_items")
+          .select("id, name, image_url, category, organizations(name)")
+          .eq("is_published", true)
+          .order("created_at", { ascending: false })
+          .limit(12);
+        deduped = (recent || []).map((it: any) => ({
+          id: it.id,
+          name: it.name,
+          image_url: it.image_url,
+          category: it.category,
+          org_name: it.organizations?.name || "Featured",
+          source_type: null,
+          source_id: null,
+        }));
+      }
+
+      setItems(deduped);
       setLoading(false);
     };
     loadFeatured();
@@ -54,8 +77,9 @@ export default function FeaturedCatalogueStrip() {
 
   if (items.length === 0) return null;
 
-  // Duplicate items for seamless infinite scroll
-  const loop = [...items, ...items];
+  // Triple the items so the marquee always overflows the viewport — keeps
+  // the infinite sideways scroll seamless even when only 1–2 items exist.
+  const loop = [...items, ...items, ...items];
   const openSimilar = (it: FeaturedItem) => {
     const params = new URLSearchParams();
     if (it.source_type && it.source_id) {
