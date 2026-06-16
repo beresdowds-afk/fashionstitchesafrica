@@ -180,7 +180,7 @@ const SuperAdminDashboard = () => {
     );
   }
 
-  const restrictedTabs = new Set(["platform_settings", "sub_rates", "unified_pricing", "pricing", "features", "regional_management", "monetization_switches", "fee_exemptions"]);
+  const restrictedTabs = new Set(["platform_settings", "sub_rates", "unified_pricing", "pricing", "features", "album_limits", "regional_management", "monetization_switches", "fee_exemptions"]);
 
   const allGroups: SidebarGroupDef[] = [
     {
