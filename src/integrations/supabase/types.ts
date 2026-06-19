@@ -3427,6 +3427,480 @@ export type Database = {
           },
         ]
       }
+      insurance_claim_actions: {
+        Row: {
+          action_type: string
+          claim_id: string
+          created_at: string
+          description: string | null
+          id: string
+          metadata: Json
+          performed_by: string | null
+        }
+        Insert: {
+          action_type: string
+          claim_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          metadata?: Json
+          performed_by?: string | null
+        }
+        Update: {
+          action_type?: string
+          claim_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          metadata?: Json
+          performed_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insurance_claim_actions_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "insurance_claims"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      insurance_claims: {
+        Row: {
+          amount_approved: number | null
+          amount_claimed: number | null
+          approved_at: string | null
+          claim_number: string
+          claim_type: Database["public"]["Enums"]["insurance_claim_type"]
+          created_at: string
+          customer_id: string | null
+          description: string | null
+          evidence_urls: string[]
+          id: string
+          organization_id: string | null
+          paid_at: string | null
+          policy_id: string
+          rejection_reason: string | null
+          resolution_notes: string | null
+          respondent_evidence_urls: string[]
+          respondent_response: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: Database["public"]["Enums"]["insurance_claim_status"]
+          submitted_by: string | null
+          tailor_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount_approved?: number | null
+          amount_claimed?: number | null
+          approved_at?: string | null
+          claim_number?: string
+          claim_type: Database["public"]["Enums"]["insurance_claim_type"]
+          created_at?: string
+          customer_id?: string | null
+          description?: string | null
+          evidence_urls?: string[]
+          id?: string
+          organization_id?: string | null
+          paid_at?: string | null
+          policy_id: string
+          rejection_reason?: string | null
+          resolution_notes?: string | null
+          respondent_evidence_urls?: string[]
+          respondent_response?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["insurance_claim_status"]
+          submitted_by?: string | null
+          tailor_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount_approved?: number | null
+          amount_claimed?: number | null
+          approved_at?: string | null
+          claim_number?: string
+          claim_type?: Database["public"]["Enums"]["insurance_claim_type"]
+          created_at?: string
+          customer_id?: string | null
+          description?: string | null
+          evidence_urls?: string[]
+          id?: string
+          organization_id?: string | null
+          paid_at?: string | null
+          policy_id?: string
+          rejection_reason?: string | null
+          resolution_notes?: string | null
+          respondent_evidence_urls?: string[]
+          respondent_response?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: Database["public"]["Enums"]["insurance_claim_status"]
+          submitted_by?: string | null
+          tailor_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insurance_claims_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "insurance_claims_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "insurance_claims_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_summary"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "insurance_claims_policy_id_fkey"
+            columns: ["policy_id"]
+            isOneToOne: false
+            referencedRelation: "insurance_policies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      insurance_config: {
+        Row: {
+          administration_percent: number
+          claims_window_days: number
+          default_excess: number
+          fee_max_percent: number
+          fee_min_percent: number
+          fee_multiplier_high: number
+          fee_multiplier_low: number
+          fee_multiplier_medium: number
+          fee_multiplier_very_high: number
+          id: number
+          max_coverage_per_claim: number
+          min_order_value: number
+          platform_percent: number
+          reserve_percent: number
+          risk_threshold_high: number
+          risk_threshold_low: number
+          risk_threshold_medium: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          administration_percent?: number
+          claims_window_days?: number
+          default_excess?: number
+          fee_max_percent?: number
+          fee_min_percent?: number
+          fee_multiplier_high?: number
+          fee_multiplier_low?: number
+          fee_multiplier_medium?: number
+          fee_multiplier_very_high?: number
+          id?: number
+          max_coverage_per_claim?: number
+          min_order_value?: number
+          platform_percent?: number
+          reserve_percent?: number
+          risk_threshold_high?: number
+          risk_threshold_low?: number
+          risk_threshold_medium?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          administration_percent?: number
+          claims_window_days?: number
+          default_excess?: number
+          fee_max_percent?: number
+          fee_min_percent?: number
+          fee_multiplier_high?: number
+          fee_multiplier_low?: number
+          fee_multiplier_medium?: number
+          fee_multiplier_very_high?: number
+          id?: number
+          max_coverage_per_claim?: number
+          min_order_value?: number
+          platform_percent?: number
+          reserve_percent?: number
+          risk_threshold_high?: number
+          risk_threshold_low?: number
+          risk_threshold_medium?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      insurance_feature_flags: {
+        Row: {
+          configuration: Json
+          created_at: string
+          description: string | null
+          enabled: boolean
+          flag_key: string
+          flag_name: string
+          id: string
+          phase: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          configuration?: Json
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          flag_key: string
+          flag_name: string
+          id?: string
+          phase: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          configuration?: Json
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          flag_key?: string
+          flag_name?: string
+          id?: string
+          phase?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      insurance_policies: {
+        Row: {
+          contract_id: string | null
+          coverage_limit: number
+          created_at: string
+          currency: string
+          customer_id: string | null
+          end_date: string | null
+          excess_amount: number
+          feature_flag_version: string | null
+          id: string
+          order_id: string | null
+          organization_id: string | null
+          policy_number: string
+          policy_type: Database["public"]["Enums"]["insurance_policy_type"]
+          premium_amount: number
+          start_date: string
+          status: Database["public"]["Enums"]["insurance_policy_status"]
+          tailor_id: string | null
+          terms: Json
+          updated_at: string
+        }
+        Insert: {
+          contract_id?: string | null
+          coverage_limit: number
+          created_at?: string
+          currency?: string
+          customer_id?: string | null
+          end_date?: string | null
+          excess_amount?: number
+          feature_flag_version?: string | null
+          id?: string
+          order_id?: string | null
+          organization_id?: string | null
+          policy_number?: string
+          policy_type: Database["public"]["Enums"]["insurance_policy_type"]
+          premium_amount: number
+          start_date?: string
+          status?: Database["public"]["Enums"]["insurance_policy_status"]
+          tailor_id?: string | null
+          terms?: Json
+          updated_at?: string
+        }
+        Update: {
+          contract_id?: string | null
+          coverage_limit?: number
+          created_at?: string
+          currency?: string
+          customer_id?: string | null
+          end_date?: string | null
+          excess_amount?: number
+          feature_flag_version?: string | null
+          id?: string
+          order_id?: string | null
+          organization_id?: string | null
+          policy_number?: string
+          policy_type?: Database["public"]["Enums"]["insurance_policy_type"]
+          premium_amount?: number
+          start_date?: string
+          status?: Database["public"]["Enums"]["insurance_policy_status"]
+          tailor_id?: string | null
+          terms?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insurance_policies_contract_id_fkey"
+            columns: ["contract_id"]
+            isOneToOne: false
+            referencedRelation: "tailor_contracts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "insurance_policies_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "insurance_policies_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "insurance_policies_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "insurance_policies_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_summary"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      insurance_reserve_ledger: {
+        Row: {
+          amount: number
+          claim_id: string | null
+          created_at: string
+          created_by: string | null
+          currency: string
+          id: string
+          notes: string | null
+          payment_id: string | null
+          policy_id: string | null
+          source: string
+          status: string
+        }
+        Insert: {
+          amount: number
+          claim_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          id?: string
+          notes?: string | null
+          payment_id?: string | null
+          policy_id?: string | null
+          source: string
+          status?: string
+        }
+        Update: {
+          amount?: number
+          claim_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          currency?: string
+          id?: string
+          notes?: string | null
+          payment_id?: string | null
+          policy_id?: string | null
+          source?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insurance_reserve_ledger_claim_id_fkey"
+            columns: ["claim_id"]
+            isOneToOne: false
+            referencedRelation: "insurance_claims"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "insurance_reserve_ledger_payment_id_fkey"
+            columns: ["payment_id"]
+            isOneToOne: false
+            referencedRelation: "payments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "insurance_reserve_ledger_policy_id_fkey"
+            columns: ["policy_id"]
+            isOneToOne: false
+            referencedRelation: "insurance_policies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      insurance_risk_scores: {
+        Row: {
+          calculated_at: string
+          expires_at: string
+          factors: Json
+          id: string
+          organization_id: string | null
+          score: number
+          subject_type: string
+          tailor_id: string | null
+          tier: Database["public"]["Enums"]["insurance_risk_tier"]
+        }
+        Insert: {
+          calculated_at?: string
+          expires_at?: string
+          factors?: Json
+          id?: string
+          organization_id?: string | null
+          score: number
+          subject_type: string
+          tailor_id?: string | null
+          tier: Database["public"]["Enums"]["insurance_risk_tier"]
+        }
+        Update: {
+          calculated_at?: string
+          expires_at?: string
+          factors?: Json
+          id?: string
+          organization_id?: string | null
+          score?: number
+          subject_type?: string
+          tailor_id?: string | null
+          tier?: Database["public"]["Enums"]["insurance_risk_tier"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "insurance_risk_scores_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "insurance_risk_scores_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_public"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "insurance_risk_scores_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations_summary"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integration_credential_events: {
         Row: {
           action: string
@@ -11430,6 +11904,25 @@ export type Database = {
         | "designer"
         | "platform_management"
       catalogue_node_type: "image" | "design_set" | "collection" | "album"
+      insurance_claim_status:
+        | "submitted"
+        | "reviewing"
+        | "approved"
+        | "partial_approved"
+        | "rejected"
+        | "paid"
+        | "expired"
+        | "cancelled"
+      insurance_claim_type:
+        | "delivery_failure"
+        | "wrong_item"
+        | "quality_issue"
+        | "measurement_error"
+        | "fraud"
+        | "non_delivery"
+      insurance_policy_status: "active" | "claimed" | "expired" | "cancelled"
+      insurance_policy_type: "order_protection" | "contract_assurance"
+      insurance_risk_tier: "low" | "medium" | "high" | "very_high"
       order_status:
         | "pending"
         | "confirmed"
@@ -11592,6 +12085,27 @@ export const Constants = {
         "platform_management",
       ],
       catalogue_node_type: ["image", "design_set", "collection", "album"],
+      insurance_claim_status: [
+        "submitted",
+        "reviewing",
+        "approved",
+        "partial_approved",
+        "rejected",
+        "paid",
+        "expired",
+        "cancelled",
+      ],
+      insurance_claim_type: [
+        "delivery_failure",
+        "wrong_item",
+        "quality_issue",
+        "measurement_error",
+        "fraud",
+        "non_delivery",
+      ],
+      insurance_policy_status: ["active", "claimed", "expired", "cancelled"],
+      insurance_policy_type: ["order_protection", "contract_assurance"],
+      insurance_risk_tier: ["low", "medium", "high", "very_high"],
       order_status: [
         "pending",
         "confirmed",

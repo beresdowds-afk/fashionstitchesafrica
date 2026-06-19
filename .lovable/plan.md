@@ -1,62 +1,70 @@
-## Goal
-Add a **REST API Integrations Registry** table inside the Super Admin Keys & Secrets portal that lets a super admin register, wire up, test, and manage RESTful APIs for external services and internal websites/apps — all in one place, with credentials linked from the existing keys infrastructure.
+## FYSORA Order Protection & Contract Assurance — Implementation Plan
 
-## What gets built
+A large, multi-phase feature. I'll deliver it in the priority order you specified, in **4 staged batches** so each batch is reviewable and we don't ship a 50-file mega-change.
 
-### 1. New database table: `rest_api_integrations`
-Columns (domain fields only):
-- `name` (display name, unique per scope)
-- `slug` (auto-generated, kebab-case)
-- `scope` — enum: `external_service` | `internal_website` | `internal_app`
-- `target_label` (e.g. "FYSORA Marketing Site", "Stripe", "Org Tailor App")
-- `base_url` (validated https URL)
-- `auth_type` — enum: `none` | `api_key_header` | `bearer_token` | `basic_auth` | `hmac_signed` | `oauth2_client_credentials`
-- `auth_header_name` (e.g. `Authorization`, `X-API-Key`)
-- `linked_platform_api_key_id` → `platform_api_keys.id` (existing hashed-key store)
-- `linked_external_integration_id` → `external_integrations.id` (from the auto-generator)
-- `default_headers` (jsonb)
-- `default_query_params` (jsonb)
-- `timeout_ms`, `retry_count`, `rate_limit_per_minute`
-- `health_check_path`, `health_status` (`unknown|healthy|degraded|down`), `last_health_check_at`, `last_health_response_ms`
-- `environment` — `live | test | staging`
-- `is_active`, `created_by`, `notes`
+---
 
-Plus a child table `rest_api_endpoints` for the catalogue of callable endpoints per integration:
-- `integration_id` → `rest_api_integrations.id`
-- `name`, `method` (GET/POST/PUT/PATCH/DELETE), `path` (relative), `description`
-- `request_schema` (jsonb), `response_schema` (jsonb), `sample_payload` (jsonb)
-- `requires_auth`, `is_public_facing`
+### Batch 1 — Foundation (DB + Feature Flags + Core Service)
 
-Both tables: GRANTs to `authenticated` and `service_role`, RLS scoped so only `super_admin` / `super_assistant` can read/write; an `is_public_facing` endpoint view exposes safe metadata to org admins (no secrets).
+**Database migration** (single migration, all tables under `public.` with GRANTs + RLS):
+- `insurance_policies` — links to existing `orders` / `tailor_contracts` / `organizations` / `profiles` (no `customers`/`tailors`/`subcontracts` tables exist; mapped to current schema). `policy_type`, `premium_amount`, `coverage_limit`, `excess_amount`, `status`, `terms jsonb`, `feature_flag_version`.
+- `insurance_claims` — `claim_type`, evidence URLs, status, amounts, review fields.
+- `insurance_claim_actions` — audit trail per claim.
+- `insurance_risk_scores` — per tailor/org, 0–100 + tier + factors jsonb, cached 24h.
+- `insurance_reserve_ledger` — reserve pool entries (premium / admin fee / platform fee / payout allocations).
+- `insurance_feature_flags` — 6 phase flags, `configuration jsonb`, `updated_by`, `updated_at`. Seeded with 6 rows, all `enabled = false`.
+- `insurance_config` (single-row table) — fee min/max %, reserve % (60), admin % (20), platform % (20), claims window days, min order value, max coverage, excess defaults.
+- RLS: customers see only their policies/claims; org/tailor sees only theirs (via `is_org_member` / membership); super_admin full access. Feature flags + config: read by authenticated, write by `super_admin` only.
+- Storage bucket `insurance-evidence` (private) + policies for claim uploaders & super admins.
 
-### 2. Edge functions
-- `rest-integration-test` — super-admin only. Takes `integration_id` + optional `endpoint_id` (or ad-hoc method/path/body), resolves credentials from `platform_api_keys`/`external_integrations` server-side, signs/authenticates the request, calls the upstream, returns `{status, response_ms, headers, body_preview}`. Plaintext keys never leave the server.
-- `rest-integration-health-check` — runs the configured `health_check_path` for one or all active integrations; updates `health_status`, `last_health_check_at`, `last_health_response_ms`. Can be invoked on demand or by a cron.
-- `rest-integration-proxy` — authenticated server-side proxy other edge functions/internal code can call to make outbound REST requests via a registered integration by `slug`, so business code never handles raw secrets.
+**Feature Flags Portal** (Super Admin):
+- New page `src/pages/super-admin/InsuranceFeatureFlags.tsx` with 6 phase cards, toggle + per-flag config drawer, last-modified timestamps.
+- Route mounted under existing super-admin shell.
 
-### 3. Audit
-Every create/edit/disable/delete/test/health-check writes to existing `audit_logs` with actor user id, action, integration id/slug, and request metadata. Secrets are never logged.
+**Core service** (shared, browser-safe):
+- `src/lib/insurance/premium.ts` — `calculatePremium`, `getCoverageLimit`, `getExcess`, `getTier`.
+- `src/lib/insurance/risk.ts` — risk score formula (weights: completion 35 / rating 25 / disputes 20 / experience 10 / timeliness 10) with 24h caching via `insurance_risk_scores`.
+- `src/hooks/useInsuranceFlags.ts` + `useInsuranceConfig.ts` — react-query hooks gating UI behind flags.
+- Edge function `insurance-quote` — server-side premium calculation (auth required, validates flag).
 
-### 4. UI inside `KeysSecretsPanel`
-New tab/section **"REST API Integrations"** containing:
-- A searchable, filterable table (columns: name, scope, target, base URL, auth type, environment, linked credential, health, last tested, status, actions).
-- "Add integration" dialog with full form, live URL validation, credential picker that lists existing `platform_api_keys`/`external_integrations` (no plaintext shown).
-- Per-row drawer with two tabs:
-  - **Endpoints** — CRUD for the endpoint catalogue + a "Send test request" button that calls `rest-integration-test` and renders the response with redacted headers.
-  - **Activity** — recent audit + health-check events.
-- Inline health-check button per row and bulk "Re-check all".
-- Toggle to enable/disable an integration without deleting it.
+### Batch 2 — Customer Checkout & Order Dashboard
 
-### 5. Wiring helper for the rest of the codebase
-- New TS helper `src/lib/restIntegrations.ts` with `callRestIntegration({ slug, endpoint, params, body })` that invokes `rest-integration-proxy`. This is the single way frontend/edge functions consume registered REST APIs going forward.
-- Documented in the existing security/keys memory so future code reuses the registry instead of inlining base URLs and secrets.
+- `src/components/insurance/OrderProtectionToggle.tsx` (gold #D4AF37 + green #008751 design tokens, NOT hardcoded — added to `index.css` as `--insurance-gold` / `--insurance-green`).
+- "How it works" 3-step mini-tutorial, expandable coverage accordion.
+- "Protected by FYSORA" badge component + Shield-with-needle SVG icon (`src/assets/fysora-shield.svg`).
+- Inject toggle into existing checkout flow (will locate exact file when implementing); persists purchase via `insurance-purchase` edge function.
+- Order dashboard: badge + status indicator + "Report Issue" CTA on protected orders.
 
-## Technical Notes
-- Single migration creates both tables, enum types, indexes (`slug`, `scope`, `environment`, `is_active`), trigger to auto-slugify, GRANTs, RLS policies, plus `update_updated_at_column` triggers.
-- All edge functions: JWT validation in code, Zod-validated input, CORS headers on every response, super-admin guard via `has_role`.
-- Credentials are resolved on the server by joining the linked id to the existing hashed store; plaintext keys are never returned to the browser. Test-call responses redact `authorization`, `cookie`, `set-cookie`, and any header matching `*token*`, `*key*`, `*secret*`.
-- No changes required to existing `external_integrations` / `platform_api_keys` schema — the new tables reference them.
+### Batch 3 — Claims (Customer submit + Admin review + Org/Tailor respond)
 
-## Out of Scope
-- Building an OpenAPI importer (can be added later as a follow-up — endpoint catalogue is manual for v1).
-- Per-org REST registries (this is platform-level; org-level integrations stay in `org_integration_api_keys`).
+- `src/pages/insurance/SubmitClaim.tsx` — 5-file upload (10MB cap each) to `insurance-evidence` bucket, claim type selector, preview/confirm.
+- `src/pages/insurance/ClaimTracker.tsx` — timeline, status, in-app chat (reuses existing `message_threads`).
+- `src/pages/super-admin/InsuranceClaimsReview.tsx` — queue, evidence viewer, approve/reject/partial, notes, automated notification trigger.
+- `src/pages/org/IncomingClaims.tsx` — org/tailor respond with evidence.
+- Edge functions: `insurance-claim-submit`, `insurance-claim-decide` (handles reserve allocation + payout entry + notifications).
+
+### Batch 4 — Risk Engine (Phase 3), Contract Assurance (Phase 4), Admin Analytics & Config
+
+- Risk score dashboard tab for org/tailor with tier badge + improvement tips.
+- Contract creation: opt-in toggle on `tailor_contracts`, premium display, digital certificate (PDF via existing invoice infra).
+- Super Admin analytics page: active/claimed/expired counts, claims volume chart (recharts), payouts by month, risk distribution, top claim reasons.
+- Super Admin config page: all knobs (fee range, reserve %, admin %, platform %, claims window, min order, max coverage, risk thresholds + multipliers).
+- Phases 5 & 6 (AI Measurement Guarantee, Licensed Insurer Partner): flag scaffolding + placeholder config panes only — full implementation deferred until you confirm scope (insurer partner needs an external provider choice).
+
+---
+
+### Technical notes
+
+- **Schema mapping:** Your spec references `customers`, `tailors`, `subcontracts`, `payment_transactions`, `users`. The actual schema uses `profiles` (customers + tailors live here, distinguished by role in `user_roles`/`org_members`), `tailor_contracts` (not `subcontracts`), `payments` (not `payment_transactions`), and `auth.users`. I'll map FKs accordingly.
+- **Color tokens:** `#D4AF37` and `#008751` go into `index.css` as HSL semantic tokens (`--insurance-gold`, `--insurance-green`) per project design rules — never hardcoded in components.
+- **Feature gating:** Every customer/org/admin entry point checks `insurance_feature_flags.enabled` via `useInsuranceFlags`; disabled phases render nothing (not even hidden code paths).
+- **Currency:** NGN primary, USD secondary (matches existing `exchange_rates`).
+- **No new external dependency** — Stripe/Paystack/Flutterwave premium charging reuses existing `payments` pipeline.
+
+---
+
+### What I need from you before starting
+
+1. **Approve Batch 1 to start now?** (DB + flags portal + core service is ~6 files + 1 migration.)
+2. **Phase 6 (Licensed Insurer Partner):** which provider? (AXA Mansard, Leadway, Hygeia, custom?) — needed before Batch 4. If undecided, I'll ship the flag + config schema only.
+3. **Payout method for approved claims:** wallet credit (existing `credit_wallets`), Paystack transfer, or manual admin trigger?

@@ -29,6 +29,7 @@ import PlatformPhoneNumbersPanel from "@/components/super-admin/PlatformPhoneNum
 import CommsOversightPanel from "@/components/super-admin/CommsOversightPanel";
 import CommunicationsHubTestPanel from "@/components/super-admin/CommunicationsHubTestPanel";
 import SentinelMcpSubscriptionPanel from "@/components/super-admin/SentinelMcpSubscriptionPanel";
+import InsuranceFeatureFlagsPanel from "@/components/super-admin/InsuranceFeatureFlagsPanel";
 import VideoBillingPanel from "@/components/super-admin/VideoBillingPanel";
 import DomainManagementPanel from "@/components/super-admin/DomainManagementPanel";
 import TenantSitesPanel from "@/components/super-admin/TenantSitesPanel";
@@ -94,7 +95,7 @@ import {
 
 import { cn } from "@/lib/utils";
 
-type TabId = "overview" | "platform_settings" | "carriers" | "organizations" | "users" | "accounts" | "accounts_health" | "pending_verifications" | "revenue" | "invoicing" | "invoice_manager" | "sub_rates" | "tax_compliance" | "regional_management" | "featured" | "keys" | "rates" | "websites" | "tenant_sites" | "pricing" | "unified_pricing" | "monetization_switches" | "fee_exemptions" | "backups" | "features" | "album_limits" | "mobile" | "app_downloads" | "audit" | "support_requests" | "bank_accounts" | "message_center" | "phone_numbers" | "comms_oversight" | "video_billing" | "domain_management" | "identity_verification" | "communications" | "comms_hub_test" | "registrations" | "disputes" | "website_templates" | "platform_updates" | "voiced_tour_sync" | "sentinel_mcp";
+type TabId = "overview" | "platform_settings" | "carriers" | "organizations" | "users" | "accounts" | "accounts_health" | "pending_verifications" | "revenue" | "invoicing" | "invoice_manager" | "sub_rates" | "tax_compliance" | "regional_management" | "featured" | "keys" | "rates" | "websites" | "tenant_sites" | "pricing" | "unified_pricing" | "monetization_switches" | "fee_exemptions" | "backups" | "features" | "album_limits" | "mobile" | "app_downloads" | "audit" | "support_requests" | "bank_accounts" | "message_center" | "phone_numbers" | "comms_oversight" | "video_billing" | "domain_management" | "identity_verification" | "communications" | "comms_hub_test" | "registrations" | "disputes" | "website_templates" | "platform_updates" | "voiced_tour_sync" | "sentinel_mcp" | "insurance_flags";
 
 interface SidebarItem {
   id: TabId;
@@ -255,6 +256,7 @@ const SuperAdminDashboard = () => {
         { id: "platform_updates", icon: Radio, label: "Platform Updates" },
         { id: "voiced_tour_sync", icon: Radio, label: "Voiced Tour Sync" },
         { id: "sentinel_mcp", icon: Shield, label: "Sentinel MCP" },
+        { id: "insurance_flags", icon: ShieldCheck, label: "Order Protection" },
         { id: "identity_verification", icon: Shield, label: "Identity Verification" },
         { id: "audit", icon: ScrollText, label: "Audit Logs" },
       ],
@@ -375,6 +377,7 @@ const SuperAdminDashboard = () => {
             {activeTab === "communications" && <CommunicationsFullPage />}
             {activeTab === "comms_hub_test" && <CommunicationsHubTestPanel />}
             {activeTab === "sentinel_mcp" && <SentinelMcpSubscriptionPanel />}
+            {activeTab === "insurance_flags" && <InsuranceFeatureFlagsPanel />}
             {activeTab === "registrations" && <RegistrationsPanel orgs={orgs} />}
             {activeTab === "disputes" && <DisputesPanel orgs={orgs} />}
             {activeTab === "website_templates" && (isSuperAdmin ? <WebsiteTemplateBuilder /> : <WebsiteTemplatePicker readOnly />)}
