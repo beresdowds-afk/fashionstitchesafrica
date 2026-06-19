@@ -188,6 +188,11 @@ Deno.serve(async (req) => {
   }
 
   // Return embeddable JavaScript widget
+  // SECURITY: every org-controlled value embedded into the generated JS MUST be
+  // serialized via JSON.stringify so that double-quotes, backslashes and angle
+  // brackets in org names/slugs cannot break out of the JS string literal and
+  // execute attacker-controlled code on third-party sites.
+  const jsStr = (v: unknown) => JSON.stringify(typeof v === "string" ? v : (v ?? ""));
   const widgetJS = `
 (function() {
   'use strict';
@@ -195,14 +200,14 @@ Deno.serve(async (req) => {
   window.__FSA_WIDGET_LOADED = true;
 
   var CONFIG = {
-    appUrl: "${appUrl}",
-    fallbackAppUrl: "${fallbackAppUrl}",
-    orgSlug: "${orgSlug}",
-    orgId: "${config.org_id}",
-    orgName: "${config.organizations?.name || ""}",
+    appUrl: ${jsStr(appUrl)},
+    fallbackAppUrl: ${jsStr(fallbackAppUrl)},
+    orgSlug: ${jsStr(orgSlug)},
+    orgId: ${jsStr(config.org_id)},
+    orgName: ${jsStr(config.organizations?.name || "")},
     features: ${JSON.stringify(features)},
     theme: ${JSON.stringify(theme)},
-    branding: "${config.branding_text || "Powered by FYSORA FASHN (Fashion Stitches Africa)"}"
+    branding: ${jsStr(config.branding_text || "Powered by FYSORA FASHN (Fashion Stitches Africa)")}
   };
 
   // Inject styles
