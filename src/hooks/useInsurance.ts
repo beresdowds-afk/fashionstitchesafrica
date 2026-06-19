@@ -4,7 +4,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useInsuranceConfig } from "./useInsuranceConfig";
 import { calculatePremium, isEligible } from "@/lib/insurance/premium";
 import { defaultRiskScore, scoreFromMetrics, type TailorMetrics } from "@/lib/insurance/risk";
-import type { InsuranceClaimType, PremiumQuote, RiskScore, InsuranceRiskTier } from "@/lib/insurance/types";
+import type { InsuranceClaimType, InsuranceClaimStatus, PremiumQuote, RiskScore, InsuranceRiskTier } from "@/lib/insurance/types";
+import { useEffect } from "react";
 
 export function useOrderPolicy(orderId: string | undefined) {
   return useQuery({
@@ -70,7 +71,89 @@ export function useClaimActions(claimId: string | undefined) {
       if (error) throw error;
       return data ?? [];
     },
-    refetchInterval: 15_000,
+    refetchInterval: 30_000,
+  });
+}
+
+/** Subscribe to realtime updates for a single claim and its actions. */
+export function useRealtimeClaim(claimId: string | undefined) {
+  const qc = useQueryClient();
+  useEffect(() => {
+    if (!claimId) return;
+    const channel = supabase
+      .channel(`claim-${claimId}`)
+      .on("postgres_changes",
+        { event: "*", schema: "public", table: "insurance_claim_actions", filter: `claim_id=eq.${claimId}` },
+        () => qc.invalidateQueries({ queryKey: ["insurance-claim-actions", claimId] }))
+      .on("postgres_changes",
+        { event: "UPDATE", schema: "public", table: "insurance_claims", filter: `id=eq.${claimId}` },
+        () => qc.invalidateQueries({ queryKey: ["insurance-claim", claimId] }))
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [claimId, qc]);
+}
+
+/** Admin list of all claims with optional status filter. */
+export function useAdminClaims(status?: string) {
+  return useQuery({
+    queryKey: ["admin-insurance-claims", status ?? "all"],
+    queryFn: async () => {
+      let q = (supabase as any).from("insurance_claims")
+        .select("*, policy:insurance_policies(id, policy_number, currency, coverage_limit, premium_amount)")
+        .order("created_at", { ascending: false })
+        .limit(200);
+      if (status && status !== "all") q = q.eq("status", status);
+      const { data, error } = await q;
+      if (error) throw error;
+      return data ?? [];
+    },
+    refetchInterval: 30_000,
+  });
+}
+
+/** Admin-only: server-driven status transition with timestamped action row. */
+export function useTransitionClaim() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: {
+      claimId: string;
+      newStatus: InsuranceClaimStatus | "evidence_requested";
+      notes?: string;
+      amountApproved?: number;
+    }) => {
+      const { data, error } = await (supabase as any).rpc("transition_insurance_claim", {
+        _claim_id: args.claimId,
+        _new_status: args.newStatus,
+        _notes: args.notes ?? null,
+        _amount_approved: args.amountApproved ?? null,
+      });
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ["insurance-claim", vars.claimId] });
+      qc.invalidateQueries({ queryKey: ["insurance-claim-actions", vars.claimId] });
+      qc.invalidateQueries({ queryKey: ["admin-insurance-claims"] });
+    },
+  });
+}
+
+/** Admin-only: update evidence scan status / per-file results. */
+export function useUpdateEvidenceScan() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: { claimId: string; status: string; scan?: unknown[] }) => {
+      const { error } = await (supabase as any).rpc("update_claim_evidence_scan", {
+        _claim_id: args.claimId,
+        _status: args.status,
+        _scan: args.scan ?? [],
+      });
+      if (error) throw error;
+    },
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ["insurance-claim", vars.claimId] });
+      qc.invalidateQueries({ queryKey: ["admin-insurance-claims"] });
+    },
   });
 }
 
