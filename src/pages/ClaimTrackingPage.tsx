@@ -5,22 +5,41 @@ import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { useClaim, useClaimActions, usePostClaimMessage, useRateClaim } from "@/hooks/useInsurance";
+import { useClaim, useClaimActions, usePostClaimMessage, useRateClaim, useRealtimeClaim } from "@/hooks/useInsurance";
 import { useInsuranceConfig } from "@/hooks/useInsuranceConfig";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { format, formatDistanceToNow } from "date-fns";
-import { ArrowLeft, Send, Star, ShieldCheck, Clock, CheckCircle2, XCircle, FileText } from "lucide-react";
+import { ArrowLeft, Send, Star, ShieldCheck, Clock, CheckCircle2, XCircle, FileText, ShieldAlert, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const FLOW = ["submitted", "reviewing", "approved", "paid"] as const;
+const FLOW = ["submitted", "reviewing", "evidence_requested", "approved", "paid"] as const;
+const FLOW_LABELS: Record<(typeof FLOW)[number], string> = {
+  submitted: "Submitted",
+  reviewing: "Under Review",
+  evidence_requested: "Evidence Requested",
+  approved: "Approved",
+  paid: "Resolved",
+};
 const TERMINAL = new Set(["rejected", "expired", "cancelled"]);
 
 function stageIndex(status: string) {
   if (status === "partial_approved") return 2;
+  if (status === "evidence_requested") return 2;
+  if (status === "approved") return 3;
+  if (status === "paid") return 4;
   const i = (FLOW as readonly string[]).indexOf(status);
   return i < 0 ? 0 : i;
 }
+
+const EVIDENCE_BADGE: Record<string, { label: string; cls: string; icon: any }> = {
+  pending:  { label: "Evidence: pending scan",  cls: "bg-muted text-muted-foreground border-border", icon: Clock },
+  scanning: { label: "Evidence: scanning",      cls: "bg-blue-500/10 text-blue-600 border-blue-500/30", icon: Loader2 },
+  clean:    { label: "Evidence: verified safe", cls: "bg-green-500/10 text-green-600 border-green-500/30", icon: ShieldCheck },
+  infected: { label: "Evidence: blocked",       cls: "bg-destructive/10 text-destructive border-destructive/30", icon: ShieldAlert },
+  failed:   { label: "Evidence: scan failed",   cls: "bg-amber-500/10 text-amber-700 border-amber-500/30", icon: ShieldAlert },
+  skipped:  { label: "No evidence",             cls: "bg-muted text-muted-foreground border-border", icon: FileText },
+};
 
 export default function ClaimTrackingPage() {
   const { id } = useParams<{ id: string }>();
@@ -28,6 +47,7 @@ export default function ClaimTrackingPage() {
   const { toast } = useToast();
   const { data: claim, isLoading } = useClaim(id);
   const { data: actions = [] } = useClaimActions(id);
+  useRealtimeClaim(id);
   const { data: cfg } = useInsuranceConfig();
   const post = usePostClaimMessage();
   const rate = useRateClaim();
@@ -56,10 +76,23 @@ export default function ClaimTrackingPage() {
   const isTerminal = TERMINAL.has(claim.status);
   const idx = stageIndex(claim.status);
   const progress = isTerminal ? 100 : ((idx + 1) / FLOW.length) * 100;
+
+  // Map each pipeline stage to its first matching action timestamp.
+  const stageTimestamps: Record<string, string | undefined> = {};
+  stageTimestamps.submitted = claim.created_at;
+  for (const a of actions ?? []) {
+    if (FLOW.includes(a.action_type) && !stageTimestamps[a.action_type]) {
+      stageTimestamps[a.action_type] = a.created_at;
+    }
+  }
+
   const eta = cfg?.claims_window_days
     ? new Date(new Date(claim.created_at).getTime() + cfg.claims_window_days * 24 * 3600 * 1000)
     : null;
   const resolved = ["paid", "rejected", "approved", "partial_approved"].includes(claim.status);
+  const evStatus = (claim.evidence_status ?? (claim.evidence_urls?.length ? "pending" : "skipped")) as keyof typeof EVIDENCE_BADGE;
+  const evMeta = EVIDENCE_BADGE[evStatus] ?? EVIDENCE_BADGE.pending;
+  const EvIcon = evMeta.icon;
 
   const send = async () => {
     if (!draft.trim()) return;
@@ -100,23 +133,34 @@ export default function ClaimTrackingPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <Progress value={progress} className="h-2" />
-          <div className="grid grid-cols-4 gap-2 text-[10px] sm:text-xs">
+          <div className="grid grid-cols-5 gap-1.5 text-[10px] sm:text-xs">
             {FLOW.map((s, i) => (
               <div key={s} className={cn(
-                "rounded border px-2 py-1 text-center capitalize",
+                "rounded border px-1.5 py-1 text-center",
                 i <= idx
                   ? "border-[hsl(43,65%,52%)]/40 bg-[hsl(43,65%,52%)]/10 text-[hsl(43,65%,38%)] font-medium"
                   : "border-border text-muted-foreground",
-              )}>{s}</div>
+              )}>
+                <div>{FLOW_LABELS[s]}</div>
+                {stageTimestamps[s] && (
+                  <div className="mt-0.5 text-[9px] opacity-75">
+                    {format(new Date(stageTimestamps[s]!), "MMM d, p")}
+                  </div>
+                )}
+              </div>
             ))}
           </div>
-          <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
             <span className="flex items-center gap-1"><Clock size={12} /> Submitted {formatDistanceToNow(new Date(claim.created_at))} ago</span>
             {eta && !isTerminal && (
               <span className="flex items-center gap-1">
                 <Clock size={12} /> Est. resolution by {format(eta, "PP")}
               </span>
             )}
+            <span className={cn("inline-flex items-center gap-1 rounded-full border px-2 py-0.5", evMeta.cls)}>
+              <EvIcon size={12} className={evStatus === "scanning" ? "animate-spin" : ""} />
+              {evMeta.label}
+            </span>
           </div>
         </CardContent>
       </Card>
