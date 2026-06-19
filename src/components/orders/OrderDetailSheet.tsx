@@ -362,6 +362,15 @@ const OrderDetailSheet = ({ order, open, onOpenChange, role, tailors, onStatusCh
         </div>
       </SheetContent>
     </Sheet>
+    {policy && (
+      <ReportIssueDialog
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        policy={policy as any}
+        orderTitle={order.title}
+      />
+    )}
+  </>
   );
 };
 
