@@ -17,6 +17,7 @@ import InvoiceManagerPanel from "@/components/invoices/InvoiceManagerPanel";
 import { useOrgSubscription } from "@/hooks/useSubscription";
 import { useDashboardStats } from "@/hooks/useDashboardStats";
 import OrdersTab from "@/components/orders/OrdersTab";
+import RiskScoreCard from "@/components/insurance/RiskScoreCard";
 import CustomersTab from "@/components/customers/CustomersTab";
 import InviteMemberDialog from "@/components/members/InviteMemberDialog";
 import NotificationBell from "@/components/notifications/NotificationBell";
