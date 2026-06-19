@@ -652,20 +652,32 @@ function buildWebsiteContent(config: DomainDnsConfig, settings: any, catalogue: 
     function updateCartUI() {
       document.getElementById('cart-count').textContent = cart.reduce((s, i) => s + i.qty, 0);
       const container = document.getElementById('cart-items');
+      // SECURITY: build cart rows with DOM APIs and textContent so item names
+      // (which originate from org-supplied catalogue data) can never execute
+      // HTML/JS in visitors' browsers.
+      while (container.firstChild) container.removeChild(container.firstChild);
       if (cart.length === 0) {
-        container.innerHTML = '<p class="cart-empty">Your cart is empty</p>';
+        var empty = document.createElement('p');
+        empty.className = 'cart-empty';
+        empty.textContent = 'Your cart is empty';
+        container.appendChild(empty);
         document.getElementById('cart-total').textContent = '0';
         return;
       }
-      container.innerHTML = cart.map(i => 
-        '<div class="cart-item">' +
-          '<div class="cart-item-info">' +
-            '<span class="cart-item-name">' + i.name + '</span>' +
-            '<span class="cart-item-price">' + i.currency + ' ' + (i.price * i.qty).toLocaleString() + ' (x' + i.qty + ')</span>' +
-          '</div>' +
-          '<button onclick="removeFromCart(\\'' + i.id + '\\')" class="cart-remove">&times;</button>' +
-        '</div>'
-      ).join('');
+      cart.forEach(function(i) {
+        var row = document.createElement('div'); row.className = 'cart-item';
+        var info = document.createElement('div'); info.className = 'cart-item-info';
+        var nm = document.createElement('span'); nm.className = 'cart-item-name'; nm.textContent = String(i.name == null ? '' : i.name);
+        var pr = document.createElement('span'); pr.className = 'cart-item-price';
+        pr.textContent = String(i.currency) + ' ' + (i.price * i.qty).toLocaleString() + ' (x' + i.qty + ')';
+        info.appendChild(nm); info.appendChild(pr);
+        var rm = document.createElement('button'); rm.className = 'cart-remove';
+        rm.setAttribute('type', 'button');
+        rm.textContent = '\u00d7';
+        rm.addEventListener('click', function() { removeFromCart(i.id); });
+        row.appendChild(info); row.appendChild(rm);
+        container.appendChild(row);
+      });
       const total = cart.reduce((s, i) => s + (i.price * i.qty), 0);
       const cur = cart[0]?.currency || 'NGN';
       document.getElementById('cart-total').textContent = cur + ' ' + total.toLocaleString();
