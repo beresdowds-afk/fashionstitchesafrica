@@ -19,6 +19,8 @@ import CurrencyDisplay from "@/components/shared/CurrencyDisplay";
 import CartSubmissionLog from "./CartSubmissionLog";
 import CatalogueCartGuide from "@/components/help/CatalogueCartGuide";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import ProtectedBadge from "@/components/insurance/ProtectedBadge";
+import { useOrderPoliciesMap } from "@/hooks/useInsurance";
 
 const exportOrdersCSV = (orders: Order[], currency: string) => {
   const headers = ["Order Number", "Title", "Status", "Customer", "Tailor", "Due Date", "Amount", "Currency", "Created"];
