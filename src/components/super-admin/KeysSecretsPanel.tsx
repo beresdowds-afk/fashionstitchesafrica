@@ -7,6 +7,7 @@ import SecretsManagementCard from "./SecretsManagementCard";
 import PlatformDnsRecordsPanel from "./PlatformDnsRecordsPanel";
 import ExternalIntegrationsPanel from "./ExternalIntegrationsPanel";
 import CredentialAutoGenerator from "./CredentialAutoGenerator";
+import RestApiRegistryPanel from "./RestApiRegistryPanel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -169,6 +170,11 @@ const KeysSecretsPanel = () => {
 
       {/* One-click worker: auto-generate API key + signing secret + webhook URL */}
       <CredentialAutoGenerator />
+
+      {/* REST API integrations registry: external services + internal sites/apps */}
+      <div className="rounded-xl bg-card border border-border p-5">
+        <RestApiRegistryPanel />
+      </div>
 
       {/* Platform DNS Records (A / TXT / CNAME / MX …) for FYSORA FASHN domains */}
       <PlatformDnsRecordsPanel />
