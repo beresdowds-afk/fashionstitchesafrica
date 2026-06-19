@@ -210,21 +210,41 @@ export default function ReportIssueDialog({ open, onOpenChange, policy, orderTit
                 />
               </label>
               {files.length > 0 && (
-                <ul className="mt-2 space-y-1">
-                  {files.map((f, i) => (
-                    <li key={i} className="flex items-center justify-between rounded border border-border bg-muted/30 px-2 py-1 text-xs">
-                      <span className="truncate">{f.name}</span>
-                      <button
-                        type="button"
-                        onClick={() => setFiles((p) => p.filter((_, idx) => idx !== i))}
-                        className="text-muted-foreground hover:text-destructive"
-                        aria-label={`Remove ${f.name}`}
-                      >
-                        <X size={12} />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+                <>
+                  <div className="mt-3 grid grid-cols-3 gap-2">
+                    {files.map((f, i) => {
+                      const key = `${f.name}-${f.size}-${f.lastModified}`;
+                      const url = previews[key];
+                      return (
+                        <div key={i} className="relative overflow-hidden rounded border border-border bg-muted/30">
+                          {url && f.type.startsWith("image/") ? (
+                            <img src={url} alt={f.name} className="h-20 w-full object-cover" />
+                          ) : url && f.type.startsWith("video/") ? (
+                            <video src={url} muted className="h-20 w-full object-cover" />
+                          ) : (
+                            <div className="flex h-20 items-center justify-center text-[10px] text-muted-foreground px-1 text-center">
+                              {f.name}
+                            </div>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => removeFile(i)}
+                            className="absolute right-0.5 top-0.5 rounded-full bg-background/80 p-0.5 text-muted-foreground hover:text-destructive"
+                            aria-label={`Remove ${f.name}`}
+                          >
+                            <X size={12} />
+                          </button>
+                          <div className="absolute inset-x-0 bottom-0 truncate bg-background/80 px-1 py-0.5 text-[10px]">
+                            {humanSize(f.size)}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <p className="mt-1 text-[10px] text-muted-foreground">
+                    Total {humanSize(totalBytes)} / {humanSize(MAX_TOTAL_BYTES)}
+                  </p>
+                </>
               )}
             </div>
           </div>
