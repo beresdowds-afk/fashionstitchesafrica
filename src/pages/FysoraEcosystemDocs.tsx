@@ -114,7 +114,7 @@ export default function FysoraEcosystemDocs() {
       <div className="min-h-screen flex w-full bg-background">
         <Sidebar collapsible="icon">
           <SidebarContent>
-            <SidebarGroup defaultOpen>
+            <SidebarGroup>
               <SidebarGroupLabel>FYSORA Ecosystem</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>
