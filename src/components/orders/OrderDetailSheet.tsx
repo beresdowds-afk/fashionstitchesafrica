@@ -120,6 +120,7 @@ const OrderDetailSheet = ({ order, open, onOpenChange, role, tailors, onStatusCh
   const showInvoice = ["completed", "delivered"].includes(order.status);
 
   return (
+    <>
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
         <SheetHeader>
