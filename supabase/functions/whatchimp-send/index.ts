@@ -12,6 +12,32 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Require authentication. Without this, any caller could relay WhatsApp
+    // messages or post to social platforms as any org and burn its quota/credits.
+    const authHeader = req.headers.get("authorization") || req.headers.get("Authorization");
+    if (!authHeader || !authHeader.toLowerCase().startsWith("bearer ")) {
+      return new Response(
+        JSON.stringify({ error: "Authentication required" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    const authClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY") ?? Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ?? "",
+      {
+        global: { headers: { Authorization: authHeader } },
+        auth: { persistSession: false, autoRefreshToken: false },
+      }
+    );
+    const { data: userData, error: userErr } = await authClient.auth.getUser();
+    if (userErr || !userData?.user) {
+      return new Response(
+        JSON.stringify({ error: "Invalid or expired session" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    const callerId = userData.user.id;
+
     const {
       action = "send_message", // send_message | send_template | post_social | get_status
       to,
@@ -36,6 +62,45 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    // Confirm the caller is an active member of the org/owner they claim to act for.
+    const resolvedOwnerId = owner_id || org_id;
+    if (!resolvedOwnerId) {
+      return new Response(
+        JSON.stringify({ error: "owner_id or org_id is required" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    if (owner_type === "organization") {
+      const { data: membership } = await supabaseAdmin
+        .from("org_members")
+        .select("user_id")
+        .eq("org_id", resolvedOwnerId)
+        .eq("user_id", callerId)
+        .eq("is_active", true)
+        .maybeSingle();
+      const { data: isSuper } = await supabaseAdmin.rpc("has_role", {
+        _user_id: callerId,
+        _role: "super_admin",
+      });
+      if (!membership && !isSuper) {
+        return new Response(
+          JSON.stringify({ error: "Caller is not a member of this organization" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    } else if (resolvedOwnerId !== callerId) {
+      const { data: isSuper } = await supabaseAdmin.rpc("has_role", {
+        _user_id: callerId,
+        _role: "super_admin",
+      });
+      if (!isSuper) {
+        return new Response(
+          JSON.stringify({ error: "Caller may only act on their own account" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
 
     const { data: keyData } = await supabaseAdmin
       .from("whatchimp_api_keys")
