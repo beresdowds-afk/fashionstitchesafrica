@@ -13,7 +13,6 @@ import SocialSyncPanel from "@/components/catalogue/SocialSyncPanel";
 import OrgMediaGroupingManager from "@/components/catalogue/OrgMediaGroupingManager";
 import CompanyOfficersPanel from "./CompanyOfficersPanel";
 import WebsiteBuilderManual from "./WebsiteBuilderManual";
-import WebsiteTemplatePicker from "./WebsiteTemplatePicker";
 import OrgTemplatePublishPanel from "./OrgTemplatePublishPanel";
 import PublishWebsiteButton, { type PublishWebsiteButtonHandle } from "./PublishWebsiteButton";
 import MediaDropzone from "@/components/shared/MediaDropzone";
