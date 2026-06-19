@@ -13,7 +13,16 @@ import type { InsuranceClaimType } from "@/lib/insurance/types";
 import { useNavigate } from "react-router-dom";
 
 const MAX_FILES = 5;
-const MAX_BYTES = 10 * 1024 * 1024; // 10MB
+const MAX_BYTES = 10 * 1024 * 1024; // 10MB per file
+const MAX_TOTAL_BYTES = 30 * 1024 * 1024; // 30MB across all files
+const ACCEPTED_PREFIXES = ["image/", "video/"];
+const ACCEPTED_EXT = /\.(jpe?g|png|gif|webp|heic|heif|mp4|mov|webm|m4v)$/i;
+
+function humanSize(n: number) {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 const claimTypeOptions: { value: InsuranceClaimType; label: string; help: string }[] = [
   { value: "non_delivery", label: "Item never arrived", help: "Order shipped but never received" },
@@ -47,22 +56,61 @@ export default function ReportIssueDialog({ open, onOpenChange, policy, orderTit
   const [claimType, setClaimType] = useState<InsuranceClaimType | "">("");
   const [description, setDescription] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<Record<string, string>>({});
   const [uploading, setUploading] = useState(false);
 
-  const reset = () => { setStep(1); setClaimType(""); setDescription(""); setFiles([]); };
+  const reset = () => {
+    setStep(1); setClaimType(""); setDescription(""); setFiles([]);
+    Object.values(previews).forEach((u) => URL.revokeObjectURL(u));
+    setPreviews({});
+  };
+
+  const totalBytes = files.reduce((a, f) => a + f.size, 0);
 
   const addFiles = (incoming: FileList | null) => {
     if (!incoming) return;
     const accepted: File[] = [];
+    let running = totalBytes;
     for (const f of Array.from(incoming)) {
-      if (files.length + accepted.length >= MAX_FILES) break;
+      if (files.length + accepted.length >= MAX_FILES) {
+        toast({ title: "Limit reached", description: `Max ${MAX_FILES} files`, variant: "destructive" });
+        break;
+      }
+      const validType = ACCEPTED_PREFIXES.some((p) => f.type.startsWith(p)) || ACCEPTED_EXT.test(f.name);
+      if (!validType) {
+        toast({ title: "Unsupported file", description: `${f.name} must be an image or video`, variant: "destructive" });
+        continue;
+      }
       if (f.size > MAX_BYTES) {
         toast({ title: "File too large", description: `${f.name} exceeds 10MB`, variant: "destructive" });
         continue;
       }
+      if (running + f.size > MAX_TOTAL_BYTES) {
+        toast({ title: "Total size exceeded", description: `Combined uploads cannot exceed ${humanSize(MAX_TOTAL_BYTES)}`, variant: "destructive" });
+        break;
+      }
+      running += f.size;
       accepted.push(f);
     }
+    if (accepted.length === 0) return;
     setFiles((prev) => [...prev, ...accepted].slice(0, MAX_FILES));
+    setPreviews((prev) => {
+      const next = { ...prev };
+      for (const f of accepted) {
+        if (f.type.startsWith("image/") || f.type.startsWith("video/")) {
+          next[`${f.name}-${f.size}-${f.lastModified}`] = URL.createObjectURL(f);
+        }
+      }
+      return next;
+    });
+  };
+
+  const removeFile = (i: number) => {
+    const f = files[i];
+    const key = `${f.name}-${f.size}-${f.lastModified}`;
+    if (previews[key]) { URL.revokeObjectURL(previews[key]); }
+    setPreviews((p) => { const c = { ...p }; delete c[key]; return c; });
+    setFiles((p) => p.filter((_, idx) => idx !== i));
   };
 
   const submit = async () => {
@@ -87,6 +135,13 @@ export default function ReportIssueDialog({ open, onOpenChange, policy, orderTit
         description: description.trim(),
         evidenceUrls: urls,
       });
+      // Mark evidence queued for scanning (admin worker / antivirus will update later).
+      try {
+        await (supabase as any)
+          .from("insurance_claims")
+          .update({ evidence_status: urls.length > 0 ? "scanning" : "skipped" })
+          .eq("id", claim.id);
+      } catch { /* non-fatal */ }
       toast({ title: "Claim submitted", description: `Claim ${claim.claim_number} is under review.` });
       onOpenChange(false);
       reset();
@@ -155,21 +210,41 @@ export default function ReportIssueDialog({ open, onOpenChange, policy, orderTit
                 />
               </label>
               {files.length > 0 && (
-                <ul className="mt-2 space-y-1">
-                  {files.map((f, i) => (
-                    <li key={i} className="flex items-center justify-between rounded border border-border bg-muted/30 px-2 py-1 text-xs">
-                      <span className="truncate">{f.name}</span>
-                      <button
-                        type="button"
-                        onClick={() => setFiles((p) => p.filter((_, idx) => idx !== i))}
-                        className="text-muted-foreground hover:text-destructive"
-                        aria-label={`Remove ${f.name}`}
-                      >
-                        <X size={12} />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+                <>
+                  <div className="mt-3 grid grid-cols-3 gap-2">
+                    {files.map((f, i) => {
+                      const key = `${f.name}-${f.size}-${f.lastModified}`;
+                      const url = previews[key];
+                      return (
+                        <div key={i} className="relative overflow-hidden rounded border border-border bg-muted/30">
+                          {url && f.type.startsWith("image/") ? (
+                            <img src={url} alt={f.name} className="h-20 w-full object-cover" />
+                          ) : url && f.type.startsWith("video/") ? (
+                            <video src={url} muted className="h-20 w-full object-cover" />
+                          ) : (
+                            <div className="flex h-20 items-center justify-center text-[10px] text-muted-foreground px-1 text-center">
+                              {f.name}
+                            </div>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => removeFile(i)}
+                            className="absolute right-0.5 top-0.5 rounded-full bg-background/80 p-0.5 text-muted-foreground hover:text-destructive"
+                            aria-label={`Remove ${f.name}`}
+                          >
+                            <X size={12} />
+                          </button>
+                          <div className="absolute inset-x-0 bottom-0 truncate bg-background/80 px-1 py-0.5 text-[10px]">
+                            {humanSize(f.size)}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <p className="mt-1 text-[10px] text-muted-foreground">
+                    Total {humanSize(totalBytes)} / {humanSize(MAX_TOTAL_BYTES)}
+                  </p>
+                </>
               )}
             </div>
           </div>
