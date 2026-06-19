@@ -13,7 +13,16 @@ import type { InsuranceClaimType } from "@/lib/insurance/types";
 import { useNavigate } from "react-router-dom";
 
 const MAX_FILES = 5;
-const MAX_BYTES = 10 * 1024 * 1024; // 10MB
+const MAX_BYTES = 10 * 1024 * 1024; // 10MB per file
+const MAX_TOTAL_BYTES = 30 * 1024 * 1024; // 30MB across all files
+const ACCEPTED_PREFIXES = ["image/", "video/"];
+const ACCEPTED_EXT = /\.(jpe?g|png|gif|webp|heic|heif|mp4|mov|webm|m4v)$/i;
+
+function humanSize(n: number) {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 const claimTypeOptions: { value: InsuranceClaimType; label: string; help: string }[] = [
   { value: "non_delivery", label: "Item never arrived", help: "Order shipped but never received" },
@@ -47,22 +56,61 @@ export default function ReportIssueDialog({ open, onOpenChange, policy, orderTit
   const [claimType, setClaimType] = useState<InsuranceClaimType | "">("");
   const [description, setDescription] = useState("");
   const [files, setFiles] = useState<File[]>([]);
+  const [previews, setPreviews] = useState<Record<string, string>>({});
   const [uploading, setUploading] = useState(false);
 
-  const reset = () => { setStep(1); setClaimType(""); setDescription(""); setFiles([]); };
+  const reset = () => {
+    setStep(1); setClaimType(""); setDescription(""); setFiles([]);
+    Object.values(previews).forEach((u) => URL.revokeObjectURL(u));
+    setPreviews({});
+  };
+
+  const totalBytes = files.reduce((a, f) => a + f.size, 0);
 
   const addFiles = (incoming: FileList | null) => {
     if (!incoming) return;
     const accepted: File[] = [];
+    let running = totalBytes;
     for (const f of Array.from(incoming)) {
-      if (files.length + accepted.length >= MAX_FILES) break;
+      if (files.length + accepted.length >= MAX_FILES) {
+        toast({ title: "Limit reached", description: `Max ${MAX_FILES} files`, variant: "destructive" });
+        break;
+      }
+      const validType = ACCEPTED_PREFIXES.some((p) => f.type.startsWith(p)) || ACCEPTED_EXT.test(f.name);
+      if (!validType) {
+        toast({ title: "Unsupported file", description: `${f.name} must be an image or video`, variant: "destructive" });
+        continue;
+      }
       if (f.size > MAX_BYTES) {
         toast({ title: "File too large", description: `${f.name} exceeds 10MB`, variant: "destructive" });
         continue;
       }
+      if (running + f.size > MAX_TOTAL_BYTES) {
+        toast({ title: "Total size exceeded", description: `Combined uploads cannot exceed ${humanSize(MAX_TOTAL_BYTES)}`, variant: "destructive" });
+        break;
+      }
+      running += f.size;
       accepted.push(f);
     }
+    if (accepted.length === 0) return;
     setFiles((prev) => [...prev, ...accepted].slice(0, MAX_FILES));
+    setPreviews((prev) => {
+      const next = { ...prev };
+      for (const f of accepted) {
+        if (f.type.startsWith("image/") || f.type.startsWith("video/")) {
+          next[`${f.name}-${f.size}-${f.lastModified}`] = URL.createObjectURL(f);
+        }
+      }
+      return next;
+    });
+  };
+
+  const removeFile = (i: number) => {
+    const f = files[i];
+    const key = `${f.name}-${f.size}-${f.lastModified}`;
+    if (previews[key]) { URL.revokeObjectURL(previews[key]); }
+    setPreviews((p) => { const c = { ...p }; delete c[key]; return c; });
+    setFiles((p) => p.filter((_, idx) => idx !== i));
   };
 
   const submit = async () => {
@@ -87,6 +135,13 @@ export default function ReportIssueDialog({ open, onOpenChange, policy, orderTit
         description: description.trim(),
         evidenceUrls: urls,
       });
+      // Mark evidence queued for scanning (admin worker / antivirus will update later).
+      try {
+        await (supabase as any)
+          .from("insurance_claims")
+          .update({ evidence_status: urls.length > 0 ? "scanning" : "skipped" })
+          .eq("id", claim.id);
+      } catch { /* non-fatal */ }
       toast({ title: "Claim submitted", description: `Claim ${claim.claim_number} is under review.` });
       onOpenChange(false);
       reset();
