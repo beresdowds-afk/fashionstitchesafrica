@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { getTemplate, isLightTemplate } from "@/config/websiteTemplates";
 import CartWidget from "@/components/catalogue/CartWidget";
+import FeaturedShowcase, { type ShowcaseVariant, type ShowcaseSpeed } from "@/components/website-builder/FeaturedShowcase";
 import { addToCart } from "@/lib/cartFlow";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
