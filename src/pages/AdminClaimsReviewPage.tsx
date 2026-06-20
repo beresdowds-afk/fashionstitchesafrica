@@ -187,13 +187,20 @@ function ClaimReviewDialog({ claim, onClose }: { claim: any | null; onClose: () 
 
   return (
     <Dialog open={!!claim} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Claim {claim.claim_number}</DialogTitle>
-          <DialogDescription className="capitalize">
-            {claim.claim_type.replace("_", " ")} · current status:{" "}
-            <Badge variant={statusVariant(claim.status)}>{claim.status.replace("_", " ")}</Badge>
-          </DialogDescription>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <DialogTitle>Claim {claim.claim_number}</DialogTitle>
+              <DialogDescription className="capitalize">
+                {claim.claim_type.replace("_", " ")} · current status:{" "}
+                <Badge variant={statusVariant(claim.status)}>{claim.status.replace("_", " ")}</Badge>
+              </DialogDescription>
+            </div>
+            <Button size="sm" variant="outline" onClick={exportBundle} disabled={exporting}>
+              <Download size={14} /> {exporting ? "Packaging…" : "Export evidence bundle"}
+            </Button>
+          </div>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -261,18 +268,13 @@ function ClaimReviewDialog({ claim, onClose }: { claim: any | null; onClose: () 
           </section>
 
           <section>
-            <p className="text-xs font-semibold uppercase text-muted-foreground mb-2">Activity log</p>
-            <ol className="space-y-2">
-              {actions.map((a: any) => (
-                <li key={a.id} className="rounded border border-border bg-muted/20 px-2 py-1 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium capitalize">{a.action_type.replace("_", " ")}</span>
-                    <span className="text-muted-foreground">{format(new Date(a.created_at), "PPp")}</span>
-                  </div>
-                  {a.description && <p className="mt-0.5 text-muted-foreground">{a.description}</p>}
-                </li>
-              ))}
-            </ol>
+            <p className="text-xs font-semibold uppercase text-muted-foreground mb-2">Audit timeline</p>
+            <ClaimAuditTimeline claimId={claim.id} variant="full" />
+          </section>
+
+          <section>
+            <p className="text-xs font-semibold uppercase text-muted-foreground mb-2">Claim chat</p>
+            <ClaimChatPanel claimId={claim.id} messages={messages as any} />
           </section>
         </div>
 
