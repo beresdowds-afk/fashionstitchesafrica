@@ -25,6 +25,18 @@ const STATUS_FILTERS = [
   "approved", "partial_approved", "rejected", "paid",
 ] as const;
 
+const EVIDENCE_FILTERS = [
+  "all", "pending", "scanning", "clean", "infected", "failed", "skipped",
+] as const;
+
+const DATE_FILTERS = [
+  { value: "all", label: "Any time" },
+  { value: "today", label: "Today" },
+  { value: "7d", label: "Last 7 days" },
+  { value: "30d", label: "Last 30 days" },
+  { value: "custom", label: "Custom range" },
+] as const;
+
 const TRANSITIONS = [
   "reviewing", "evidence_requested", "approved",
   "partial_approved", "rejected", "paid",
@@ -40,18 +52,47 @@ export default function AdminClaimsReviewPage() {
   const { user, loading } = useAuth();
   const { isSuperAdmin, isSuperAssistant, loading: roleLoading } = useUserGlobalRole();
   const [status, setStatus] = useState<string>("all");
+  const [evidence, setEvidence] = useState<string>("all");
+  const [dateRange, setDateRange] = useState<string>("all");
+  const [dateFrom, setDateFrom] = useState<string>("");
+  const [dateTo, setDateTo] = useState<string>("");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<any | null>(null);
   const { data: claims = [], isLoading } = useAdminClaims(status);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return claims;
-    return claims.filter((c: any) =>
-      c.claim_number?.toLowerCase().includes(q) ||
-      c.claim_type?.toLowerCase().includes(q) ||
-      c.description?.toLowerCase().includes(q));
-  }, [claims, search]);
+    const now = Date.now();
+    let from: number | null = null;
+    let to: number | null = null;
+    if (dateRange === "today") from = new Date(new Date().setHours(0, 0, 0, 0)).getTime();
+    else if (dateRange === "7d") from = now - 7 * 86400_000;
+    else if (dateRange === "30d") from = now - 30 * 86400_000;
+    else if (dateRange === "custom") {
+      if (dateFrom) from = new Date(dateFrom).getTime();
+      if (dateTo) to = new Date(dateTo).getTime() + 86400_000 - 1;
+    }
+
+    return (claims as any[]).filter((c) => {
+      if (q && !(
+        c.claim_number?.toLowerCase().includes(q) ||
+        c.claim_type?.toLowerCase().includes(q) ||
+        c.description?.toLowerCase().includes(q)
+      )) return false;
+      if (evidence !== "all" && (c.evidence_status ?? "pending") !== evidence) return false;
+      if (from || to) {
+        const t = new Date(c.created_at).getTime();
+        if (from && t < from) return false;
+        if (to && t > to) return false;
+      }
+      return true;
+    });
+  }, [claims, search, evidence, dateRange, dateFrom, dateTo]);
+
+  const resetFilters = () => {
+    setStatus("all"); setEvidence("all"); setDateRange("all");
+    setDateFrom(""); setDateTo(""); setSearch("");
+  };
 
   if (loading || roleLoading) return <div className="container mx-auto px-4 py-16 text-center text-muted-foreground">Loading…</div>;
   if (!user) return <Navigate to="/auth" replace />;
@@ -75,20 +116,47 @@ export default function AdminClaimsReviewPage() {
         <CardContent className="space-y-4">
           <div className="flex flex-wrap items-center gap-3">
             <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-48"><SelectValue placeholder="Status" /></SelectTrigger>
               <SelectContent>
                 {STATUS_FILTERS.map((s) => (
-                  <SelectItem key={s} value={s}>{s.replace("_", " ")}</SelectItem>
+                  <SelectItem key={s} value={s} className="capitalize">
+                    {s === "all" ? "All statuses" : s.replace("_", " ")}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            <Select value={evidence} onValueChange={setEvidence}>
+              <SelectTrigger className="w-48"><SelectValue placeholder="Evidence" /></SelectTrigger>
+              <SelectContent>
+                {EVIDENCE_FILTERS.map((e) => (
+                  <SelectItem key={e} value={e} className="capitalize">
+                    {e === "all" ? "Any evidence" : e}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={dateRange} onValueChange={setDateRange}>
+              <SelectTrigger className="w-44"><SelectValue placeholder="Date" /></SelectTrigger>
+              <SelectContent>
+                {DATE_FILTERS.map((d) => (
+                  <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {dateRange === "custom" && (
+              <>
+                <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-40" />
+                <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-40" />
+              </>
+            )}
             <Input
               placeholder="Search claim # or description…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-72"
+              className="w-64"
             />
             <Badge variant="outline">{filtered.length} shown</Badge>
+            <Button size="sm" variant="ghost" onClick={resetFilters}>Reset</Button>
           </div>
 
           {isLoading ? (
