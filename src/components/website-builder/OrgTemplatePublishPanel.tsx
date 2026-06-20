@@ -79,7 +79,6 @@ export default function OrgTemplatePublishPanel({ org }: Props) {
   const published = findById((siteRow as any)?.published_template_id ?? null);
   const candidate = findById(candidateId);
   const consequences = useMemo(() => candidate ? diffTemplates(published, candidate) : [], [published, candidate]);
-  const needsConsent = consequences.some(c => c.severity !== "info");
 
   const writeEvent = async (action: "select" | "apply" | "publish" | "unpublish" | "change", fromId: string | null, toId: string | null, cons: Consequence[]) => {
     await supabase.from("org_website_template_events").insert({
