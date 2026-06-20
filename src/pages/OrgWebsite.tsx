@@ -481,6 +481,22 @@ const OrgWebsite = () => {
         {activePage === "home" && (
           <HomePage org={org} website={website} brandColor={brandColor} accentColor={accentColor} fontHeading={fontHeading} officers={officers} tailors={tailors} slug={slug!} onNavigate={setActivePage} user={user} requireAuth={requireAuth} template={template} isLight={isLight} />
         )}
+        {activePage === "home" && (website as any)?.featured_showcase_enabled && catalogue.length > 0 && (
+          <section className="px-4 sm:px-6 lg:px-12 py-12" style={{ background: isLight ? "rgba(0,0,0,0.02)" : "rgba(255,255,255,0.03)" }}>
+            <div className="max-w-7xl mx-auto">
+              <h2 className="text-2xl sm:text-3xl mb-6" style={{ fontFamily: fontHeading, color: brandColor }}>
+                Featured
+              </h2>
+              <FeaturedShowcase
+                items={catalogue.slice(0, 12).map((c: any) => ({
+                  id: c.id, name: c.name, image_url: c.image_url, price: c.price, currency: c.currency,
+                }))}
+                variant={((website as any).featured_showcase_variant ?? "infinite-scroll") as ShowcaseVariant}
+                speed={((website as any).featured_showcase_speed ?? "medium") as ShowcaseSpeed}
+              />
+            </div>
+          </section>
+        )}
         {activePage === "about" && (
           <AboutPage org={org} website={website} brandColor={brandColor} accentColor={accentColor} fontHeading={fontHeading} officers={officers} template={template} isLight={isLight} />
         )}
