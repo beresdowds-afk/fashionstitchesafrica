@@ -1479,6 +1479,12 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
         <OrgMediaGroupingManager orgId={org.id} currency={(org as any).currency || "NGN"} />
       )}
 
+      {activeSection === "catalogue" && (
+        <div className="mt-6">
+          <FeaturedShowcasePanel org={{ id: org.id }} />
+        </div>
+      )}
+
       {activeSection === "integration" && (
         <div className="rounded-xl bg-card border border-border p-6 space-y-6">
           <div>
