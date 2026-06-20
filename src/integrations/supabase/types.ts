@@ -6952,6 +6952,9 @@ export type Database = {
           created_at: string
           facebook_url: string | null
           favicon_url: string | null
+          featured_showcase_enabled: boolean
+          featured_showcase_speed: string
+          featured_showcase_variant: string
           font_body: string
           font_heading: string
           hero_description: string | null
@@ -6991,6 +6994,9 @@ export type Database = {
           created_at?: string
           facebook_url?: string | null
           favicon_url?: string | null
+          featured_showcase_enabled?: boolean
+          featured_showcase_speed?: string
+          featured_showcase_variant?: string
           font_body?: string
           font_heading?: string
           hero_description?: string | null
@@ -7030,6 +7036,9 @@ export type Database = {
           created_at?: string
           facebook_url?: string | null
           favicon_url?: string | null
+          featured_showcase_enabled?: boolean
+          featured_showcase_speed?: string
+          featured_showcase_variant?: string
           font_body?: string
           font_heading?: string
           hero_description?: string | null
