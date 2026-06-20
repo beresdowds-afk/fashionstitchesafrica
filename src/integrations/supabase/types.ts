@@ -3430,6 +3430,7 @@ export type Database = {
       insurance_claim_actions: {
         Row: {
           action_type: string
+          attachments: Json
           claim_id: string
           created_at: string
           description: string | null
@@ -3439,6 +3440,7 @@ export type Database = {
         }
         Insert: {
           action_type: string
+          attachments?: Json
           claim_id: string
           created_at?: string
           description?: string | null
@@ -3448,6 +3450,7 @@ export type Database = {
         }
         Update: {
           action_type?: string
+          attachments?: Json
           claim_id?: string
           created_at?: string
           description?: string | null
@@ -11809,6 +11812,19 @@ export type Database = {
         Returns: number
       }
       ensure_designer_personal_org: { Args: never; Returns: string }
+      get_claim_audit_timeline: {
+        Args: { _claim_id: string }
+        Returns: {
+          action_type: string
+          actor_id: string
+          actor_name: string
+          attachments: Json
+          created_at: string
+          description: string
+          id: string
+          metadata: Json
+        }[]
+      }
       get_my_identity: {
         Args: never
         Returns: {

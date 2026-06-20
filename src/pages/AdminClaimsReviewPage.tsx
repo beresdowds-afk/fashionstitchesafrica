@@ -10,12 +10,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAdminClaims, useTransitionClaim, useUpdateEvidenceScan, useClaimActions } from "@/hooks/useInsurance";
+import ClaimChatPanel from "@/components/insurance/ClaimChatPanel";
+import ClaimAuditTimeline from "@/components/insurance/ClaimAuditTimeline";
 import { useUserGlobalRole } from "@/hooks/useOrganization";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
-import { ArrowLeft, ShieldCheck, ShieldAlert, FileText, Eye, Loader2 } from "lucide-react";
+import { ArrowLeft, ShieldCheck, ShieldAlert, FileText, Eye, Loader2, Download } from "lucide-react";
 import { Navigate } from "react-router-dom";
 
 const STATUS_FILTERS = [
@@ -152,6 +154,11 @@ function ClaimReviewDialog({ claim, onClose }: { claim: any | null; onClose: () 
   const [newStatus, setNewStatus] = useState<string>("reviewing");
   const [notes, setNotes] = useState("");
   const [amount, setAmount] = useState<string>("");
+  const [exporting, setExporting] = useState(false);
+  const messages = useMemo(
+    () => (actions ?? []).filter((a: any) => a.action_type === "message"),
+    [actions],
+  );
 
   if (!claim) return null;
 
@@ -159,6 +166,35 @@ function ClaimReviewDialog({ claim, onClose }: { claim: any | null; onClose: () 
     const { data } = await (supabase.storage.from("insurance-evidence") as any)
       .createSignedUrl(path, 60 * 10);
     if (data?.signedUrl) window.open(data.signedUrl, "_blank", "noopener");
+  };
+
+  const exportBundle = async () => {
+    setExporting(true);
+    try {
+      const { data: sess } = await supabase.auth.getSession();
+      const token = sess?.session?.access_token;
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/insurance-claim-export`;
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ claim_id: claim.id }),
+      });
+      if (!resp.ok) {
+        const text = await resp.text();
+        throw new Error(text || `Export failed (${resp.status})`);
+      }
+      const blob = await resp.blob();
+      const dl = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = dl; a.download = `${claim.claim_number}-evidence.zip`;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(dl);
+      toast({ title: "Evidence bundle downloaded" });
+    } catch (e: any) {
+      toast({ title: "Export failed", description: e?.message ?? String(e), variant: "destructive" });
+    } finally {
+      setExporting(false);
+    }
   };
 
   const apply = async () => {
@@ -187,13 +223,20 @@ function ClaimReviewDialog({ claim, onClose }: { claim: any | null; onClose: () 
 
   return (
     <Dialog open={!!claim} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Claim {claim.claim_number}</DialogTitle>
-          <DialogDescription className="capitalize">
-            {claim.claim_type.replace("_", " ")} · current status:{" "}
-            <Badge variant={statusVariant(claim.status)}>{claim.status.replace("_", " ")}</Badge>
-          </DialogDescription>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <DialogTitle>Claim {claim.claim_number}</DialogTitle>
+              <DialogDescription className="capitalize">
+                {claim.claim_type.replace("_", " ")} · current status:{" "}
+                <Badge variant={statusVariant(claim.status)}>{claim.status.replace("_", " ")}</Badge>
+              </DialogDescription>
+            </div>
+            <Button size="sm" variant="outline" onClick={exportBundle} disabled={exporting}>
+              <Download size={14} /> {exporting ? "Packaging…" : "Export evidence bundle"}
+            </Button>
+          </div>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -261,18 +304,13 @@ function ClaimReviewDialog({ claim, onClose }: { claim: any | null; onClose: () 
           </section>
 
           <section>
-            <p className="text-xs font-semibold uppercase text-muted-foreground mb-2">Activity log</p>
-            <ol className="space-y-2">
-              {actions.map((a: any) => (
-                <li key={a.id} className="rounded border border-border bg-muted/20 px-2 py-1 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium capitalize">{a.action_type.replace("_", " ")}</span>
-                    <span className="text-muted-foreground">{format(new Date(a.created_at), "PPp")}</span>
-                  </div>
-                  {a.description && <p className="mt-0.5 text-muted-foreground">{a.description}</p>}
-                </li>
-              ))}
-            </ol>
+            <p className="text-xs font-semibold uppercase text-muted-foreground mb-2">Audit timeline</p>
+            <ClaimAuditTimeline claimId={claim.id} variant="full" />
+          </section>
+
+          <section>
+            <p className="text-xs font-semibold uppercase text-muted-foreground mb-2">Claim chat</p>
+            <ClaimChatPanel claimId={claim.id} messages={messages as any} />
           </section>
         </div>
 
