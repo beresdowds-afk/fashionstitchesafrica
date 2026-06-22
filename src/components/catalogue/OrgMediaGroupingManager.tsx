@@ -12,6 +12,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { useOrgMediaGroups, NodeType, MediaAsset, GroupNode } from "@/hooks/useOrgMediaGroups";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, Plus, Trash2, Layers, FolderTree, Album, Image as ImageIcon, ChevronRight, Send, FilePlus2 } from "lucide-react";
+import ImageCapacityPanel from "@/components/catalogue/ImageCapacityPanel";
 
 interface Props { orgId: string; currency?: string }
 
