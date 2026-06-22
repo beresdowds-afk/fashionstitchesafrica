@@ -188,6 +188,7 @@ const OrgMediaGroupingManager = ({ orgId, currency = "NGN" }: Props) => {
       </div>
 
       <Accordion type="multiple" defaultValue={["library", "sets", "collections", "albums"]} className="space-y-2">
+        <ImageCapacityPanel orgId={orgId} />
         <AccordionItem value="library" className="border rounded-lg px-3">
           <AccordionTrigger className="hover:no-underline">
             <span className="flex items-center gap-2 text-sm font-medium">
