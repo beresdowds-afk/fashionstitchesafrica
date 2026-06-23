@@ -481,29 +481,69 @@ const OrgWebsite = () => {
       </nav>
 
       {/* ─── Page Content ─── */}
-      <div className="pt-[calc(4rem+1.75rem)]">
-        {activePage === "home" && (
-          <HomePage org={org} website={website} brandColor={brandColor} accentColor={accentColor} fontHeading={fontHeading} officers={officers} tailors={tailors} slug={slug!} onNavigate={setActivePage} user={user} requireAuth={requireAuth} template={template} isLight={isLight} />
-        )}
-        {activePage === "home" && (website as any)?.featured_showcase_enabled && catalogue.length > 0 && (
-          <section className="px-4 sm:px-6 lg:px-12 py-12" style={{ background: isLight ? "rgba(0,0,0,0.02)" : "rgba(255,255,255,0.03)" }}>
-            <div className="max-w-7xl mx-auto">
-              <h2 className="text-2xl sm:text-3xl mb-6" style={{ fontFamily: fontHeading, color: brandColor }}>
-                Featured
-              </h2>
-              <FeaturedShowcase
-                items={catalogue.map((c: any) => ({
-                  id: c.id, name: c.name, image_url: c.image_url, price: c.price, currency: c.currency,
-                }))}
-                variant={((website as any).featured_showcase_variant ?? "infinite-scroll") as ShowcaseVariant}
-                speed={((website as any).featured_showcase_speed ?? "medium") as ShowcaseSpeed}
-                itemLimit={Number((website as any).featured_showcase_item_limit ?? 8)}
-                pauseOnHover={Boolean((website as any).featured_showcase_pause_on_hover ?? true)}
-                mobileSpeed={((website as any).featured_showcase_mobile_speed ?? "medium") as ShowcaseSpeed}
-                respectReducedMotion={Boolean((website as any).featured_showcase_respect_reduced_motion ?? true)}
-              />
+      <div className={embed ? "" : "pt-[calc(4rem+1.75rem)]"}>
+        {/* Collapsible Featured Showcase drawer — only on home, not in embed */}
+        {!embed && activePage === "home" && (website as any)?.featured_showcase_enabled && catalogue.length > 0 && (
+          <section
+            aria-label="Featured catalogue"
+            className={`border-b ${borderStyle}`}
+            style={{ background: isLight ? "rgba(0,0,0,0.02)" : "rgba(255,255,255,0.03)" }}
+          >
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
+              <button
+                type="button"
+                onClick={() => setShowcaseOpen(v => !v)}
+                aria-expanded={showcaseOpen}
+                aria-controls="featured-showcase-drawer"
+                className="w-full flex items-center justify-between py-3 text-left"
+              >
+                <span className="text-sm sm:text-base flex items-center gap-2" style={{ fontFamily: fontHeading, color: brandColor }}>
+                  <Sparkles size={14} style={{ color: accentColor }} /> Featured Products
+                </span>
+                <ChevronDown
+                  size={18}
+                  className="transition-transform"
+                  style={{ color: td.textSecondary, transform: showcaseOpen ? "rotate(180deg)" : "rotate(0)" }}
+                />
+              </button>
+              <div
+                id="featured-showcase-drawer"
+                className="overflow-hidden transition-all"
+                style={{ maxHeight: showcaseOpen ? "25vh" : "0px" }}
+              >
+                <div className="pb-4">
+                  <FeaturedShowcase
+                    items={catalogue.map((c: any) => ({
+                      id: c.id, name: c.name, image_url: c.image_url, price: c.price, currency: c.currency,
+                    }))}
+                    variant={((website as any).featured_showcase_variant ?? "infinite-scroll") as ShowcaseVariant}
+                    speed={((website as any).featured_showcase_speed ?? "medium") as ShowcaseSpeed}
+                    itemLimit={Number((website as any).featured_showcase_item_limit ?? 8)}
+                    pauseOnHover={Boolean((website as any).featured_showcase_pause_on_hover ?? true)}
+                    mobileSpeed={((website as any).featured_showcase_mobile_speed ?? "medium") as ShowcaseSpeed}
+                    respectReducedMotion={Boolean((website as any).featured_showcase_respect_reduced_motion ?? true)}
+                  />
+                </div>
+              </div>
             </div>
           </section>
+        )}
+
+        {/* Full organisation catalogue as a 3/4-page iframe (together with the drawer above fills the viewport) */}
+        {!embed && activePage === "home" && (
+          <section aria-label="Organisation catalogue" className="w-full">
+            <iframe
+              title={`${org.name} catalogue`}
+              src={`/site/${slug}?embed=1&page=catalogue`}
+              loading="lazy"
+              className="w-full border-0 block"
+              style={{ height: showcaseOpen ? "75vh" : "calc(100vh - 4rem - 1.75rem - 48px)" }}
+            />
+          </section>
+        )}
+
+        {activePage === "home" && (
+          <HomePage org={org} website={website} brandColor={brandColor} accentColor={accentColor} fontHeading={fontHeading} officers={officers} tailors={tailors} slug={slug!} onNavigate={setActivePage} user={user} requireAuth={requireAuth} template={template} isLight={isLight} />
         )}
         {activePage === "about" && (
           <AboutPage org={org} website={website} brandColor={brandColor} accentColor={accentColor} fontHeading={fontHeading} officers={officers} template={template} isLight={isLight} />
