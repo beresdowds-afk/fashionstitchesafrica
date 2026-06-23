@@ -150,10 +150,17 @@ const OrgMediaGroupingManager = ({ orgId, currency = "NGN" }: Props) => {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-          <Dialog open={publishOpen} onOpenChange={setPublishOpen}>
+          <Dialog open={publishOpen} onOpenChange={(open) => {
+            if (open && selection.length === 0) {
+              toast({ title: "Select images, sets, collections or albums first", description: "Tick at least one item from your library to publish." });
+              return;
+            }
+            setPublishOpen(open);
+          }}>
             <DialogTrigger asChild>
-              <Button size="sm" disabled={selection.length === 0}>
+              <Button size="sm">
                 <Send size={14} className="mr-1" /> Publish to Catalogue
+                {selection.length > 0 && <Badge variant="secondary" className="ml-2">{previewCount}</Badge>}
               </Button>
             </DialogTrigger>
             <DialogContent>

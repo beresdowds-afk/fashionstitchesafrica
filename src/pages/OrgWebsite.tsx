@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, Link, useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
@@ -7,7 +7,7 @@ import {
   Instagram, MessageCircle, Phone, Mail, MapPin, ExternalLink, Scissors, Calendar, BookOpen,
   Home, Menu, X, Sparkles, Lock, Facebook, Twitter, Linkedin, Youtube, Users, Download,
   PhoneCall, MessageSquare, Send, Map, ChevronUp, Info, Globe, Heart, ShoppingBag,
-  Leaf, Eye
+  Leaf, Eye, ChevronDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getTemplate, isLightTemplate } from "@/config/websiteTemplates";
@@ -225,14 +225,18 @@ const OrgWebsite = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const embed = searchParams.get("embed") === "1";
+  const embedPage = searchParams.get("page") as "home" | "about" | "catalogue" | "booking" | "tailors" | null;
   const [org, setOrg] = useState<OrgData | null>(null);
   const [website, setWebsite] = useState<OrgWebsiteData | null>(null);
   const [catalogue, setCatalogue] = useState<CatalogueItem[]>([]);
   const [officers, setOfficers] = useState<OfficerData[]>([]);
   const [tailors, setTailors] = useState<TailorData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activePage, setActivePage] = useState<"home" | "about" | "catalogue" | "booking" | "tailors">("home");
+  const [activePage, setActivePage] = useState<"home" | "about" | "catalogue" | "booking" | "tailors">(embedPage || "home");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showcaseOpen, setShowcaseOpen] = useState(true);
 
   const requireAuth = (action: string) => {
     if (!user) {
@@ -371,7 +375,7 @@ const OrgWebsite = () => {
   return (
     <div className="min-h-screen" style={{ backgroundColor: td.bgBase, color: td.textPrimary, fontFamily: `'${fontBody}', sans-serif` }}>
       {/* ─── Editorial Navigation ─── */}
-      <nav className={`fixed top-0 left-0 right-0 z-50 backdrop-blur-md border-b ${borderStyle}`}
+      {!embed && <nav className={`fixed top-0 left-0 right-0 z-50 backdrop-blur-md border-b ${borderStyle}`}
         style={{ backgroundColor: isLight ? `${td.bgBase}ee` : `${td.bgBase}ee` }}>
         {/* FSA Banner */}
         <div className="text-center py-1.5 text-[11px] tracking-[0.15em] uppercase" style={{ background: isLight ? `${brandColor}08` : `${brandColor}15`, color: accentColor }}>
@@ -474,32 +478,72 @@ const OrgWebsite = () => {
             </motion.div>
           )}
         </AnimatePresence>
-      </nav>
+      </nav>}
 
       {/* ─── Page Content ─── */}
-      <div className="pt-[calc(4rem+1.75rem)]">
-        {activePage === "home" && (
-          <HomePage org={org} website={website} brandColor={brandColor} accentColor={accentColor} fontHeading={fontHeading} officers={officers} tailors={tailors} slug={slug!} onNavigate={setActivePage} user={user} requireAuth={requireAuth} template={template} isLight={isLight} />
-        )}
-        {activePage === "home" && (website as any)?.featured_showcase_enabled && catalogue.length > 0 && (
-          <section className="px-4 sm:px-6 lg:px-12 py-12" style={{ background: isLight ? "rgba(0,0,0,0.02)" : "rgba(255,255,255,0.03)" }}>
-            <div className="max-w-7xl mx-auto">
-              <h2 className="text-2xl sm:text-3xl mb-6" style={{ fontFamily: fontHeading, color: brandColor }}>
-                Featured
-              </h2>
-              <FeaturedShowcase
-                items={catalogue.map((c: any) => ({
-                  id: c.id, name: c.name, image_url: c.image_url, price: c.price, currency: c.currency,
-                }))}
-                variant={((website as any).featured_showcase_variant ?? "infinite-scroll") as ShowcaseVariant}
-                speed={((website as any).featured_showcase_speed ?? "medium") as ShowcaseSpeed}
-                itemLimit={Number((website as any).featured_showcase_item_limit ?? 8)}
-                pauseOnHover={Boolean((website as any).featured_showcase_pause_on_hover ?? true)}
-                mobileSpeed={((website as any).featured_showcase_mobile_speed ?? "medium") as ShowcaseSpeed}
-                respectReducedMotion={Boolean((website as any).featured_showcase_respect_reduced_motion ?? true)}
-              />
+      <div className={embed ? "" : "pt-[calc(4rem+1.75rem)]"}>
+        {/* Collapsible Featured Showcase drawer — only on home, not in embed */}
+        {!embed && activePage === "home" && (website as any)?.featured_showcase_enabled && catalogue.length > 0 && (
+          <section
+            aria-label="Featured catalogue"
+            className={`border-b ${borderStyle}`}
+            style={{ background: isLight ? "rgba(0,0,0,0.02)" : "rgba(255,255,255,0.03)" }}
+          >
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12">
+              <button
+                type="button"
+                onClick={() => setShowcaseOpen(v => !v)}
+                aria-expanded={showcaseOpen}
+                aria-controls="featured-showcase-drawer"
+                className="w-full flex items-center justify-between py-3 text-left"
+              >
+                <span className="text-sm sm:text-base flex items-center gap-2" style={{ fontFamily: fontHeading, color: brandColor }}>
+                  <Sparkles size={14} style={{ color: accentColor }} /> Featured Products
+                </span>
+                <ChevronDown
+                  size={18}
+                  className="transition-transform"
+                  style={{ color: td.textSecondary, transform: showcaseOpen ? "rotate(180deg)" : "rotate(0)" }}
+                />
+              </button>
+              <div
+                id="featured-showcase-drawer"
+                className="overflow-hidden transition-all"
+                style={{ maxHeight: showcaseOpen ? "25vh" : "0px" }}
+              >
+                <div className="pb-4">
+                  <FeaturedShowcase
+                    items={catalogue.map((c: any) => ({
+                      id: c.id, name: c.name, image_url: c.image_url, price: c.price, currency: c.currency,
+                    }))}
+                    variant={((website as any).featured_showcase_variant ?? "infinite-scroll") as ShowcaseVariant}
+                    speed={((website as any).featured_showcase_speed ?? "medium") as ShowcaseSpeed}
+                    itemLimit={Number((website as any).featured_showcase_item_limit ?? 8)}
+                    pauseOnHover={Boolean((website as any).featured_showcase_pause_on_hover ?? true)}
+                    mobileSpeed={((website as any).featured_showcase_mobile_speed ?? "medium") as ShowcaseSpeed}
+                    respectReducedMotion={Boolean((website as any).featured_showcase_respect_reduced_motion ?? true)}
+                  />
+                </div>
+              </div>
             </div>
           </section>
+        )}
+
+        {/* Full organisation catalogue as a 3/4-page iframe (together with the drawer above fills the viewport) */}
+        {!embed && activePage === "home" && (
+          <section aria-label="Organisation catalogue" className="w-full">
+            <iframe
+              title={`${org.name} catalogue`}
+              src={`/site/${slug}?embed=1&page=catalogue`}
+              loading="lazy"
+              className="w-full border-0 block"
+              style={{ height: showcaseOpen ? "75vh" : "calc(100vh - 4rem - 1.75rem - 48px)" }}
+            />
+          </section>
+        )}
+
+        {activePage === "home" && (
+          <HomePage org={org} website={website} brandColor={brandColor} accentColor={accentColor} fontHeading={fontHeading} officers={officers} tailors={tailors} slug={slug!} onNavigate={setActivePage} user={user} requireAuth={requireAuth} template={template} isLight={isLight} />
         )}
         {activePage === "about" && (
           <AboutPage org={org} website={website} brandColor={brandColor} accentColor={accentColor} fontHeading={fontHeading} officers={officers} template={template} isLight={isLight} />
@@ -515,7 +559,7 @@ const OrgWebsite = () => {
         )}
       </div>
 
-      <FloatingCTA org={org} website={website} brandColor={brandColor} isLight={isLight} />
+      {!embed && <FloatingCTA org={org} website={website} brandColor={brandColor} isLight={isLight} />}
 
       {org?.id && (
         <CartWidget
@@ -526,7 +570,7 @@ const OrgWebsite = () => {
       )}
 
       {/* ─── Luxe Footer ─── */}
-      <footer className={`border-t ${borderStyle} pt-20 pb-10 mt-20`} style={{ backgroundColor: td.bgSurface }}>
+      {!embed && <footer className={`border-t ${borderStyle} pt-20 pb-10 mt-20`} style={{ backgroundColor: td.bgSurface }}>
         <div className={`${td.containerMaxWidth} mx-auto px-6 lg:px-12`}>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
             <div className="lg:col-span-1">
@@ -609,9 +653,9 @@ const OrgWebsite = () => {
             </div>
           </div>
         </div>
-      </footer>
+      </footer>}
 
-      <ScrollToTop brandColor={brandColor} />
+      {!embed && <ScrollToTop brandColor={brandColor} />}
     </div>
   );
 };
