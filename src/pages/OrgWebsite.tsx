@@ -559,7 +559,7 @@ const OrgWebsite = () => {
         )}
       </div>
 
-      <FloatingCTA org={org} website={website} brandColor={brandColor} isLight={isLight} />
+      {!embed && <FloatingCTA org={org} website={website} brandColor={brandColor} isLight={isLight} />}
 
       {org?.id && (
         <CartWidget
@@ -570,7 +570,7 @@ const OrgWebsite = () => {
       )}
 
       {/* ─── Luxe Footer ─── */}
-      <footer className={`border-t ${borderStyle} pt-20 pb-10 mt-20`} style={{ backgroundColor: td.bgSurface }}>
+      {!embed && <footer className={`border-t ${borderStyle} pt-20 pb-10 mt-20`} style={{ backgroundColor: td.bgSurface }}>
         <div className={`${td.containerMaxWidth} mx-auto px-6 lg:px-12`}>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
             <div className="lg:col-span-1">
@@ -653,9 +653,9 @@ const OrgWebsite = () => {
             </div>
           </div>
         </div>
-      </footer>
+      </footer>}
 
-      <ScrollToTop brandColor={brandColor} />
+      {!embed && <ScrollToTop brandColor={brandColor} />}
     </div>
   );
 };
