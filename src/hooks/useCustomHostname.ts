@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { lookupTenantHost } from "@/config/tenantHostnames";
 
 const CACHE_KEY = "fsa.custom_hostname.v1";
 const CACHE_TTL_MS = 5 * 60 * 1000;
@@ -19,6 +20,7 @@ export interface ResolvedHostname {
 export const useCustomHostname = () => {
   const [resolved, setResolved] = useState<ResolvedHostname | null>(null);
   const [loading, setLoading] = useState(true);
+  const [resolveError, setResolveError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -40,6 +42,13 @@ export const useCustomHostname = () => {
       return;
     }
 
+    // Synchronous static fallback so a newly-pointed tenant domain renders
+    // immediately even if the DB resolver is slow / unreachable.
+    const staticHit = lookupTenantHost(host);
+    if (staticHit) {
+      setResolved({ org_id: staticHit.org_id ?? "", slug: staticHit.slug, name: staticHit.name });
+    }
+
     try {
       const raw = sessionStorage.getItem(`${CACHE_KEY}:${host}`);
       if (raw) {
@@ -57,12 +66,13 @@ export const useCustomHostname = () => {
         .rpc("resolve_org_by_hostname", { _host: host });
       if (cancelled) return;
       const value: ResolvedHostname | null = !error && data && data[0] ? data[0] : null;
-      setResolved(value);
+      if (value) setResolved(value);
+      else if (!staticHit) setResolveError(error?.message ?? "host_not_mapped");
       setLoading(false);
       try {
         sessionStorage.setItem(
           `${CACHE_KEY}:${host}`,
-          JSON.stringify({ value, expires_at: Date.now() + CACHE_TTL_MS })
+          JSON.stringify({ value: value ?? (staticHit ? { org_id: staticHit.org_id ?? "", slug: staticHit.slug, name: staticHit.name } : null), expires_at: Date.now() + CACHE_TTL_MS })
         );
       } catch {}
     })();
@@ -70,5 +80,5 @@ export const useCustomHostname = () => {
     return () => { cancelled = true; };
   }, []);
 
-  return { resolved, loading };
+  return { resolved, loading, resolveError };
 };

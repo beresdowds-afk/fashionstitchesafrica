@@ -9,7 +9,7 @@ import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
-import { CheckCircle2, Loader2, Rocket, EyeOff, AlertTriangle, History, Eye, Undo2, Copy } from "lucide-react";
+import { CheckCircle2, Loader2, Rocket, EyeOff, AlertTriangle, History, Eye, Undo2, Copy, Globe } from "lucide-react";
 import { getTemplateList, type WebsiteTemplate } from "@/config/websiteTemplates";
 import { useCustomWebsiteTemplates, rowToTemplate } from "@/hooks/useCustomWebsiteTemplates";
 import WebsiteTemplatePicker from "./WebsiteTemplatePicker";
@@ -67,6 +67,10 @@ export default function OrgTemplatePublishPanel({ org }: Props) {
   const [stagingBusy, setStagingBusy] = useState(false);
   const [rollbackBusy, setRollbackBusy] = useState(false);
   const [rollbackConfirmOpen, setRollbackConfirmOpen] = useState(false);
+  const [duplicateBusy, setDuplicateBusy] = useState(false);
+  const [lastDuplication, setLastDuplication] = useState<{ source: "live" | "cached" | "default"; at: string; fields: number } | null>(null);
+
+  const DUP_CACHE_KEY = `fsa.tpl_duplicate.${org.id}`;
 
   const load = async () => {
     setLoading(true);
@@ -275,6 +279,100 @@ export default function OrgTemplatePublishPanel({ org }: Props) {
     catch { toast({ title: previewUrl }); }
   };
 
+  /**
+   * "Duplicate Data from Live Site" — pull the currently-published website
+   * row + counts into a snapshot that the candidate template will inherit.
+   *
+   * Defensive 401 / network handling: live → session cache → template defaults.
+   * NEVER throws to the caller and NEVER blocks publishing.
+   */
+  const duplicateFromLive = async () => {
+    if (!candidate) {
+      toast({ title: "Pick a template first", description: "Select the destination template before duplicating live data." });
+      return;
+    }
+    setDuplicateBusy(true);
+    let source: "live" | "cached" | "default" = "default";
+    let snapshot: any = null;
+    let fieldsCopied = 0;
+    try {
+      // 1) Try the live, public-facing website row (no auth required, RLS-safe view).
+      const { data: live, error: liveErr } = await supabase
+        .from("org_websites_public" as any)
+        .select("*")
+        .eq("org_id", org.id)
+        .maybeSingle();
+      if (!liveErr && live) {
+        snapshot = live;
+        source = "live";
+        try { sessionStorage.setItem(DUP_CACHE_KEY, JSON.stringify({ snapshot: live, at: new Date().toISOString() })); } catch {}
+      } else {
+        // 2) Fall back to cached snapshot from a previous successful fetch.
+        try {
+          const raw = sessionStorage.getItem(DUP_CACHE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            snapshot = parsed.snapshot;
+            source = "cached";
+            toast({
+              title: "Using cached live data",
+              description: `From ${new Date(parsed.at).toLocaleTimeString()} — publishing is not blocked.`,
+            });
+          }
+        } catch {}
+        // 3) Final fallback: template defaults (snapshot stays null → consumer uses defaults).
+        if (!snapshot) {
+          source = "default";
+          toast({
+            title: "Live data unreachable",
+            description: "Will publish with template defaults. Permissions and logs preserved.",
+          });
+        }
+      }
+
+      // Field-name intersection between live snapshot and candidate template's design+copy.
+      if (snapshot) {
+        const candidateKeys = new Set([
+          ...Object.keys(candidate.design || {}),
+          ...Object.keys(candidate.copy || {}),
+        ]);
+        fieldsCopied = Object.keys(snapshot).filter(k => candidateKeys.has(k)).length;
+      }
+
+      // Log to audit trail. Defensive: never throw on logging failure.
+      try {
+        await supabase.from("org_website_template_events").insert({
+          org_id: org.id,
+          actor_user_id: user?.id ?? null,
+          action: "change",
+          from_template_id: published?.id ?? null,
+          to_template_id: candidate.id,
+          consequences: { items: [{ label: `Duplicated from live (${source})`, severity: "info" }] },
+          metadata: { duplication: true, data_source: source, fields_copied: fieldsCopied },
+        });
+      } catch {}
+
+      const at = new Date().toISOString();
+      setLastDuplication({ source, at, fields: fieldsCopied });
+      if (source === "live") {
+        toast({
+          title: "Data duplicated from live site",
+          description: `${fieldsCopied} field${fieldsCopied === 1 ? "" : "s"} matched. Permissions and logs preserved.`,
+        });
+      }
+    } catch (e: any) {
+      // Absolute last resort — even unexpected exceptions must not block publish.
+      toast({
+        title: "Duplication encountered an error",
+        description: `${e?.message ?? "Unknown error"} — falling back to template defaults so you can still publish.`,
+        variant: "destructive",
+      });
+      setLastDuplication({ source: "default", at: new Date().toISOString(), fields: 0 });
+    } finally {
+      setDuplicateBusy(false);
+    }
+  };
+
   if (loading) {
     return <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 size={14} className="animate-spin" /> Loading template state…</div>;
   }
@@ -312,6 +410,16 @@ export default function OrgTemplatePublishPanel({ org }: Props) {
               {busy === "publish" ? <Loader2 size={14} className="mr-1 animate-spin" /> : <Rocket size={14} className="mr-1" />}
               Publish template
             </Button>
+            <Button
+              onClick={duplicateFromLive}
+              disabled={!candidate || duplicateBusy}
+              variant="secondary"
+              className="sm:col-span-2"
+              title="Pull all data from your currently published live site into the selected template."
+            >
+              {duplicateBusy ? <Loader2 size={14} className="mr-1 animate-spin" /> : <Globe size={14} className="mr-1" />}
+              Duplicate Data from Live Site
+            </Button>
             <Button onClick={saveStagingPreview} disabled={!candidate || stagingBusy} variant="secondary">
               {stagingBusy ? <Loader2 size={14} className="mr-1 animate-spin" /> : <Eye size={14} className="mr-1" />}
               Save as preview (72h)
@@ -325,6 +433,20 @@ export default function OrgTemplatePublishPanel({ org }: Props) {
               Unpublish live site
             </Button>
           </div>
+
+          {lastDuplication && (
+            <div className={`text-xs rounded-md border px-3 py-2 ${
+              lastDuplication.source === "live"
+                ? "border-green-500/40 bg-green-500/5 text-green-700"
+                : lastDuplication.source === "cached"
+                ? "border-amber-500/40 bg-amber-500/5 text-amber-700"
+                : "border-muted-foreground/30 bg-muted text-muted-foreground"
+            }`}>
+              Last duplication: <strong>{lastDuplication.source}</strong> • {lastDuplication.fields} field
+              {lastDuplication.fields === 1 ? "" : "s"} mapped • {new Date(lastDuplication.at).toLocaleTimeString()}
+              {lastDuplication.source !== "live" && " — publishing remains enabled."}
+            </div>
+          )}
         </CardContent>
       </Card>
 
