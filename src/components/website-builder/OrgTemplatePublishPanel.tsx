@@ -304,7 +304,7 @@ export default function OrgTemplatePublishPanel({ org }: Props) {
           </div>
 
           <div className="grid sm:grid-cols-2 gap-2 pt-2">
-            <Button onClick={() => askConfirm("apply")} disabled={!candidate || busy !== null || candidateId === (siteRow as any)?.selected_template_id} variant="outline">
+            <Button onClick={() => askConfirm("apply")} disabled={!candidate || busy !== null} variant="outline">
               {busy === "apply" ? <Loader2 size={14} className="mr-1 animate-spin" /> : null}
               Apply selection
             </Button>
