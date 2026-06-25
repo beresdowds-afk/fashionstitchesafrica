@@ -69,6 +69,11 @@ export default function OrgTemplatePublishPanel({ org }: Props) {
   const [rollbackConfirmOpen, setRollbackConfirmOpen] = useState(false);
   const [duplicateBusy, setDuplicateBusy] = useState(false);
   const [lastDuplication, setLastDuplication] = useState<{ source: "live" | "cached" | "default"; at: string; fields: number } | null>(null);
+  const [duplicatePreview, setDuplicatePreview] = useState<null | {
+    source: "live" | "cached" | "default";
+    snapshot: any;
+    mappings: Array<{ field: string; from: any; to: any; changed: boolean }>;
+  }>(null);
 
   const DUP_CACHE_KEY = `fsa.tpl_duplicate.${org.id}`;
 
@@ -294,7 +299,6 @@ export default function OrgTemplatePublishPanel({ org }: Props) {
     setDuplicateBusy(true);
     let source: "live" | "cached" | "default" = "default";
     let snapshot: any = null;
-    let fieldsCopied = 0;
     try {
       // 1) Try the live, public-facing website row (no auth required, RLS-safe view).
       const { data: live, error: liveErr } = await supabase
@@ -330,47 +334,58 @@ export default function OrgTemplatePublishPanel({ org }: Props) {
         }
       }
 
-      // Field-name intersection between live snapshot and candidate template's design+copy.
-      if (snapshot) {
-        const candidateKeys = new Set([
-          ...Object.keys(candidate.design || {}),
-          ...Object.keys(candidate.copy || {}),
-        ]);
-        fieldsCopied = Object.keys(snapshot).filter(k => candidateKeys.has(k)).length;
-      }
-
-      // Log to audit trail. Defensive: never throw on logging failure.
-      try {
-        await supabase.from("org_website_template_events").insert({
-          org_id: org.id,
-          actor_user_id: user?.id ?? null,
-          action: "change",
-          from_template_id: published?.id ?? null,
-          to_template_id: candidate.id,
-          consequences: { items: [{ label: `Duplicated from live (${source})`, severity: "info" }] },
-          metadata: { duplication: true, data_source: source, fields_copied: fieldsCopied },
-        });
-      } catch {}
-
-      const at = new Date().toISOString();
-      setLastDuplication({ source, at, fields: fieldsCopied });
-      if (source === "live") {
-        toast({
-          title: "Data duplicated from live site",
-          description: `${fieldsCopied} field${fieldsCopied === 1 ? "" : "s"} matched. Permissions and logs preserved.`,
-        });
-      }
+      // Build the live → template field mapping preview.
+      const candidateMerged: Record<string, any> = {
+        ...(candidate.design || {}),
+        ...(candidate.copy || {}),
+      };
+      const candidateKeys = Object.keys(candidateMerged);
+      const mappings = candidateKeys.map((field) => {
+        const from = snapshot ? snapshot[field] : undefined;
+        const to = candidateMerged[field];
+        const hasFrom = from !== undefined && from !== null && from !== "";
+        return {
+          field,
+          from: hasFrom ? from : null,
+          to,
+          changed: hasFrom && JSON.stringify(from) !== JSON.stringify(to),
+        };
+      });
+      setDuplicatePreview({ source, snapshot, mappings });
     } catch (e: any) {
-      // Absolute last resort — even unexpected exceptions must not block publish.
       toast({
         title: "Duplication encountered an error",
-        description: `${e?.message ?? "Unknown error"} — falling back to template defaults so you can still publish.`,
+        description: `${e?.message ?? "Unknown error"} — preview unavailable, publishing remains enabled.`,
         variant: "destructive",
       });
       setLastDuplication({ source: "default", at: new Date().toISOString(), fields: 0 });
     } finally {
       setDuplicateBusy(false);
     }
+  };
+
+  /** Commit the previewed duplication: log audit + record lastDuplication. */
+  const confirmDuplicate = async () => {
+    if (!duplicatePreview || !candidate) return;
+    const { source, mappings } = duplicatePreview;
+    const fieldsCopied = mappings.filter((m) => m.changed).length;
+    try {
+      await supabase.from("org_website_template_events").insert({
+        org_id: org.id,
+        actor_user_id: user?.id ?? null,
+        action: "change",
+        from_template_id: published?.id ?? null,
+        to_template_id: candidate.id,
+        consequences: { items: [{ label: `Duplicated from live (${source})`, severity: "info" }] },
+        metadata: { duplication: true, data_source: source, fields_copied: fieldsCopied, confirmed: true },
+      });
+    } catch {}
+    setLastDuplication({ source, at: new Date().toISOString(), fields: fieldsCopied });
+    toast({
+      title: "Overwrite confirmed",
+      description: `${fieldsCopied} field${fieldsCopied === 1 ? "" : "s"} will be replaced on publish.`,
+    });
+    setDuplicatePreview(null);
   };
 
   if (loading) {
