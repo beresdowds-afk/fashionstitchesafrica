@@ -655,6 +655,60 @@ export default function OrgTemplatePublishPanel({ org }: Props) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Live → template field mapping preview */}
+      <Dialog open={!!duplicatePreview} onOpenChange={(o) => !o && setDuplicatePreview(null)}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Globe size={16} className="text-primary" /> Confirm overwrite from live site
+            </DialogTitle>
+            <DialogDescription>
+              Review which template fields will be replaced by values pulled from the
+              live site. Source: <strong>{duplicatePreview?.source ?? "—"}</strong>.
+              Only changed rows will be overwritten on publish.
+            </DialogDescription>
+          </DialogHeader>
+          {duplicatePreview && (
+            <div className="max-h-[55vh] overflow-auto rounded-md border border-border">
+              <table className="w-full text-xs">
+                <thead className="bg-muted/40 text-left sticky top-0">
+                  <tr>
+                    <th className="px-3 py-2">Field</th>
+                    <th className="px-3 py-2">Live value</th>
+                    <th className="px-3 py-2">Template default</th>
+                    <th className="px-3 py-2">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {duplicatePreview.mappings.map((m) => (
+                    <tr key={m.field} className="border-t border-border">
+                      <td className="px-3 py-1.5 font-mono">{m.field}</td>
+                      <td className="px-3 py-1.5 truncate max-w-[220px]">{m.from === null ? <span className="text-muted-foreground">—</span> : String(typeof m.from === "object" ? JSON.stringify(m.from) : m.from)}</td>
+                      <td className="px-3 py-1.5 truncate max-w-[220px] text-muted-foreground">{String(typeof m.to === "object" ? JSON.stringify(m.to) : m.to)}</td>
+                      <td className="px-3 py-1.5">
+                        {m.changed ? (
+                          <Badge variant="outline" className="text-amber-600 border-amber-500/40">overwrite</Badge>
+                        ) : m.from === null ? (
+                          <Badge variant="outline">keep default</Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-emerald-600 border-emerald-500/40">identical</Badge>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setDuplicatePreview(null)}>Cancel</Button>
+            <Button onClick={confirmDuplicate}>
+              Confirm overwrite ({duplicatePreview?.mappings.filter((m) => m.changed).length ?? 0} fields)
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
