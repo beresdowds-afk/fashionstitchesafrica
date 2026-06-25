@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Globe, Trash2, CheckCircle2, Loader2 } from "lucide-react";
+import { Globe, Trash2, CheckCircle2, Loader2, RefreshCw, Cloud, Copy } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 interface Hostname {
   id: string;
@@ -15,6 +16,13 @@ interface Hostname {
   is_primary: boolean;
   notes: string | null;
   created_at: string;
+  cf_hostname_id?: string | null;
+  cf_status?: string | null;
+  cf_ssl_status?: string | null;
+  cf_ownership_verification?: any;
+  cf_validation_records?: any;
+  cf_verification_errors?: any;
+  cf_last_checked_at?: string | null;
 }
 
 interface Org { id: string; name: string; slug: string }
@@ -32,6 +40,8 @@ const CustomHostnamesPanel = () => {
   const [adding, setAdding] = useState(false);
   const [newHost, setNewHost] = useState("");
   const [newOrgId, setNewOrgId] = useState("");
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [dnsDialog, setDnsDialog] = useState<Hostname | null>(null);
 
   const refresh = async () => {
     setLoading(true);
@@ -49,10 +59,10 @@ const CustomHostnamesPanel = () => {
   const add = async () => {
     if (!newHost || !newOrgId) return;
     setAdding(true);
-    const { error } = await supabase.from("org_custom_hostnames" as any).insert({
+    const { data: inserted, error } = await supabase.from("org_custom_hostnames" as any).insert({
       hostname: newHost.trim().toLowerCase(),
       org_id: newOrgId,
-    });
+    }).select("*").maybeSingle();
     setAdding(false);
     if (error) {
       toast({ title: "Could not add hostname", description: error.message, variant: "destructive" });
@@ -60,7 +70,47 @@ const CustomHostnamesPanel = () => {
     }
     setNewHost("");
     setNewOrgId("");
-    toast({ title: "Hostname added", description: "Connect the domain in Project Settings → Domains, then mark as verified." });
+    toast({ title: "Hostname added", description: "Provisioning on Cloudflare…" });
+    if (inserted) {
+      await provisionCf((inserted as any).id);
+    }
+    refresh();
+  };
+
+  const provisionCf = async (id: string) => {
+    setBusyId(id);
+    const { data, error } = await supabase.functions.invoke("cloudflare-hostname", {
+      body: { action: "create", hostname_id: id },
+    });
+    setBusyId(null);
+    if (error || (data as any)?.error) {
+      toast({
+        title: "Cloudflare provisioning failed",
+        description: (data as any)?.error ?? error?.message ?? "Unknown error",
+        variant: "destructive",
+      });
+      return;
+    }
+    toast({ title: "Cloudflare custom hostname created", description: "Share DNS records with the customer to validate." });
+    const { data: row } = await supabase.from("org_custom_hostnames" as any).select("*").eq("id", id).maybeSingle();
+    if (row) setDnsDialog(row as any);
+    refresh();
+  };
+
+  const checkStatus = async (id: string) => {
+    setBusyId(id);
+    const { data, error } = await supabase.functions.invoke("cloudflare-hostname", {
+      body: { action: "status", hostname_id: id },
+    });
+    setBusyId(null);
+    if (error || (data as any)?.error) {
+      toast({ title: "Status check failed", description: (data as any)?.error ?? error?.message, variant: "destructive" });
+      return;
+    }
+    toast({
+      title: (data as any)?.verified ? "Hostname is active" : "Still validating",
+      description: (data as any)?.verified ? "SSL is live; visitors will reach the org site." : "Customer DNS not yet propagated.",
+    });
     refresh();
   };
 
@@ -75,8 +125,13 @@ const CustomHostnamesPanel = () => {
     await supabase.from("org_custom_hostnames" as any).update({ is_primary: v }).eq("id", id);
     refresh();
   };
-  const remove = async (id: string) => {
-    await supabase.from("org_custom_hostnames" as any).delete().eq("id", id);
+  const remove = async (row: Hostname) => {
+    if (row.cf_hostname_id) {
+      await supabase.functions.invoke("cloudflare-hostname", {
+        body: { action: "delete", hostname_id: row.id },
+      });
+    }
+    await supabase.from("org_custom_hostnames" as any).delete().eq("id", row.id);
     refresh();
   };
 
@@ -89,10 +144,11 @@ const CustomHostnamesPanel = () => {
 
       <div className="rounded-xl border border-border bg-card p-4 space-y-3">
         <p className="text-sm text-muted-foreground">
-          After adding a hostname, also connect it in Project Settings → Domains
-          (A record <code className="px-1 bg-muted rounded">185.158.133.1</code> plus
-          the <code className="px-1 bg-muted rounded">_lovable</code> TXT shown there).
-          Mark as verified once the domain is live so visitors land on the org site.
+          Adding a hostname automatically creates a Cloudflare custom hostname and
+          returns the DNS validation records to share with the customer. Status
+          polls Cloudflare until <strong>active</strong>, then visitors land on the
+          org site. The local <em>Verified</em> switch flips on automatically once
+          Cloudflare confirms SSL is live.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-[2fr,2fr,auto] gap-3 items-end">
           <div>
@@ -125,6 +181,7 @@ const CustomHostnamesPanel = () => {
               <tr>
                 <th className="px-4 py-2">Hostname</th>
                 <th className="px-4 py-2">Org</th>
+                <th className="px-4 py-2">CF Status</th>
                 <th className="px-4 py-2">Verified</th>
                 <th className="px-4 py-2">Primary</th>
                 <th className="px-4 py-2 text-right">Actions</th>
@@ -137,11 +194,29 @@ const CustomHostnamesPanel = () => {
                   <tr key={r.id} className="border-t border-border">
                     <td className="px-4 py-3 font-mono">{r.hostname}</td>
                     <td className="px-4 py-3">{org?.name || r.org_id}</td>
+                    <td className="px-4 py-3">
+                      {r.cf_hostname_id ? (
+                        <button onClick={() => setDnsDialog(r)} className="text-xs underline decoration-dotted">
+                          {r.cf_status ?? "pending"} • ssl: {r.cf_ssl_status ?? "—"}
+                        </button>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">not provisioned</span>
+                      )}
+                    </td>
                     <td className="px-4 py-3"><Switch checked={r.is_verified} onCheckedChange={(v) => toggleVerified(r.id, v)} /></td>
                     <td className="px-4 py-3"><Switch checked={r.is_primary} onCheckedChange={(v) => togglePrimary(r.id, r.org_id, v)} /></td>
                     <td className="px-4 py-3 text-right">
                       {r.is_verified && <CheckCircle2 size={14} className="inline text-emerald-500 mr-2" />}
-                      <Button variant="ghost" size="sm" onClick={() => remove(r.id)}>
+                      {!r.cf_hostname_id ? (
+                        <Button variant="ghost" size="sm" onClick={() => provisionCf(r.id)} disabled={busyId === r.id} title="Provision on Cloudflare">
+                          {busyId === r.id ? <Loader2 size={14} className="animate-spin" /> : <Cloud size={14} />}
+                        </Button>
+                      ) : (
+                        <Button variant="ghost" size="sm" onClick={() => checkStatus(r.id)} disabled={busyId === r.id} title="Check status">
+                          {busyId === r.id ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+                        </Button>
+                      )}
+                      <Button variant="ghost" size="sm" onClick={() => remove(r)}>
                         <Trash2 size={14} />
                       </Button>
                     </td>
@@ -152,6 +227,77 @@ const CustomHostnamesPanel = () => {
           </table>
         )}
       </div>
+
+      <Dialog open={!!dnsDialog} onOpenChange={(o) => !o && setDnsDialog(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Cloud size={18} className="text-primary" /> DNS records for {dnsDialog?.hostname}
+            </DialogTitle>
+            <DialogDescription>
+              Send these to the customer. They add them at their registrar; Cloudflare
+              validates and provisions SSL automatically. Use "Check status" to refresh.
+            </DialogDescription>
+          </DialogHeader>
+          {dnsDialog && (
+            <div className="space-y-3 text-sm">
+              {dnsDialog.cf_ownership_verification && (
+                <RecordBlock title="Ownership (TXT)" record={dnsDialog.cf_ownership_verification} />
+              )}
+              {dnsDialog.cf_validation_records && (
+                <RecordBlock title="SSL Validation" record={dnsDialog.cf_validation_records} />
+              )}
+              <div className="rounded-md border border-border p-3 bg-muted/30">
+                <div className="text-xs text-muted-foreground mb-1">Then point the hostname at our origin</div>
+                <CopyableRow label="CNAME" name={dnsDialog.hostname} value="fs-africa.org.ng" />
+              </div>
+              {dnsDialog.cf_verification_errors && (
+                <pre className="text-xs bg-destructive/10 text-destructive p-2 rounded overflow-auto">
+                  {JSON.stringify(dnsDialog.cf_verification_errors, null, 2)}
+                </pre>
+              )}
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" size="sm" onClick={() => dnsDialog && checkStatus(dnsDialog.id)}>
+                  <RefreshCw size={14} className="mr-1" /> Check status
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
+
+const CopyableRow = ({ label, name, value }: { label: string; name: string; value: string }) => {
+  const { toast } = useToast();
+  const copy = (t: string) => {
+    navigator.clipboard.writeText(t);
+    toast({ title: "Copied" });
+  };
+  return (
+    <div className="grid grid-cols-[80px,1fr,auto] gap-2 items-center text-xs font-mono">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="truncate">{name} → {value}</span>
+      <Button size="sm" variant="ghost" onClick={() => copy(`${name}\t${label}\t${value}`)}>
+        <Copy size={12} />
+      </Button>
+    </div>
+  );
+};
+
+const RecordBlock = ({ title, record }: { title: string; record: any }) => {
+  const r = record || {};
+  const name = r.name ?? r.txt_name;
+  const value = r.value ?? r.txt_value;
+  return (
+    <div className="rounded-md border border-border p-3 bg-muted/30">
+      <div className="text-xs text-muted-foreground mb-1">{title}</div>
+      {name && value ? (
+        <CopyableRow label={r.type ?? "TXT"} name={name} value={value} />
+      ) : (
+        <pre className="text-xs overflow-auto">{JSON.stringify(record, null, 2)}</pre>
+      )}
     </div>
   );
 };

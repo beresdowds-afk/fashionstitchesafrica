@@ -69,6 +69,11 @@ export default function OrgTemplatePublishPanel({ org }: Props) {
   const [rollbackConfirmOpen, setRollbackConfirmOpen] = useState(false);
   const [duplicateBusy, setDuplicateBusy] = useState(false);
   const [lastDuplication, setLastDuplication] = useState<{ source: "live" | "cached" | "default"; at: string; fields: number } | null>(null);
+  const [duplicatePreview, setDuplicatePreview] = useState<null | {
+    source: "live" | "cached" | "default";
+    snapshot: any;
+    mappings: Array<{ field: string; from: any; to: any; changed: boolean }>;
+  }>(null);
 
   const DUP_CACHE_KEY = `fsa.tpl_duplicate.${org.id}`;
 
@@ -294,7 +299,6 @@ export default function OrgTemplatePublishPanel({ org }: Props) {
     setDuplicateBusy(true);
     let source: "live" | "cached" | "default" = "default";
     let snapshot: any = null;
-    let fieldsCopied = 0;
     try {
       // 1) Try the live, public-facing website row (no auth required, RLS-safe view).
       const { data: live, error: liveErr } = await supabase
@@ -330,47 +334,58 @@ export default function OrgTemplatePublishPanel({ org }: Props) {
         }
       }
 
-      // Field-name intersection between live snapshot and candidate template's design+copy.
-      if (snapshot) {
-        const candidateKeys = new Set([
-          ...Object.keys(candidate.design || {}),
-          ...Object.keys(candidate.copy || {}),
-        ]);
-        fieldsCopied = Object.keys(snapshot).filter(k => candidateKeys.has(k)).length;
-      }
-
-      // Log to audit trail. Defensive: never throw on logging failure.
-      try {
-        await supabase.from("org_website_template_events").insert({
-          org_id: org.id,
-          actor_user_id: user?.id ?? null,
-          action: "change",
-          from_template_id: published?.id ?? null,
-          to_template_id: candidate.id,
-          consequences: { items: [{ label: `Duplicated from live (${source})`, severity: "info" }] },
-          metadata: { duplication: true, data_source: source, fields_copied: fieldsCopied },
-        });
-      } catch {}
-
-      const at = new Date().toISOString();
-      setLastDuplication({ source, at, fields: fieldsCopied });
-      if (source === "live") {
-        toast({
-          title: "Data duplicated from live site",
-          description: `${fieldsCopied} field${fieldsCopied === 1 ? "" : "s"} matched. Permissions and logs preserved.`,
-        });
-      }
+      // Build the live → template field mapping preview.
+      const candidateMerged: Record<string, any> = {
+        ...(candidate.design || {}),
+        ...(candidate.copy || {}),
+      };
+      const candidateKeys = Object.keys(candidateMerged);
+      const mappings = candidateKeys.map((field) => {
+        const from = snapshot ? snapshot[field] : undefined;
+        const to = candidateMerged[field];
+        const hasFrom = from !== undefined && from !== null && from !== "";
+        return {
+          field,
+          from: hasFrom ? from : null,
+          to,
+          changed: hasFrom && JSON.stringify(from) !== JSON.stringify(to),
+        };
+      });
+      setDuplicatePreview({ source, snapshot, mappings });
     } catch (e: any) {
-      // Absolute last resort — even unexpected exceptions must not block publish.
       toast({
         title: "Duplication encountered an error",
-        description: `${e?.message ?? "Unknown error"} — falling back to template defaults so you can still publish.`,
+        description: `${e?.message ?? "Unknown error"} — preview unavailable, publishing remains enabled.`,
         variant: "destructive",
       });
       setLastDuplication({ source: "default", at: new Date().toISOString(), fields: 0 });
     } finally {
       setDuplicateBusy(false);
     }
+  };
+
+  /** Commit the previewed duplication: log audit + record lastDuplication. */
+  const confirmDuplicate = async () => {
+    if (!duplicatePreview || !candidate) return;
+    const { source, mappings } = duplicatePreview;
+    const fieldsCopied = mappings.filter((m) => m.changed).length;
+    try {
+      await supabase.from("org_website_template_events").insert({
+        org_id: org.id,
+        actor_user_id: user?.id ?? null,
+        action: "change",
+        from_template_id: published?.id ?? null,
+        to_template_id: candidate.id,
+        consequences: { items: [{ label: `Duplicated from live (${source})`, severity: "info" }] },
+        metadata: { duplication: true, data_source: source, fields_copied: fieldsCopied, confirmed: true },
+      });
+    } catch {}
+    setLastDuplication({ source, at: new Date().toISOString(), fields: fieldsCopied });
+    toast({
+      title: "Overwrite confirmed",
+      description: `${fieldsCopied} field${fieldsCopied === 1 ? "" : "s"} will be replaced on publish.`,
+    });
+    setDuplicatePreview(null);
   };
 
   if (loading) {
@@ -636,6 +651,60 @@ export default function OrgTemplatePublishPanel({ org }: Props) {
             <Button variant="destructive" onClick={runRollback} disabled={rollbackBusy}>
               {rollbackBusy ? <Loader2 size={14} className="mr-1 animate-spin" /> : <Undo2 size={14} className="mr-1" />}
               Confirm rollback
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Live → template field mapping preview */}
+      <Dialog open={!!duplicatePreview} onOpenChange={(o) => !o && setDuplicatePreview(null)}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Globe size={16} className="text-primary" /> Confirm overwrite from live site
+            </DialogTitle>
+            <DialogDescription>
+              Review which template fields will be replaced by values pulled from the
+              live site. Source: <strong>{duplicatePreview?.source ?? "—"}</strong>.
+              Only changed rows will be overwritten on publish.
+            </DialogDescription>
+          </DialogHeader>
+          {duplicatePreview && (
+            <div className="max-h-[55vh] overflow-auto rounded-md border border-border">
+              <table className="w-full text-xs">
+                <thead className="bg-muted/40 text-left sticky top-0">
+                  <tr>
+                    <th className="px-3 py-2">Field</th>
+                    <th className="px-3 py-2">Live value</th>
+                    <th className="px-3 py-2">Template default</th>
+                    <th className="px-3 py-2">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {duplicatePreview.mappings.map((m) => (
+                    <tr key={m.field} className="border-t border-border">
+                      <td className="px-3 py-1.5 font-mono">{m.field}</td>
+                      <td className="px-3 py-1.5 truncate max-w-[220px]">{m.from === null ? <span className="text-muted-foreground">—</span> : String(typeof m.from === "object" ? JSON.stringify(m.from) : m.from)}</td>
+                      <td className="px-3 py-1.5 truncate max-w-[220px] text-muted-foreground">{String(typeof m.to === "object" ? JSON.stringify(m.to) : m.to)}</td>
+                      <td className="px-3 py-1.5">
+                        {m.changed ? (
+                          <Badge variant="outline" className="text-amber-600 border-amber-500/40">overwrite</Badge>
+                        ) : m.from === null ? (
+                          <Badge variant="outline">keep default</Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-emerald-600 border-emerald-500/40">identical</Badge>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setDuplicatePreview(null)}>Cancel</Button>
+            <Button onClick={confirmDuplicate}>
+              Confirm overwrite ({duplicatePreview?.mappings.filter((m) => m.changed).length ?? 0} fields)
             </Button>
           </DialogFooter>
         </DialogContent>
