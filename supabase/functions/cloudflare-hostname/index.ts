@@ -7,6 +7,7 @@ const RAW_CF_ZONE = Deno.env.get('CLOUDFLARE_ZONE_ID') ?? '';
 // fail the ByteString check when constructing fetch().
 const CF_TOKEN = RAW_CF_TOKEN.replace(/[^\x21-\x7E]/g, '');
 const CF_ZONE_ID = RAW_CF_ZONE.replace(/[^\x21-\x7E]/g, '');
+console.log('[boot v3] token_len_raw=', RAW_CF_TOKEN.length, 'clean=', CF_TOKEN.length, 'zone_clean=', CF_ZONE_ID.length);
 const CF_API = 'https://api.cloudflare.com/client/v4';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
