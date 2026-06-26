@@ -274,6 +274,22 @@ const CustomHostnamesPanel = () => {
                 </pre>
               )}
               <div className="flex justify-end gap-2 pt-2">
+                <Button variant="default" size="sm" onClick={async () => {
+                  if (!dnsDialog) return;
+                  setBusyId(dnsDialog.id);
+                  const { data, error } = await supabase.functions.invoke("cloudflare-hostname", {
+                    body: { action: "create_validation_records", hostname_id: dnsDialog.id },
+                  });
+                  setBusyId(null);
+                  if (error || (data as any)?.error) {
+                    toast({ title: "Auto-create failed", description: (data as any)?.error ?? error?.message, variant: "destructive" });
+                  } else {
+                    toast({ title: "TXT records created on Cloudflare", description: JSON.stringify((data as any)?.records?.map((r: any) => r.status)) });
+                    checkStatus(dnsDialog.id);
+                  }
+                }}>
+                  <Cloud size={14} className="mr-1" /> Auto-create TXT on Cloudflare
+                </Button>
                 <Button variant="outline" size="sm" onClick={() => dnsDialog && checkStatus(dnsDialog.id)}>
                   <RefreshCw size={14} className="mr-1" /> Check status
                 </Button>
