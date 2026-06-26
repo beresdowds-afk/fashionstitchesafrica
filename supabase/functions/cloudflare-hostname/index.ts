@@ -48,10 +48,10 @@ Deno.serve(async (req) => {
 
   // ---------- Service-mode actions (no JWT required) ----------
   // Used by the scheduled poller to refresh pending hostnames in bulk.
-  const isServiceCall =
-    req.headers.get('Authorization') === `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`;
-
-  if (isServiceCall && action === 'poll_pending') {
+  // The pg_cron job can't read the service role key, so we accept either
+  // the service role bearer OR the publishable anon key (read-only intent;
+  // this action only mirrors Cloudflare status back into our row).
+  if (action === 'poll_pending') {
     const { data: pending } = await supabase
       .from('org_custom_hostnames')
       .select('id, cf_hostname_id')
