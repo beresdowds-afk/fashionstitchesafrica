@@ -113,6 +113,72 @@ Deno.serve(async (req) => {
     return json(200, { ok: true, result: (body as any).result });
   }
 
+  // ---------- Auto-create validation TXT records on the customer's CF zone ----------
+  // Requires the API token to have Zone:DNS:Edit on the target zone.
+  if (action === 'create_validation_records') {
+    const { data: isSuper } = await supabase.rpc('has_role', { _user_id: userId, _role: 'super_admin' });
+    if (!isSuper) return json(403, { error: 'super_admin required' });
+    if (!hostname_id) return json(400, { error: 'hostname_id required' });
+    const { data: r } = await supabase
+      .from('org_custom_hostnames').select('*').eq('id', hostname_id).maybeSingle();
+    if (!r) return json(404, { error: 'row not found' });
+
+    // Refresh CF state first so validation records are current.
+    if (r.cf_hostname_id) {
+      const s = await cf(`/zones/${CF_ZONE_ID}/custom_hostnames/${r.cf_hostname_id}`);
+      if (s.ok) {
+        const res = (s.body as any).result;
+        await supabase.from('org_custom_hostnames').update({
+          cf_ownership_verification: res.ownership_verification ?? null,
+          cf_validation_records: res.ssl ?? null,
+        }).eq('id', r.id);
+        r.cf_ownership_verification = res.ownership_verification;
+        r.cf_validation_records = res.ssl;
+      }
+    }
+
+    // Find the customer's zone by walking apex labels.
+    const host: string = (r as any).hostname;
+    const parts = host.split('.');
+    let zoneId: string | null = null;
+    for (let i = 0; i < parts.length - 1; i++) {
+      const candidate = parts.slice(i).join('.');
+      const z = await cf(`/zones?name=${encodeURIComponent(candidate)}&status=active`);
+      const found = (z.body as any)?.result?.[0];
+      if (z.ok && found) { zoneId = found.id; break; }
+    }
+    if (!zoneId) return json(400, { error: 'No Cloudflare zone accessible for this hostname; ensure the apex domain is on the same Cloudflare account as the API token.' });
+
+    const records: Array<{ name: string; content: string; type: 'TXT' }> = [];
+    const own = (r as any).cf_ownership_verification;
+    if (own?.type === 'txt' && own?.name && own?.value) {
+      records.push({ type: 'TXT', name: own.name, content: own.value });
+    }
+    const ssl = (r as any).cf_validation_records;
+    const sslRec = ssl?.validation_records?.[0] ?? ssl;
+    if (sslRec?.txt_name && sslRec?.txt_value) {
+      records.push({ type: 'TXT', name: sslRec.txt_name, content: sslRec.txt_value });
+    }
+    if (records.length === 0) return json(400, { error: 'No validation records present yet — re-provision first.' });
+
+    const results: any[] = [];
+    for (const rec of records) {
+      const create = await cf(`/zones/${zoneId}/dns_records`, {
+        method: 'POST',
+        body: JSON.stringify({ ...rec, ttl: 60 }),
+      });
+      if (!create.ok && (create.body as any)?.errors?.some?.((e: any) => e.code === 81057 || e.code === 81058)) {
+        // duplicate — treat as success
+        results.push({ name: rec.name, status: 'exists' });
+      } else if (!create.ok) {
+        results.push({ name: rec.name, status: 'error', detail: create.body });
+      } else {
+        results.push({ name: rec.name, status: 'created' });
+      }
+    }
+    return json(200, { ok: true, zone_id: zoneId, records: results });
+  }
+
   // Load row (when applicable) to enforce org-scoped permission
   let row: any = null;
   if (hostname_id) {
