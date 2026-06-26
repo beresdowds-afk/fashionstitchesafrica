@@ -19,6 +19,7 @@ const json = (status: number, body: unknown) =>
   });
 
 async function cf(path: string, init: RequestInit = {}) {
+  console.log('[cf] request', path, 'token_len=', CF_TOKEN.length, 'zone_len=', CF_ZONE_ID.length);
   const res = await fetch(`${CF_API}${path}`, {
     ...init,
     headers: {
