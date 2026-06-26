@@ -1,8 +1,13 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
-const CF_TOKEN = Deno.env.get('CLOUDFLARE_API_TOKEN') ?? '';
-const CF_ZONE_ID = Deno.env.get('CLOUDFLARE_ZONE_ID') ?? '';
+const RAW_CF_TOKEN = Deno.env.get('CLOUDFLARE_API_TOKEN') ?? '';
+const RAW_CF_ZONE = Deno.env.get('CLOUDFLARE_ZONE_ID') ?? '';
+// Strip any non-ASCII / control / whitespace chars that would make the header
+// fail the ByteString check when constructing fetch().
+const CF_TOKEN = RAW_CF_TOKEN.replace(/[^\x21-\x7E]/g, '');
+const CF_ZONE_ID = RAW_CF_ZONE.replace(/[^\x21-\x7E]/g, '');
+console.log('[boot v3] token_len_raw=', RAW_CF_TOKEN.length, 'clean=', CF_TOKEN.length, 'zone_clean=', CF_ZONE_ID.length);
 const CF_API = 'https://api.cloudflare.com/client/v4';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
@@ -15,6 +20,7 @@ const json = (status: number, body: unknown) =>
   });
 
 async function cf(path: string, init: RequestInit = {}) {
+  console.log('[cf] request', path, 'token_len=', CF_TOKEN.length, 'zone_len=', CF_ZONE_ID.length);
   const res = await fetch(`${CF_API}${path}`, {
     ...init,
     headers: {
