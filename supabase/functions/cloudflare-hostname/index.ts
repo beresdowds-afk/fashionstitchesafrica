@@ -1,8 +1,8 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
-const CF_TOKEN = Deno.env.get('CLOUDFLARE_API_TOKEN') ?? '';
-const CF_ZONE_ID = Deno.env.get('CLOUDFLARE_ZONE_ID') ?? '';
+const CF_TOKEN = (Deno.env.get('CLOUDFLARE_API_TOKEN') ?? '').replace(/[\r\n\t]/g, '').trim();
+const CF_ZONE_ID = (Deno.env.get('CLOUDFLARE_ZONE_ID') ?? '').replace(/[\r\n\t\s]/g, '').trim();
 const CF_API = 'https://api.cloudflare.com/client/v4';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
