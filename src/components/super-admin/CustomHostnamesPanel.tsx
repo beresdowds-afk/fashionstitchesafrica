@@ -244,7 +244,13 @@ const CustomHostnamesPanel = () => {
                           setBusyId(r.id);
                           const { data, error } = await supabase.functions.invoke(
                             "cloudflare-worker-routes",
-                            { body: { action: "provision_route", hostname: r.hostname } }
+                            {
+                              body: {
+                                action: "provision_route",
+                                hostname: r.hostname,
+                                slug: orgs.find((o) => o.id === r.org_id)?.slug,
+                              },
+                            }
                           );
                           setBusyId(null);
                           if (error || (data as any)?.error) {
