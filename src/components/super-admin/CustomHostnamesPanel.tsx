@@ -224,15 +224,20 @@ const CustomHostnamesPanel = () => {
                     <td className="px-4 py-3"><Switch checked={r.is_primary} onCheckedChange={(v) => togglePrimary(r.id, r.org_id, v)} /></td>
                     <td className="px-4 py-3 text-right">
                       {r.is_verified && <CheckCircle2 size={14} className="inline text-emerald-500 mr-2" />}
-                      {!r.cf_hostname_id ? (
+                      {!r.cf_hostname_id && (
                         <Button variant="ghost" size="sm" onClick={() => provisionCf(r.id)} disabled={busyId === r.id} title="Provision on Cloudflare">
                           {busyId === r.id ? <Loader2 size={14} className="animate-spin" /> : <Cloud size={14} />}
                         </Button>
-                      ) : (
-                        <Button variant="ghost" size="sm" onClick={() => checkStatus(r.id)} disabled={busyId === r.id} title="Check status">
-                          {busyId === r.id ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-                        </Button>
                       )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => r.cf_hostname_id ? checkStatus(r.id) : provisionCf(r.id)}
+                        disabled={busyId === r.id}
+                        title={r.cf_hostname_id ? "Refresh Cloudflare status" : "Provision then refresh"}
+                      >
+                        {busyId === r.id ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+                      </Button>
                       <Button variant="ghost" size="sm" onClick={() => remove(r)}>
                         <Trash2 size={14} />
                       </Button>
