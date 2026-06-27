@@ -236,6 +236,39 @@ const CustomHostnamesPanel = () => {
                       <Button variant="ghost" size="sm" onClick={() => remove(r)}>
                         <Trash2 size={14} />
                       </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        title="Provision Cloudflare Worker route for edge URL rewriting"
+                        onClick={async () => {
+                          setBusyId(r.id);
+                          const { data, error } = await supabase.functions.invoke(
+                            "cloudflare-worker-routes",
+                            { body: { action: "provision_route", hostname: r.hostname } }
+                          );
+                          setBusyId(null);
+                          if (error || (data as any)?.error) {
+                            toast({
+                              title: "Worker route failed",
+                              description: (data as any)?.error?.toString?.() ?? error?.message,
+                              variant: "destructive",
+                            });
+                          } else {
+                            toast({
+                              title: (data as any)?.duplicate
+                                ? "Worker route already exists"
+                                : "Worker route provisioned",
+                              description: `${r.hostname}/* → ${(data as any)?.worker}`,
+                            });
+                          }
+                        }}
+                      >
+                        {busyId === r.id ? (
+                          <Loader2 size={14} className="animate-spin" />
+                        ) : (
+                          "WR"
+                        )}
+                      </Button>
                     </td>
                   </tr>
                 );
