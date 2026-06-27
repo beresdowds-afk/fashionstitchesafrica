@@ -187,13 +187,13 @@ const CustomHostnamesPanel = () => {
         </div>
       </div>
 
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="rounded-xl border border-border bg-card overflow-x-auto">
         {loading ? (
           <div className="p-6 text-sm text-muted-foreground">Loading…</div>
         ) : rows.length === 0 ? (
           <div className="p-6 text-sm text-muted-foreground">No custom hostnames yet.</div>
         ) : (
-          <table className="w-full text-sm">
+          <table className="w-full min-w-[900px] text-sm">
             <thead className="bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
               <tr>
                 <th className="px-4 py-2">Hostname</th>
