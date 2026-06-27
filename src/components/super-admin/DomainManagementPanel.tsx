@@ -1548,6 +1548,10 @@ const DomainManagementPanel = () => {
 
         <TabsContent value="evaluate">
           <NonNativeEvaluationPanel />
+          {/* Branded custom hostnames (e.g. gabulkfashionstudio.org.ng → org site) */}
+          <div className="mt-10">
+            <CustomHostnamesPanel />
+          </div>
         </TabsContent>
 
         <TabsContent value="domains">
@@ -1677,11 +1681,6 @@ const DomainManagementPanel = () => {
           <NativeWebsitePublishingPanel />
         </TabsContent>
       </Tabs>
-
-      {/* Branded custom hostnames (e.g. gabulkfashionstudio.org.ng → org site) */}
-      <div className="mt-10">
-        <CustomHostnamesPanel />
-      </div>
     </motion.div>
   );
 };
