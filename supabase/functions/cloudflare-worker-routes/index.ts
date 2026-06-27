@@ -5,6 +5,7 @@ const CF_TOKEN = (Deno.env.get('CLOUDFLARE_API_TOKEN') ?? '').replace(/[^\x21-\x
 const CF_ACCOUNT_ID = (Deno.env.get('CLOUDFLARE_ACCOUNT_ID') ?? '').replace(/[^\x21-\x7E]/g, '');
 const CF_API = 'https://api.cloudflare.com/client/v4';
 const WORKER_NAME = Deno.env.get('CLOUDFLARE_TENANT_WORKER_NAME') ?? 'fysora-tenant-rewriter';
+const KV_NAMESPACE_ID = (Deno.env.get('CLOUDFLARE_TENANT_KV_NAMESPACE_ID') ?? '').replace(/[^\x21-\x7E]/g, '');
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
@@ -24,6 +25,36 @@ async function cf(path: string, init: RequestInit = {}) {
       'Content-Type': 'application/json',
     },
   });
+  const body = await res.json().catch(() => ({}));
+  return { ok: res.ok, status: res.status, body };
+}
+
+// Raw KV write needs text/plain body (not JSON-wrapped).
+async function kvPut(key: string, value: string) {
+  const res = await fetch(
+    `${CF_API}/accounts/${CF_ACCOUNT_ID}/storage/kv/namespaces/${KV_NAMESPACE_ID}/values/${encodeURIComponent(key)}`,
+    {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${CF_TOKEN}`, 'Content-Type': 'text/plain' },
+      body: value,
+    },
+  );
+  const body = await res.json().catch(() => ({}));
+  return { ok: res.ok, status: res.status, body };
+}
+async function kvDelete(key: string) {
+  const res = await fetch(
+    `${CF_API}/accounts/${CF_ACCOUNT_ID}/storage/kv/namespaces/${KV_NAMESPACE_ID}/values/${encodeURIComponent(key)}`,
+    { method: 'DELETE', headers: { Authorization: `Bearer ${CF_TOKEN}` } },
+  );
+  const body = await res.json().catch(() => ({}));
+  return { ok: res.ok, status: res.status, body };
+}
+async function kvList() {
+  const res = await fetch(
+    `${CF_API}/accounts/${CF_ACCOUNT_ID}/storage/kv/namespaces/${KV_NAMESPACE_ID}/keys`,
+    { headers: { Authorization: `Bearer ${CF_TOKEN}` } },
+  );
   const body = await res.json().catch(() => ({}));
   return { ok: res.ok, status: res.status, body };
 }
@@ -62,7 +93,7 @@ Deno.serve(async (req) => {
 
   let payload: any = {};
   try { payload = await req.json(); } catch {}
-  const { action, hostname } = payload || {};
+  const { action, hostname, slug } = payload || {};
 
   // ---- action: provision_route ----
   // Binds `<hostname>/*` to the tenant rewriter Worker on the matching zone.
@@ -81,13 +112,24 @@ Deno.serve(async (req) => {
     const dup = (created.body as any)?.errors?.some((e: any) => e.code === 10020);
     if (!created.ok && !dup) return json(created.status, { error: created.body });
 
+    // If caller provided a slug, also persist host→slug + www variant in KV
+    // so the rewriter can resolve this tenant immediately without a redeploy.
+    let kvWritten: string[] = [];
+    if (slug && KV_NAMESPACE_ID) {
+      const hosts = [hostname.toLowerCase(), `www.${hostname.toLowerCase()}`.replace(/^www\.www\./, 'www.')];
+      for (const h of hosts) {
+        const r = await kvPut(h, String(slug));
+        if (r.ok) kvWritten.push(h);
+      }
+    }
+
     await admin.from('audit_logs').insert({
       action: 'cloudflare_worker_route_provisioned',
-      details: { hostname, zone_id: zoneId, pattern, worker: WORKER_NAME, duplicate: !!dup },
+      details: { hostname, slug: slug ?? null, zone_id: zoneId, pattern, worker: WORKER_NAME, duplicate: !!dup, kv_written: kvWritten },
       user_id: userRes.user.id,
     });
 
-    return json(200, { ok: true, zone_id: zoneId, pattern, worker: WORKER_NAME, duplicate: !!dup });
+    return json(200, { ok: true, zone_id: zoneId, pattern, worker: WORKER_NAME, duplicate: !!dup, kv_written: kvWritten });
   }
 
   // ---- action: list_routes ----
@@ -113,6 +155,53 @@ Deno.serve(async (req) => {
       user_id: userRes.user.id,
     });
     return json(200, { ok: true });
+  }
+
+  // ---- action: set_tenant_mapping ----
+  // Upsert a host → slug entry in the Workers KV namespace bound as TENANT_MAP.
+  if (action === 'set_tenant_mapping') {
+    if (!hostname || !slug) return json(400, { error: 'hostname and slug required' });
+    if (!KV_NAMESPACE_ID) return json(500, { error: 'CLOUDFLARE_TENANT_KV_NAMESPACE_ID not configured' });
+    const host = String(hostname).toLowerCase();
+    const hosts = host.startsWith('www.') ? [host, host.replace(/^www\./, '')] : [host, `www.${host}`];
+    const results: Record<string, boolean> = {};
+    for (const h of hosts) {
+      const r = await kvPut(h, String(slug));
+      results[h] = r.ok;
+    }
+    await admin.from('audit_logs').insert({
+      action: 'cloudflare_worker_kv_mapping_set',
+      details: { hostname: host, slug, results },
+      user_id: userRes.user.id,
+    });
+    return json(200, { ok: true, results });
+  }
+
+  // ---- action: delete_tenant_mapping ----
+  if (action === 'delete_tenant_mapping') {
+    if (!hostname) return json(400, { error: 'hostname required' });
+    if (!KV_NAMESPACE_ID) return json(500, { error: 'CLOUDFLARE_TENANT_KV_NAMESPACE_ID not configured' });
+    const host = String(hostname).toLowerCase();
+    const hosts = host.startsWith('www.') ? [host, host.replace(/^www\./, '')] : [host, `www.${host}`];
+    const results: Record<string, boolean> = {};
+    for (const h of hosts) {
+      const r = await kvDelete(h);
+      results[h] = r.ok;
+    }
+    await admin.from('audit_logs').insert({
+      action: 'cloudflare_worker_kv_mapping_deleted',
+      details: { hostname: host, results },
+      user_id: userRes.user.id,
+    });
+    return json(200, { ok: true, results });
+  }
+
+  // ---- action: list_tenant_mappings ----
+  if (action === 'list_tenant_mappings') {
+    if (!KV_NAMESPACE_ID) return json(500, { error: 'CLOUDFLARE_TENANT_KV_NAMESPACE_ID not configured' });
+    const { ok, status, body } = await kvList();
+    if (!ok) return json(status, { error: body });
+    return json(200, { ok: true, keys: (body as any).result ?? [] });
   }
 
   return json(400, { error: 'unknown action' });

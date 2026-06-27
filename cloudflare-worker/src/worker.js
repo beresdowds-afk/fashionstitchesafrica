@@ -6,16 +6,39 @@
  * platform origin (https://www.fs-africa.org.ng), preserving the visible URL
  * in the user's address bar.
  *
- * Tenant → slug mapping is embedded statically here for fast cold-starts.
- * The companion edge function `cloudflare-worker-routes` keeps the Worker's
- * *route bindings* in sync with `org_custom_hostnames`, but updating this
- * mapping for a new tenant currently requires a Worker redeploy.
+ * Tenant → slug mapping is stored in Workers KV (binding: `TENANT_MAP`) so
+ * adding a new tenant is fully tool-driven via the `cloudflare-worker-routes`
+ * edge function — no Worker redeploy required. A small static fallback is kept
+ * for bootstrap tenants in case the KV binding is missing.
  */
 
-const TENANT_MAP = {
+const STATIC_FALLBACK = {
   "gabulkfashionstudio.org.ng": "gabulk-fashion-studio",
   "www.gabulkfashionstudio.org.ng": "gabulk-fashion-studio",
 };
+
+// Per-isolate in-memory cache to avoid a KV round-trip on every request.
+const memCache = new Map(); // host -> { slug: string|null, expires: number }
+const CACHE_TTL_MS = 60_000;
+
+async function resolveSlug(host, env) {
+  const now = Date.now();
+  const cached = memCache.get(host);
+  if (cached && cached.expires > now) return cached.slug;
+
+  let slug = null;
+  if (env.TENANT_MAP && typeof env.TENANT_MAP.get === "function") {
+    try {
+      slug = await env.TENANT_MAP.get(host, { cacheTtl: 60 });
+    } catch (_) {
+      slug = null;
+    }
+  }
+  if (!slug) slug = STATIC_FALLBACK[host] ?? null;
+
+  memCache.set(host, { slug, expires: now + CACHE_TTL_MS });
+  return slug;
+}
 
 export default {
   /**
@@ -25,7 +48,7 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     const host = url.hostname.toLowerCase();
-    const slug = TENANT_MAP[host];
+    const slug = await resolveSlug(host, env);
     const origin = env.PLATFORM_ORIGIN || "https://www.fs-africa.org.ng";
 
     // Unknown host → pass through to platform root.

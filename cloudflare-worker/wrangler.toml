@@ -21,3 +21,12 @@ compatibility_date = "2025-01-01"
 
 [vars]
 PLATFORM_ORIGIN = "https://www.fs-africa.org.ng"
+
+# Workers KV: host → slug mapping. Create the namespace once with
+#   npx wrangler kv:namespace create TENANT_MAP
+# then paste the returned `id` below. After that, new tenants are added
+# entirely via the `cloudflare-worker-routes` edge function (KV writes via
+# the Cloudflare API) — no redeploy required.
+[[kv_namespaces]]
+binding = "TENANT_MAP"
+id = "<TENANT_MAP_KV_NAMESPACE_ID>"
