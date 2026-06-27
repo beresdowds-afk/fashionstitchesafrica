@@ -251,8 +251,9 @@ const CustomHostnamesPanel = () => {
                         <Trash2 size={14} />
                       </Button>
                       <Button
-                        variant="ghost"
+                        variant="outline"
                         size="sm"
+                        className="h-7 px-2 text-xs"
                         title="Provision Cloudflare Worker route for edge URL rewriting"
                         onClick={async () => {
                           setBusyId(r.id);
@@ -284,10 +285,9 @@ const CustomHostnamesPanel = () => {
                         }}
                       >
                         {busyId === r.id ? (
-                          <Loader2 size={14} className="animate-spin" />
-                        ) : (
-                          "WR"
-                        )}
+                          <Loader2 size={12} className="animate-spin mr-1" />
+                        ) : null}
+                        WR route
                       </Button>
                     </td>
                   </tr>
