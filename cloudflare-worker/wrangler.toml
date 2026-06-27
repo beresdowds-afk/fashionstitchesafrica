@@ -1,0 +1,23 @@
+name = "fysora-tenant-rewriter"
+main = "src/worker.js"
+compatibility_date = "2025-01-01"
+
+# Account and zone are supplied at deploy time via env vars or `wrangler deploy --var`.
+# account_id = "<CLOUDFLARE_ACCOUNT_ID>"
+
+# Routes are added programmatically by the `cloudflare-worker-routes` edge
+# function for each tenant custom hostname. You can also pre-declare them
+# here for the initial bootstrap tenant:
+#
+# [[routes]]
+# pattern  = "gabulkfashionstudio.org.ng/*"
+# zone_name = "gabulkfashionstudio.org.ng"
+# custom_domain = true
+#
+# [[routes]]
+# pattern  = "www.gabulkfashionstudio.org.ng/*"
+# zone_name = "gabulkfashionstudio.org.ng"
+# custom_domain = true
+
+[vars]
+PLATFORM_ORIGIN = "https://www.fs-africa.org.ng"
