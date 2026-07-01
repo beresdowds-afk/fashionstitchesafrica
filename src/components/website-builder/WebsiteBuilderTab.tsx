@@ -806,6 +806,14 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
       supabase.from("website_builder_requests").select("*").eq("org_id", org.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
     ]);
 
+    // Secrets live in a separate admin-only table
+    const { data: secretsRow } = await supabase
+      .from("org_website_secrets" as any)
+      .select("api_key, api_secret")
+      .eq("org_id", org.id)
+      .maybeSingle();
+    const secrets = (secretsRow as any) || {};
+
     if (wsResult.data) {
       const ws = wsResult.data as any;
       setSettings({
@@ -814,8 +822,8 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
         tagline: ws.tagline || "",
         hero_description: ws.hero_description || "",
         hero_image_url: ws.hero_image_url || "",
-        api_key: ws.api_key || "",
-        api_secret: ws.api_secret || "",
+        api_key: secrets.api_key || "",
+        api_secret: secrets.api_secret || "",
         webhook_url: ws.webhook_url || "",
         instagram_url: ws.instagram_url || "",
         facebook_url: ws.facebook_url || "",
@@ -884,8 +892,6 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
       brand_color: settings.brand_color,
       accent_color: settings.accent_color,
       theme: settings.theme,
-      api_key: settings.api_key || null,
-      api_secret: settings.api_secret || null,
       webhook_url: settings.webhook_url || null,
       instagram_url: settings.instagram_url || null,
       facebook_url: settings.facebook_url || null,
@@ -913,6 +919,18 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
     const { error } = await supabase
       .from("org_websites")
       .upsert(payload as any, { onConflict: "org_id" });
+
+    // Secrets (api_key / api_secret) are stored in a separate admin-only table
+    if (!error && (settings.api_key || settings.api_secret)) {
+      await supabase.from("org_website_secrets" as any).upsert(
+        {
+          org_id: org.id,
+          api_key: settings.api_key || null,
+          api_secret: settings.api_secret || null,
+        },
+        { onConflict: "org_id" }
+      );
+    }
 
     setSaving(false);
     if (error) toast({ title: "Error saving", description: error.message, variant: "destructive" });
