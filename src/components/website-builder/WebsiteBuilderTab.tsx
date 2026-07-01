@@ -806,6 +806,14 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
       supabase.from("website_builder_requests").select("*").eq("org_id", org.id).order("created_at", { ascending: false }).limit(1).maybeSingle(),
     ]);
 
+    // Secrets live in a separate admin-only table
+    const { data: secretsRow } = await supabase
+      .from("org_website_secrets" as any)
+      .select("api_key, api_secret")
+      .eq("org_id", org.id)
+      .maybeSingle();
+    const secrets = (secretsRow as any) || {};
+
     if (wsResult.data) {
       const ws = wsResult.data as any;
       setSettings({
@@ -814,8 +822,8 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
         tagline: ws.tagline || "",
         hero_description: ws.hero_description || "",
         hero_image_url: ws.hero_image_url || "",
-        api_key: ws.api_key || "",
-        api_secret: ws.api_secret || "",
+        api_key: secrets.api_key || "",
+        api_secret: secrets.api_secret || "",
         webhook_url: ws.webhook_url || "",
         instagram_url: ws.instagram_url || "",
         facebook_url: ws.facebook_url || "",
