@@ -682,7 +682,18 @@ const HomePage = ({ org, website, brandColor, accentColor, fontHeading, officers
       <section className="relative min-h-[90vh] flex items-center overflow-hidden">
         {website.hero_image_url ? (
           <div className="absolute inset-0">
-            <img src={website.hero_image_url} alt="Hero" className="w-full h-full object-cover" />
+            {/\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(website.hero_image_url) ? (
+              <video
+                src={website.hero_image_url}
+                autoPlay
+                muted
+                loop
+                playsInline
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <img src={website.hero_image_url} alt="Hero" className="w-full h-full object-cover" />
+            )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-black/30" />
           </div>
         ) : (

@@ -35,6 +35,9 @@ const ImageUrlField = ({
   const { toast } = useToast();
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+
+  const isVideo = /\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(value || "");
 
   const handleFile = async (file: File) => {
     if (!file) return;
@@ -67,8 +70,33 @@ const ImageUrlField = ({
   };
 
   return (
-    <div className={className}>
-      <div className="flex gap-2">
+    <div
+      className={className}
+      onDragOver={(e) => {
+        if (disabled || uploading) return;
+        e.preventDefault();
+        e.stopPropagation();
+        setDragOver(true);
+      }}
+      onDragLeave={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragOver(false);
+      }}
+      onDrop={(e) => {
+        if (disabled || uploading) return;
+        e.preventDefault();
+        e.stopPropagation();
+        setDragOver(false);
+        const f = e.dataTransfer.files?.[0];
+        if (f) handleFile(f);
+      }}
+    >
+      <div
+        className={`flex gap-2 rounded-lg transition ${
+          dragOver ? "ring-2 ring-primary ring-offset-2 bg-primary/5 p-1" : ""
+        }`}
+      >
         <Input
           id={inputId}
           value={value}
@@ -103,14 +131,26 @@ const ImageUrlField = ({
           </Button>
         )}
       </div>
+      <p className="mt-1 text-[10px] text-muted-foreground">
+        Tip: drag &amp; drop an image or video here to upload.
+      </p>
       {value && (
         <div className="mt-2 flex items-center gap-2 text-[11px] text-muted-foreground">
-          <img
-            src={value}
-            alt="Preview"
-            onError={(e) => ((e.currentTarget.style.display = "none"))}
-            className="h-10 w-10 rounded border border-border object-cover bg-muted"
-          />
+          {isVideo ? (
+            <video
+              src={value}
+              muted
+              playsInline
+              className="h-10 w-10 rounded border border-border object-cover bg-muted"
+            />
+          ) : (
+            <img
+              src={value}
+              alt="Preview"
+              onError={(e) => ((e.currentTarget.style.display = "none"))}
+              className="h-10 w-10 rounded border border-border object-cover bg-muted"
+            />
+          )}
           <span className="truncate">{value}</span>
         </div>
       )}
