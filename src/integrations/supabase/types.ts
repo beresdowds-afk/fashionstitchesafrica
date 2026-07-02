@@ -5245,6 +5245,8 @@ export type Database = {
           name: string
           order_id: string
           quantity: number
+          selected_size: string | null
+          size_standard: string | null
           status: Database["public"]["Enums"]["order_status"]
           unit_price: number | null
         }
@@ -5257,6 +5259,8 @@ export type Database = {
           name: string
           order_id: string
           quantity?: number
+          selected_size?: string | null
+          size_standard?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           unit_price?: number | null
         }
@@ -5269,6 +5273,8 @@ export type Database = {
           name?: string
           order_id?: string
           quantity?: number
+          selected_size?: string | null
+          size_standard?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           unit_price?: number | null
         }
@@ -5753,6 +5759,7 @@ export type Database = {
       }
       org_catalogue_items: {
         Row: {
+          available_sizes: string[] | null
           category: string | null
           category_id: string | null
           created_at: string
@@ -5766,6 +5773,8 @@ export type Database = {
           org_id: string
           price: number | null
           published_at: string
+          size_chart: Json | null
+          size_chart_standard: string | null
           sort_order: number
           source_id: string | null
           source_type: Database["public"]["Enums"]["catalogue_node_type"] | null
@@ -5773,6 +5782,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          available_sizes?: string[] | null
           category?: string | null
           category_id?: string | null
           created_at?: string
@@ -5786,6 +5796,8 @@ export type Database = {
           org_id: string
           price?: number | null
           published_at?: string
+          size_chart?: Json | null
+          size_chart_standard?: string | null
           sort_order?: number
           source_id?: string | null
           source_type?:
@@ -5795,6 +5807,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          available_sizes?: string[] | null
           category?: string | null
           category_id?: string | null
           created_at?: string
@@ -5808,6 +5821,8 @@ export type Database = {
           org_id?: string
           price?: number | null
           published_at?: string
+          size_chart?: Json | null
+          size_chart_standard?: string | null
           sort_order?: number
           source_id?: string | null
           source_type?:

@@ -14,6 +14,8 @@ import { getTemplate, isLightTemplate } from "@/config/websiteTemplates";
 import CartWidget from "@/components/catalogue/CartWidget";
 import FeaturedShowcase, { type ShowcaseVariant, type ShowcaseSpeed } from "@/components/website-builder/FeaturedShowcase";
 import { addToCart } from "@/lib/cartFlow";
+import { AddToCartDialog } from "@/components/catalogue/AddToCartDialog";
+import { supabase as _sb } from "@/integrations/supabase/client";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface OrgWebsiteData {
@@ -1115,6 +1117,8 @@ const CataloguePage = ({ orgId, items, currency, brandColor, accentColor, user, 
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [sortBy, setSortBy] = useState<string>("featured");
   const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [buyOpen, setBuyOpen] = useState(false);
+  const [activeProduct, setActiveProduct] = useState<any>(null);
 
   const categories = ["All", ...Array.from(new Set(items.map((i) => i.category).filter(Boolean) as string[]))];
 
@@ -1218,23 +1222,28 @@ const CataloguePage = ({ orgId, items, currency, brandColor, accentColor, user, 
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                addToCart(orgId, {
-                                  id: item.id,
-                                  name: item.name,
-                                  unit_price: Number(item.price) || 0,
-                                  currency: item.currency || currency,
-                                  image_url: item.image_url,
-                                  category: item.category,
-                                  source: "org_catalogue",
-                                });
+                                setActiveProduct(item);
+                                setBuyOpen(true);
                               }}
                               className="px-4 py-2 text-[10px] font-medium uppercase tracking-[0.12em] hover:opacity-90 transition-opacity"
                               style={{ background: brandColor, color: "#fff" }}
                             >
-                              Add to Cart
+                              Select & Add
                             </button>
                           )}
-                          <button className="w-9 h-9 bg-white/90 flex items-center justify-center hover:bg-white transition-colors">
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (!user) { requireAuth("wishlist"); return; }
+                              await _sb.from("customer_wishlists").insert({
+                                user_id: user.id,
+                                org_id: orgId,
+                                catalogue_item_id: item.id,
+                              });
+                            }}
+                            className="w-9 h-9 bg-white/90 flex items-center justify-center hover:bg-white transition-colors"
+                            aria-label="Save to wishlist"
+                          >
                             <Heart size={14} className="text-black" />
                           </button>
                         </div>
@@ -1266,6 +1275,13 @@ const CataloguePage = ({ orgId, items, currency, brandColor, accentColor, user, 
           </div>
         )}
       </motion.div>
+      <AddToCartDialog
+        open={buyOpen}
+        onOpenChange={setBuyOpen}
+        orgId={orgId}
+        product={activeProduct}
+        defaultCurrency={currency}
+      />
     </div>
   );
 };
