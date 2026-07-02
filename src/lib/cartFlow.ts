@@ -22,6 +22,8 @@ export interface CartItem {
   image_url?: string | null;
   category?: string | null;
   source: "org_catalogue" | "tailor_catalogue";
+  selected_size?: string | null;
+  size_standard?: string | null;
 }
 
 const KEY = (orgId: string) => `fsa_cart_${orgId}`;
@@ -47,7 +49,12 @@ const writeCart = (orgId: string, items: CartItem[]) => {
 
 export const addToCart = (orgId: string, item: Omit<CartItem, "quantity">, qty = 1) => {
   const cart = getCart(orgId);
-  const existing = cart.find((c) => c.id === item.id && c.source === item.source);
+  const existing = cart.find(
+    (c) =>
+      c.id === item.id &&
+      c.source === item.source &&
+      (c.selected_size ?? null) === (item.selected_size ?? null),
+  );
   if (existing) {
     existing.quantity += qty;
   } else {
@@ -125,6 +132,8 @@ export async function submitCartOrder(args: SubmitCartArgs): Promise<SubmitCartR
         source: i.source,
         quantity: i.quantity,
         client_unit_price: i.unit_price,
+        selected_size: i.selected_size ?? null,
+        size_standard: i.size_standard ?? null,
       })),
     },
   });
