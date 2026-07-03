@@ -111,6 +111,7 @@ const defaultSettings = (orgId: string): WebsiteSettings => ({
   tagline: "",
   hero_description: "",
   hero_image_url: "",
+  hero_poster_url: "",
   brand_color: "#8B5CF6",
   accent_color: "#D4AF37",
   theme: "dark",
