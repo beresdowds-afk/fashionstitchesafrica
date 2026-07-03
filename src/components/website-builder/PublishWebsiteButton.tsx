@@ -220,7 +220,7 @@ const PublishWebsiteButton = forwardRef<PublishWebsiteButtonHandle, PublishWebsi
     <div class="hero-overlay"></div>
     ${heroImg
       ? (isHeroVideo
-          ? `<video class="hero-bg" autoplay muted loop playsinline${heroPoster ? ` poster="${heroPoster}"` : ""}><source src="${heroImg}"></video>`
+          ? `<video class="hero-bg" autoplay muted loop playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"${heroPoster ? ` poster="${heroPoster}"` : ""}><source src="${heroImg}"></video>`
           : `<div class="hero-bg" style="background-image:url('${heroImg}')"></div>`)
       : ""}
     <div class="hero-content">
