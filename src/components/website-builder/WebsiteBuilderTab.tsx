@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import {
   Globe, Zap, Link2, Eye, Plus, Trash2, Edit2, Save, X, Package, Layers,
   ExternalLink, Copy, Key, Crown, Clock, CheckCircle2, AlertCircle,
-  ArrowRight, Sparkles, Star, Lock, Palette, Building2, Book
+  ArrowRight, Sparkles, Star, Lock, Palette, Building2, Book, ChevronDown, Menu
 } from "lucide-react";
 import OrgBrandingPanel from "./OrgBrandingPanel";
 import SocialSyncPanel from "@/components/catalogue/SocialSyncPanel";
@@ -18,6 +18,10 @@ import OrgTemplatePublishPanel from "./OrgTemplatePublishPanel";
 import PublishWebsiteButton, { type PublishWebsiteButtonHandle } from "./PublishWebsiteButton";
 import MediaDropzone from "@/components/shared/MediaDropzone";
 import ImageUrlField from "@/components/shared/ImageUrlField";
+import HeroMediaField from "@/components/shared/HeroMediaField";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { PaymentFlowTracker } from "@/components/payments/PaymentFlowTracker";
 import { usePaymentFlow } from "@/hooks/usePaymentFlow";
 import type { AppRole } from "@/hooks/useOrganization";
@@ -34,6 +38,7 @@ interface WebsiteSettings {
   tagline: string;
   hero_description: string;
   hero_image_url: string;
+  hero_poster_url: string;
   brand_color: string;
   accent_color: string;
   theme: "dark" | "light";
