@@ -1207,13 +1207,15 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Hero Image URL</label>
-                <ImageUrlField
+                <label className="text-sm font-medium">Hero Background (image or video)</label>
+                <HeroMediaField
                   value={settings.hero_image_url || ""}
                   onChange={(url) => setSettings({ ...settings, hero_image_url: url })}
+                  posterValue={(settings as any).hero_poster_url || ""}
+                  onPosterChange={(url) => setSettings({ ...settings, hero_poster_url: url } as any)}
                   disabled={!canEdit}
-                  placeholder="https://… or upload hero image"
-                  folder="hero-images"
+                  folder="hero-media"
+                  maxFileMb={10}
                 />
               </div>
 
