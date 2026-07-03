@@ -899,6 +899,7 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
       tagline: settings.tagline || null,
       hero_description: settings.hero_description || null,
       hero_image_url: settings.hero_image_url || null,
+      hero_poster_url: (settings as any).hero_poster_url || null,
       brand_color: settings.brand_color,
       accent_color: settings.accent_color,
       theme: settings.theme,
