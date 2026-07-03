@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import {
   Globe, Zap, Link2, Eye, Plus, Trash2, Edit2, Save, X, Package, Layers,
   ExternalLink, Copy, Key, Crown, Clock, CheckCircle2, AlertCircle,
-  ArrowRight, Sparkles, Star, Lock, Palette, Building2, Book
+  ArrowRight, Sparkles, Star, Lock, Palette, Building2, Book, ChevronDown, Menu
 } from "lucide-react";
 import OrgBrandingPanel from "./OrgBrandingPanel";
 import SocialSyncPanel from "@/components/catalogue/SocialSyncPanel";
@@ -18,6 +18,10 @@ import OrgTemplatePublishPanel from "./OrgTemplatePublishPanel";
 import PublishWebsiteButton, { type PublishWebsiteButtonHandle } from "./PublishWebsiteButton";
 import MediaDropzone from "@/components/shared/MediaDropzone";
 import ImageUrlField from "@/components/shared/ImageUrlField";
+import HeroMediaField from "@/components/shared/HeroMediaField";
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 import { PaymentFlowTracker } from "@/components/payments/PaymentFlowTracker";
 import { usePaymentFlow } from "@/hooks/usePaymentFlow";
 import type { AppRole } from "@/hooks/useOrganization";
@@ -34,6 +38,7 @@ interface WebsiteSettings {
   tagline: string;
   hero_description: string;
   hero_image_url: string;
+  hero_poster_url: string;
   brand_color: string;
   accent_color: string;
   theme: "dark" | "light";
@@ -106,6 +111,7 @@ const defaultSettings = (orgId: string): WebsiteSettings => ({
   tagline: "",
   hero_description: "",
   hero_image_url: "",
+  hero_poster_url: "",
   brand_color: "#8B5CF6",
   accent_color: "#D4AF37",
   theme: "dark",
@@ -825,6 +831,7 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
         tagline: ws.tagline || "",
         hero_description: ws.hero_description || "",
         hero_image_url: ws.hero_image_url || "",
+        hero_poster_url: (ws as any).hero_poster_url || "",
         api_key: secrets.api_key || "",
         api_secret: secrets.api_secret || "",
         webhook_url: ws.webhook_url || "",
@@ -892,6 +899,7 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
       tagline: settings.tagline || null,
       hero_description: settings.hero_description || null,
       hero_image_url: settings.hero_image_url || null,
+      hero_poster_url: (settings as any).hero_poster_url || null,
       brand_color: settings.brand_color,
       accent_color: settings.accent_color,
       theme: settings.theme,
@@ -1025,9 +1033,9 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
         </div>
       )}
 
-      {/* Section tabs */}
-      <div className="flex gap-1 bg-muted/50 p-1 rounded-lg w-fit mb-6 overflow-x-auto">
-        {[
+      {/* Section switcher — consolidated dropdown so the builder area can render full-screen. */}
+      {(() => {
+        const sectionList = [
           { id: "plans" as const, icon: Crown, label: "Plans" },
           { id: "general" as const, icon: Globe, label: "General" },
           { id: "branding" as const, icon: Palette, label: "Branding" },
@@ -1037,19 +1045,47 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
           { id: "templates" as const, icon: Sparkles, label: "Templates" },
           { id: "integration" as const, icon: Link2, label: "Integration" },
           { id: "guide" as const, icon: Book, label: "User Guide" },
-        ].map((s) => (
-          <button
-            key={s.id}
-            onClick={() => setActiveSection(s.id)}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${activeSection === s.id ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground"}`}
-          >
-            <s.icon size={14} /> {s.label}
-            {s.id === "plans" && (subscription || proRequest) && (
-              <span className="w-1.5 h-1.5 rounded-full bg-primary ml-0.5" />
-            )}
-          </button>
-        ))}
-      </div>
+        ];
+        const active = sectionList.find((s) => s.id === activeSection) ?? sectionList[0];
+        const ActiveIcon = active.icon;
+        return (
+          <div className="mb-6 flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Menu size={14} />
+                  <ActiveIcon size={14} />
+                  <span className="font-medium">{active.label}</span>
+                  <ChevronDown size={14} className="opacity-60" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56 z-50 bg-popover">
+                <DropdownMenuLabel>Website Builder</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {sectionList.map((s) => {
+                  const Icon = s.icon;
+                  const isActive = s.id === activeSection;
+                  return (
+                    <DropdownMenuItem
+                      key={s.id}
+                      onSelect={() => setActiveSection(s.id)}
+                      className={isActive ? "bg-accent" : ""}
+                    >
+                      <Icon size={14} className="mr-2" /> {s.label}
+                      {s.id === "plans" && (subscription || proRequest) && (
+                        <span className="ml-auto h-1.5 w-1.5 rounded-full bg-primary" />
+                      )}
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <span className="text-xs text-muted-foreground hidden sm:inline">
+              Choose a section — the editor fills the screen for a full‑width workspace.
+            </span>
+          </div>
+        );
+      })()}
 
       {/* ── Plans ─────────────────────────────────────────────── */}
       {activeSection === "plans" && (
@@ -1199,13 +1235,15 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Hero Image URL</label>
-                <ImageUrlField
+                <label className="text-sm font-medium">Hero Background (image or video)</label>
+                <HeroMediaField
                   value={settings.hero_image_url || ""}
                   onChange={(url) => setSettings({ ...settings, hero_image_url: url })}
+                  posterValue={(settings as any).hero_poster_url || ""}
+                  onPosterChange={(url) => setSettings({ ...settings, hero_poster_url: url } as any)}
                   disabled={!canEdit}
-                  placeholder="https://… or upload hero image"
-                  folder="hero-images"
+                  folder="hero-media"
+                  maxFileMb={10}
                 />
               </div>
 

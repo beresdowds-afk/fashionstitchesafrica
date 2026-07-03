@@ -81,6 +81,8 @@ const PublishWebsiteButton = forwardRef<PublishWebsiteButtonHandle, PublishWebsi
       const tagline = escapeHtml(ws.tagline || "");
       const heroDesc = escapeHtml(ws.hero_description || (orgData.description || "Premium bespoke fashion powered by FYSORA FASHN (Fashion Stitches Africa)."));
       const heroImg = sanitizeUrl(ws.hero_image_url || "");
+      const heroPoster = sanitizeUrl((ws as any).hero_poster_url || "");
+      const isHeroVideo = /\.(mp4|webm|ogg|mov|m4v)(\?|$)/i.test(heroImg);
       const fontHeading = sanitizeFont(ws.font_heading, "Playfair Display");
       const fontBody = sanitizeFont(ws.font_body, "DM Sans");
       const palette = (ws.color_palette || {}) as Record<string, string>;
@@ -216,7 +218,11 @@ const PublishWebsiteButton = forwardRef<PublishWebsiteButtonHandle, PublishWebsi
 
   <section class="hero" id="home">
     <div class="hero-overlay"></div>
-    ${heroImg ? `<div class="hero-bg" style="background-image:url('${heroImg}')"></div>` : ""}
+    ${heroImg
+      ? (isHeroVideo
+          ? `<video class="hero-bg" autoplay muted loop playsinline style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"${heroPoster ? ` poster="${heroPoster}"` : ""}><source src="${heroImg}"></video>`
+          : `<div class="hero-bg" style="background-image:url('${heroImg}')"></div>`)
+      : ""}
     <div class="hero-content">
       <div class="hero-badge">✦ ${address ? address.split(",").pop()?.trim().toUpperCase() || "AFRICA" : "AFRICA"}</div>
       <h1 class="hero-title">${orgName}</h1>
