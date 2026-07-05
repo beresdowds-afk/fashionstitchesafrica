@@ -1,3 +1,6 @@
+## 📁 `Commercialization_Subscription.md`
+
+```markdown
 # FYSORA Commercialization & Subscription Implementation Prompt
 
 ## Centralized Commercial Authority
@@ -7,7 +10,7 @@ All subscriptions, transaction fees, escrow fees, commissions, organization plan
 - They may display subscription offers and initiate checkout flows but the entire payment processing, subscription management, and revenue collection occurs within FYSORA FASHN.
 
 ## Editable Pricing Governance Platform
-Use the existing **super admin interface** within FYSORA FASHN to manage all commercial parameters:
+Build an **admin interface** within FYSORA FASHN to manage all commercial parameters:
 
 - **Subscription Plans** – create, update, delete, set prices (with multiple currencies).
   - Types: Free, Professional, Business, Enterprise.
@@ -16,7 +19,7 @@ Use the existing **super admin interface** within FYSORA FASHN to manage all com
 - **Escrow Fees** – percentage or fixed fee per escrow transaction.
 - **Service Fees** – e.g., for measurement verification, dispute resolution.
 - **Promotions/Discounts** – define coupon codes, temporary discounts, trial periods.
-- **Currency Exchange Rates** – for multi-currency support (if using a central conversion engine).
+- **Currency Exchange Rates** – for multi‑currency support (if using a central conversion engine).
 
 All changes are audited (who changed what, when) and can be rolled back if needed.
 
@@ -24,14 +27,14 @@ All changes are audited (who changed what, when) and can be rolled back if neede
 1. **Plan Selection** – user selects a plan in any PWA, which calls the FYSORA FASHN subscription API.
 2. **Checkout** – FYSORA FASHN generates a payment intent (using a gateway like Stripe/Paystack) and returns a client secret.
 3. **Payment** – the PWA confirms the payment via the gateway; FYSORA FASHN listens for webhooks to update subscription status.
-4. **Activation** – subscription status becomes active; permissions are updated in the user's token.
+4. **Activation** – subscription status becomes active; permissions are updated in the user’s token.
 5. **Renewal** – automatic renewal is managed by the payment gateway; FYSORA FASHN receives webhook and updates expiry.
 6. **Cancellation** – user can cancel (immediate or at end of period) via any PWA; cancellation request goes to FYSORA FASHN.
 
 ## Payment Processing
-- Support multiple payment methods: credit/debit cards, bank transfers, mobile money, etc., via available integrated gateway(s).
-- Securely store payment method tokens (PCI-compliant).
-- Handle recurring billing (subscriptions) and one-time payments (orders, escrow deposits).
+- Support multiple payment methods: credit/debit cards, bank transfers, mobile money, etc., via integrated gateway(s).
+- Securely store payment method tokens (PCI‑compliant).
+- Handle recurring billing (subscriptions) and one‑time payments (orders, escrow deposits).
 - Provide invoices/receipts (generated and stored in FYSORA FASHN).
 - Support refunds (initiated through FYSORA FASHN dispute workflow).
 
@@ -48,16 +51,16 @@ Each subscription plan defines a set of feature flags that are enforced by all a
 - `can_access_premium_tools`
 - `api_rate_limit`
 
-FYSORA FASHN provides an endpoint `/api/subscriptions/features` that returns the user's feature set; each PWA uses this to enable/disable UI elements.
+FYSORA FASHN provides an endpoint `/api/subscriptions/features` that returns the user’s feature set; each PWA uses this to enable/disable UI elements.
 
-## Multi-Currency & Localization
+## Multi‑Currency & Localization
 - Plans can have prices in multiple currencies (NGN, USD, EUR, etc.).
 - Users see pricing in their preferred currency (based on IP or account settings).
 - Conversion rates are updated regularly (manual or via a service).
 - Transactions are settled in the currency of the plan; gateway handles conversion if needed.
 
 ## Admin Dashboard
-Use existing super admin panel for FYSORA FASHN staff to:
+Build a secure admin panel for FYSORA FASHN staff to:
 - View all subscriptions and their statuses.
 - Manually adjust subscription (grant/revoke, extend, refund).
 - Create/edit pricing plans and fees.
@@ -83,11 +86,3 @@ Use existing super admin panel for FYSORA FASHN staff to:
 - Ensure GDPR/CCPA compliance for customer data.
 - All financial actions are logged for audit.
 - Sensitive configuration (API keys, webhook secrets) stored in environment variables or a secrets manager.
-
----
-
-## Related Documents
-- [Ecosystem Governance](Ecosystem_Governance.md) — FYSORA FASHN's sole revenue authority and distribution rules.
-- [Authentication & SSO](Authentication_SSO.md) — identity required to attribute subscriptions and entitlements.
-- [API Synchronization](API_Synchronization.md) — webhooks and endpoints that propagate billing events.
-- [Back to Index](index.md)
