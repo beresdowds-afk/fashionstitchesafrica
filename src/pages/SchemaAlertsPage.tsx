@@ -57,7 +57,7 @@ export default function SchemaAlertsPage() {
     load();
   };
 
-  const runValidator = async (fn: "schema-validator" | "catalogue-health-check") => {
+  const runValidator = async (fn: "schema-validator" | "catalogue-health-check" | "identity-access-check") => {
     setRunning(fn);
     const { data, error } = await supabase.functions.invoke(fn);
     setRunning(null);
@@ -84,6 +84,9 @@ export default function SchemaAlertsPage() {
           </Button>
           <Button variant="outline" size="sm" onClick={() => runValidator("catalogue-health-check")} disabled={!!running}>
             <Play className="h-4 w-4 mr-1" /> Run health-check
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => runValidator("identity-access-check")} disabled={!!running}>
+            <Play className="h-4 w-4 mr-1" /> Run identity check
           </Button>
           <Button variant="outline" size="sm" onClick={() => setShowResolved((s) => !s)}>
             {showResolved ? "Hide" : "Show"} resolved
