@@ -191,6 +191,7 @@ const App = () => (
             <Route path="/fysora-ecosystem/:doc" element={<FysoraEcosystemDocs />} />
             <Route path="/claims/:id" element={<ClaimTrackingPage />} />
             <Route path="/super-admin/claims" element={<AdminClaimsReviewPage />} />
+            <Route path="/super-admin/schema-alerts" element={<SchemaAlertsPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           </RouteAuthGuard>
