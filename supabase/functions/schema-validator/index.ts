@@ -78,12 +78,16 @@ Deno.serve(async (req) => {
     inner.get(g.grantee)!.add(g.privilege_type);
   }
 
-  // RLS state (query pg_class)
-  const { data: rlsRows } = await supabase.rpc("get_rls_states", {}).select?.() ?? { data: null };
+  // RLS state via pg_tables view (readable through information_schema fallback)
+  const { data: rlsRows } = await supabase
+    .schema("pg_catalog" as never)
+    .from("pg_tables" as never)
+    .select("tablename, rowsecurity")
+    .eq("schemaname", "public")
+    .in("tablename", names);
   const rlsMap = new Map<string, boolean>();
-  // Fallback: query via a cheap raw SQL through a select on pg_class isn't accessible via PostgREST. Use a helper if present, otherwise skip.
-  if (Array.isArray(rlsRows)) {
-    for (const r of rlsRows as Array<{ table_name: string; rls_enabled: boolean }>) rlsMap.set(r.table_name, r.rls_enabled);
+  for (const r of ((rlsRows ?? []) as Array<{ tablename: string; rowsecurity: boolean }>)) {
+    rlsMap.set(r.tablename, r.rowsecurity);
   }
 
   for (const spec of objects) {
