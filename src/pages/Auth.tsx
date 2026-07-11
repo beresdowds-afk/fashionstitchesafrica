@@ -292,8 +292,8 @@ const Auth = () => {
       }
 
       // Enforce passkey second-factor if the profile opts in.
-      const { data: prof } = await supabase
-        .from("profiles")
+      const { data: prof } = await (supabase
+        .from("profiles") as any)
         .select("passkey_second_factor_required")
         .eq("id", userId)
         .maybeSingle();
