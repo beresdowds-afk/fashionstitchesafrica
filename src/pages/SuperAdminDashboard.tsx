@@ -322,6 +322,9 @@ const SuperAdminDashboard = () => {
                 <Button variant="ghost" size="sm" className="text-ivory/70 hover:text-ivory text-xs hidden xl:flex" onClick={() => navigate("/admin-install")}>
                   <Download size={14} className="mr-1" /> Admin App
                 </Button>
+                <Button variant="ghost" size="sm" className="text-ivory/70 hover:text-ivory text-xs hidden lg:flex" onClick={() => navigate("/super-admin/schema-alerts")} title="Daily schema-health alerts">
+                  <AlertTriangle size={14} className="mr-1" /> Schema Alerts
+                </Button>
                 <Button variant="ghost" size="icon" onClick={tour.restart} title="Restart tour guide" className="text-ivory/70 hover:text-ivory h-8 w-8">
                   <HelpCircle size={16} />
                 </Button>
