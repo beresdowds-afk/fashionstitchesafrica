@@ -15,6 +15,8 @@ import { ArrowLeft, Mail, Lock, User, Shield, Users, Scissors, Building2, Loader
 import { useToast } from "@/hooks/use-toast";
 import DisclaimerDialog, { DisclaimerBanner } from "@/components/shared/DisclaimerDialog";
 import { prefetchPostLoginData, readPrefetchedData } from "@/lib/postLoginPrefetch";
+import { verifyPasskeyForCurrentSession } from "@/lib/passkeyChallenge";
+import { KeyRound } from "lucide-react";
 
 type AuthMode = "signin" | "signup" | "forgot";
 type UserRole = "customer" | "designer" | "tailor" | "organization";
@@ -83,6 +85,7 @@ const Auth = () => {
   const isPortal = searchParams.get("portal") === "1";
   const roleParam = searchParams.get("role") as UserRole | null;
   const { toast } = useToast();
+  const [passkeyStep, setPasskeyStep] = useState(false);
 
   const [selectedRole, setSelectedRole] = useState<UserRole>(roleParam && ROLE_CONFIG[roleParam] ? roleParam : "customer");
   const [showPassword, setShowPassword] = useState(false);
@@ -286,6 +289,28 @@ const Auth = () => {
       if (!userId) {
         navigate(isPortal ? "/portal" : "/dashboard");
         return;
+      }
+
+      // Enforce passkey second-factor if the profile opts in.
+      const { data: prof } = await (supabase
+        .from("profiles") as any)
+        .select("passkey_second_factor_required")
+        .eq("id", userId)
+        .maybeSingle();
+      if ((prof as any)?.passkey_second_factor_required) {
+        setPasskeyStep(true);
+        const result = await verifyPasskeyForCurrentSession();
+        setPasskeyStep(false);
+        if (result.ok === false) {
+          await supabase.auth.signOut();
+          toast({
+            title: "Passkey required",
+            description: result.message + " You've been signed out — please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+        toast({ title: "Passkey verified", description: "Second-factor confirmed." });
       }
 
       // Use prefetched cache if available; otherwise fetch fresh.
@@ -656,6 +681,39 @@ const Auth = () => {
                   <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
                 </svg>
                 Continue with Google
+              </Button>
+            )}
+
+            {mode === "signin" && (
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full gap-2 mt-2"
+                disabled={loading || !email || !password}
+                data-testid="signin-with-passkey"
+                onClick={async () => {
+                  setLoading(true);
+                  const { error } = await signIn(email, password);
+                  if (error) {
+                    toast({ title: "Sign-in failed", description: error.message, variant: "destructive" });
+                    setLoading(false);
+                    return;
+                  }
+                  setPasskeyStep(true);
+                  const result = await verifyPasskeyForCurrentSession();
+                  setPasskeyStep(false);
+                  setLoading(false);
+                  if (result.ok === false) {
+                    await supabase.auth.signOut();
+                    toast({ title: "Passkey verification failed", description: result.message, variant: "destructive" });
+                    return;
+                  }
+                  toast({ title: "Signed in with passkey" });
+                  navigate(isPortal ? "/portal" : "/dashboard");
+                }}
+              >
+                <KeyRound className="w-4 h-4" />
+                {passkeyStep ? "Verifying passkey…" : "Sign in with passkey"}
               </Button>
             )}
           </form>

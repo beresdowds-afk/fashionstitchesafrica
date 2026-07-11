@@ -8819,6 +8819,7 @@ export type Database = {
           latitude: number | null
           linkedin_url: string | null
           longitude: number | null
+          passkey_second_factor_required: boolean
           physical_address: string | null
           portfolio_url: string | null
           promo_consent: boolean
@@ -8857,6 +8858,7 @@ export type Database = {
           latitude?: number | null
           linkedin_url?: string | null
           longitude?: number | null
+          passkey_second_factor_required?: boolean
           physical_address?: string | null
           portfolio_url?: string | null
           promo_consent?: boolean
@@ -8895,6 +8897,7 @@ export type Database = {
           latitude?: number | null
           linkedin_url?: string | null
           longitude?: number | null
+          passkey_second_factor_required?: boolean
           physical_address?: string | null
           portfolio_url?: string | null
           promo_consent?: boolean
