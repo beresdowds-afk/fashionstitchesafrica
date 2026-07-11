@@ -61,7 +61,10 @@ export function PasskeysPanel() {
       .select("id, credential_id, nickname, device_type, backed_up, last_used_at, created_at")
       .order("created_at", { ascending: false }),
       user
-        ? supabase.from("profiles").select("passkey_second_factor_required").eq("id", user.id).maybeSingle()
+        ? (supabase.from("profiles") as any)
+            .select("passkey_second_factor_required")
+            .eq("id", user.id)
+            .maybeSingle()
         : Promise.resolve({ data: null } as any),
     ]);
     if (error) toast.error(error.message);
