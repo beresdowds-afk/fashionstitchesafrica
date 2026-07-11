@@ -38,6 +38,7 @@ import FysoraEcosystemDocs from "./pages/FysoraEcosystemDocs";
 import ClaimTrackingPage from "./pages/ClaimTrackingPage";
 import AdminClaimsReviewPage from "./pages/AdminClaimsReviewPage";
 import SchemaAlertsPage from "./pages/SchemaAlertsPage";
+import AccountSecurityPage from "./pages/AccountSecurityPage";
 import TemplatePreviewPage from "./pages/TemplatePreviewPage";
 import PlatformUpdateWatcher from "@/components/platform/PlatformUpdateWatcher";
 import TourSyncWorker from "@/components/platform/TourSyncWorker";
@@ -192,6 +193,7 @@ const App = () => (
             <Route path="/claims/:id" element={<ClaimTrackingPage />} />
             <Route path="/super-admin/claims" element={<AdminClaimsReviewPage />} />
             <Route path="/super-admin/schema-alerts" element={<SchemaAlertsPage />} />
+            <Route path="/account/security" element={<AccountSecurityPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           </RouteAuthGuard>
