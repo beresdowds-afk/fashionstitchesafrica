@@ -9297,6 +9297,66 @@ export type Database = {
           },
         ]
       }
+      schema_validation_alerts: {
+        Row: {
+          column_name: string | null
+          created_at: string
+          dashboard_url: string | null
+          details: Json
+          fingerprint: string
+          first_seen_at: string
+          id: string
+          last_seen_at: string
+          message: string
+          object_name: string
+          object_type: string
+          occurrence_count: number
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          column_name?: string | null
+          created_at?: string
+          dashboard_url?: string | null
+          details?: Json
+          fingerprint: string
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          message: string
+          object_name: string
+          object_type: string
+          occurrence_count?: number
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          source: string
+          updated_at?: string
+        }
+        Update: {
+          column_name?: string | null
+          created_at?: string
+          dashboard_url?: string | null
+          details?: Json
+          fingerprint?: string
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          message?: string
+          object_name?: string
+          object_type?: string
+          occurrence_count?: number
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          source?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sentinel_agent_incidents: {
         Row: {
           agent_key: string
@@ -12407,6 +12467,15 @@ export type Database = {
         Args: { _org_id: string; _user_id: string }
         Returns: boolean
       }
+      capture_missing_column_error: {
+        Args: {
+          _column_name: string
+          _message: string
+          _object_name: string
+          _route?: string
+        }
+        Returns: string
+      }
       claim_promotional_grant: {
         Args: { _grant_type: string; _org_id?: string }
         Returns: Json
@@ -12548,6 +12617,19 @@ export type Database = {
           msg_id: number
           read_ct: number
         }[]
+      }
+      record_schema_alert: {
+        Args: {
+          _column_name: string
+          _dashboard_url?: string
+          _details?: Json
+          _message: string
+          _object_name: string
+          _object_type: string
+          _severity: string
+          _source: string
+        }
+        Returns: string
       }
       resolve_org_by_hostname: {
         Args: { _host: string }
