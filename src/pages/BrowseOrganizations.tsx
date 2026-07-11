@@ -15,6 +15,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { joinOrganization } from "@/lib/joinOrganization";
 import { resolvePublicSiteUrl, isExternalSiteUrl } from "@/lib/publicSiteUrl";
+import { reportSchemaError } from "@/lib/schemaErrorReporter";
 
 interface OrgCard {
   id: string;
