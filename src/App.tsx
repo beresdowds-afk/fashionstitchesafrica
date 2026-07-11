@@ -37,6 +37,7 @@ import NotFound from "./pages/NotFound";
 import FysoraEcosystemDocs from "./pages/FysoraEcosystemDocs";
 import ClaimTrackingPage from "./pages/ClaimTrackingPage";
 import AdminClaimsReviewPage from "./pages/AdminClaimsReviewPage";
+import SchemaAlertsPage from "./pages/SchemaAlertsPage";
 import TemplatePreviewPage from "./pages/TemplatePreviewPage";
 import PlatformUpdateWatcher from "@/components/platform/PlatformUpdateWatcher";
 import TourSyncWorker from "@/components/platform/TourSyncWorker";
