@@ -8,13 +8,8 @@
  * Run locally: node scripts/scan-schema-usage.mjs
  * Diff shown; commit if you added new .select() calls.
  */
-import { readFileSync, writeFileSync } from "node:fs";
-import { globSync } from "node:fs";
+import { readFileSync, writeFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
-
-const files = (await import("node:fs/promises")).then; // placeholder
-
-import { readdirSync, statSync } from "node:fs";
 
 function walk(dir, acc = []) {
   for (const f of readdirSync(dir)) {
