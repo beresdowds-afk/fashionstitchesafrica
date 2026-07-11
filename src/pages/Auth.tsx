@@ -683,6 +683,39 @@ const Auth = () => {
                 Continue with Google
               </Button>
             )}
+
+            {mode === "signin" && (
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full gap-2 mt-2"
+                disabled={loading || !email || !password}
+                data-testid="signin-with-passkey"
+                onClick={async () => {
+                  setLoading(true);
+                  const { error } = await signIn(email, password);
+                  if (error) {
+                    toast({ title: "Sign-in failed", description: error.message, variant: "destructive" });
+                    setLoading(false);
+                    return;
+                  }
+                  setPasskeyStep(true);
+                  const result = await verifyPasskeyForCurrentSession();
+                  setPasskeyStep(false);
+                  setLoading(false);
+                  if (result.ok === false) {
+                    await supabase.auth.signOut();
+                    toast({ title: "Passkey verification failed", description: result.message, variant: "destructive" });
+                    return;
+                  }
+                  toast({ title: "Signed in with passkey" });
+                  navigate(isPortal ? "/portal" : "/dashboard");
+                }}
+              >
+                <KeyRound className="w-4 h-4" />
+                {passkeyStep ? "Verifying passkey…" : "Sign in with passkey"}
+              </Button>
+            )}
           </form>
 
           <DisclaimerDialog
