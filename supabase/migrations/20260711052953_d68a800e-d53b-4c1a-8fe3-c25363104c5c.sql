@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS passkey_second_factor_required boolean NOT NULL DEFAULT false;
