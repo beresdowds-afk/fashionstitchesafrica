@@ -15,6 +15,8 @@ import { ArrowLeft, Mail, Lock, User, Shield, Users, Scissors, Building2, Loader
 import { useToast } from "@/hooks/use-toast";
 import DisclaimerDialog, { DisclaimerBanner } from "@/components/shared/DisclaimerDialog";
 import { prefetchPostLoginData, readPrefetchedData } from "@/lib/postLoginPrefetch";
+import { verifyPasskeyForCurrentSession } from "@/lib/passkeyChallenge";
+import { KeyRound } from "lucide-react";
 
 type AuthMode = "signin" | "signup" | "forgot";
 type UserRole = "customer" | "designer" | "tailor" | "organization";
@@ -83,6 +85,7 @@ const Auth = () => {
   const isPortal = searchParams.get("portal") === "1";
   const roleParam = searchParams.get("role") as UserRole | null;
   const { toast } = useToast();
+  const [passkeyStep, setPasskeyStep] = useState(false);
 
   const [selectedRole, setSelectedRole] = useState<UserRole>(roleParam && ROLE_CONFIG[roleParam] ? roleParam : "customer");
   const [showPassword, setShowPassword] = useState(false);
@@ -286,6 +289,28 @@ const Auth = () => {
       if (!userId) {
         navigate(isPortal ? "/portal" : "/dashboard");
         return;
+      }
+
+      // Enforce passkey second-factor if the profile opts in.
+      const { data: prof } = await supabase
+        .from("profiles")
+        .select("passkey_second_factor_required")
+        .eq("id", userId)
+        .maybeSingle();
+      if ((prof as any)?.passkey_second_factor_required) {
+        setPasskeyStep(true);
+        const result = await verifyPasskeyForCurrentSession();
+        setPasskeyStep(false);
+        if (!result.ok) {
+          await supabase.auth.signOut();
+          toast({
+            title: "Passkey required",
+            description: result.message + " You've been signed out — please try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+        toast({ title: "Passkey verified", description: "Second-factor confirmed." });
       }
 
       // Use prefetched cache if available; otherwise fetch fresh.
