@@ -7257,6 +7257,7 @@ export type Database = {
       org_websites: {
         Row: {
           accent_color: string | null
+          api_key: string | null
           brand_color: string | null
           color_palette: Json
           created_at: string
@@ -7309,6 +7310,7 @@ export type Database = {
         }
         Insert: {
           accent_color?: string | null
+          api_key?: string | null
           brand_color?: string | null
           color_palette?: Json
           created_at?: string
@@ -7361,6 +7363,7 @@ export type Database = {
         }
         Update: {
           accent_color?: string | null
+          api_key?: string | null
           brand_color?: string | null
           color_palette?: Json
           created_at?: string
