@@ -330,6 +330,9 @@ const SuperAdminDashboard = () => {
                 </Button>
                 <ManualPwaUpdateButton compact />
                 <div className="w-px h-6 bg-border/30 mx-1" />
+                <Button variant="ghost" size="icon" className="text-ivory/70 hover:text-ivory h-8 w-8" onClick={() => navigate("/account/security")} title="Account & Security (passkeys)">
+                  <ShieldCheck size={14} />
+                </Button>
                 <Button variant="ghost" size="icon" className="text-ivory/70 hover:text-ivory h-8 w-8" onClick={() => signOut().then(() => navigate("/"))}>
                   <LogOut size={14} />
                 </Button>
