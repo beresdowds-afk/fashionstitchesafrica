@@ -116,6 +116,12 @@ export function PasskeysPanel() {
   };
 
   const remove = async (id: string) => {
+    if (requireTwoFactor && passkeys.length <= 1) {
+      toast.error(
+        "Turn off \"Require passkey after sign-in\" before removing your last passkey — otherwise you'll be locked out of your account."
+      );
+      return;
+    }
     const { error } = await supabase.from("webauthn_credentials").delete().eq("id", id);
     if (error) toast.error(error.message);
     else {
