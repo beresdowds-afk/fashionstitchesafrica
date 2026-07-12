@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   LogOut, Package, CreditCard, Bell, Ruler, Clock, ChevronRight,
   CheckCircle2, AlertCircle, KeyRound, Loader2, Video, Search,
-  MapPin, Heart, HelpCircle, Sparkles, Crown, ShoppingBag
+  MapPin, Heart, HelpCircle, Sparkles, Crown, ShoppingBag, ShieldCheck
 } from "lucide-react";
 import FeatureGate from "@/components/shared/FeatureGate";
 import IdentityVerificationGate from "@/components/shared/IdentityVerificationGate";
@@ -231,6 +231,9 @@ const CustomerPortal = () => {
             <span className="text-sm text-muted-foreground hidden sm:block">
               {profile?.display_name || user.email}
             </span>
+            <Button variant="ghost" size="sm" onClick={() => navigate("/account/security")} title="Account & Security (passkeys)">
+              <ShieldCheck size={16} />
+            </Button>
             <Button variant="ghost" size="sm" onClick={handleSignOut}>
               <LogOut size={16} />
             </Button>
