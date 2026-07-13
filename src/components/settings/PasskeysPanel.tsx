@@ -9,6 +9,17 @@ import { KeyRound, Trash2, ShieldCheck, Loader2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Copy, Download } from "lucide-react";
 
 /** Turn edge-function / WebAuthn errors into a user-friendly sentence. */
 function friendlyPasskeyError(raw: unknown, phase: "register" | "authenticate"): string {
@@ -52,6 +63,10 @@ export function PasskeysPanel() {
   const [enrolling, setEnrolling] = useState(false);
   const [requireTwoFactor, setRequireTwoFactor] = useState(false);
   const [savingRequire, setSavingRequire] = useState(false);
+  const [unusedBackupCodes, setUnusedBackupCodes] = useState(0);
+  const [newCodes, setNewCodes] = useState<string[] | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<null | { title: string; body: string; onConfirm: () => void }>(null);
+  const [generating, setGenerating] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -71,6 +86,12 @@ export function PasskeysPanel() {
     else setPasskeys((data as Passkey[]) ?? []);
     setRequireTwoFactor(Boolean((prof as any)?.passkey_second_factor_required));
     setLoading(false);
+
+    // Backup-code status is best-effort; hide the counter if the function isn't deployed yet.
+    try {
+      const { data: status } = await supabase.functions.invoke("passkey-recovery", { body: { action: "status" } });
+      if (typeof (status as any)?.unused === "number") setUnusedBackupCodes((status as any).unused);
+    } catch { /* ignore */ }
   };
 
   useEffect(() => { void load(); }, [user?.id]);
@@ -116,26 +137,53 @@ export function PasskeysPanel() {
   };
 
   const remove = async (id: string) => {
-    if (requireTwoFactor && passkeys.length <= 1) {
+    if (requireTwoFactor && passkeys.length <= 1 && unusedBackupCodes === 0) {
       toast.error(
-        "Turn off \"Require passkey after sign-in\" before removing your last passkey — otherwise you'll be locked out of your account."
+        "This is your last passkey and 2FA is on with no backup codes. Generate backup codes or turn off 2FA first — otherwise you'll be locked out."
       );
       return;
     }
-    const { error } = await supabase.from("webauthn_credentials").delete().eq("id", id);
-    if (error) toast.error(error.message);
-    else {
-      toast.success("Passkey removed");
-      await load();
-    }
+    setConfirmDialog({
+      title: "Remove this passkey?",
+      body: "You won't be able to sign in with this device again until you enroll a new passkey here.",
+      onConfirm: async () => {
+        const { error } = await supabase.from("webauthn_credentials").delete().eq("id", id);
+        if (error) toast.error(error.message);
+        else {
+          toast.success("Passkey removed");
+          await load();
+        }
+      },
+    });
   };
 
   const toggleRequire = async (next: boolean) => {
     if (!user) return;
-    if (next && passkeys.length === 0) {
-      toast.error("Enroll at least one passkey before requiring it as a second factor.");
+    // Block BOTH enabling and disabling when the account has zero passkeys:
+    // enabling with 0 = immediate lockout; disabling with 0 usually means the
+    // user already can't sign in and should use a backup code instead.
+    if (passkeys.length === 0) {
+      toast.error(
+        next
+          ? "Enroll at least one passkey below before requiring it as a second factor."
+          : "You have no passkeys enrolled. Enroll one first, or use a backup code from the sign-in screen to recover access."
+      );
       return;
     }
+    if (next && unusedBackupCodes === 0) {
+      // Prompt but don't block — strongly encourage generating backup codes.
+      setConfirmDialog({
+        title: "Turn on passkey 2FA without backup codes?",
+        body: "Backup codes let you sign in if you lose every enrolled passkey. We strongly recommend generating them before enabling 2FA.",
+        onConfirm: () => void applyRequire(true),
+      });
+      return;
+    }
+    await applyRequire(next);
+  };
+
+  const applyRequire = async (next: boolean) => {
+    if (!user) return;
     setSavingRequire(true);
     const { error } = await supabase
       .from("profiles")
@@ -149,7 +197,43 @@ export function PasskeysPanel() {
     }
   };
 
+  const generateBackupCodes = async () => {
+    setGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("passkey-recovery", { body: { action: "generate" } });
+      if (error || (data as any)?.error) throw new Error((data as any)?.error ?? error?.message);
+      setNewCodes((data as any).codes as string[]);
+      await load();
+      toast.success("10 backup codes generated — save them somewhere safe.");
+    } catch (e) {
+      toast.error((e as Error).message ?? "Could not generate backup codes.");
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const copyCodes = async () => {
+    if (!newCodes) return;
+    await navigator.clipboard.writeText(newCodes.join("\n"));
+    toast.success("Copied to clipboard");
+  };
+
+  const downloadCodes = () => {
+    if (!newCodes) return;
+    const blob = new Blob(
+      [`FYSORA FASHN — Passkey backup codes\nGenerated: ${new Date().toISOString()}\n\n${newCodes.join("\n")}\n\nEach code can be used once.\n`],
+      { type: "text/plain" }
+    );
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "fysora-backup-codes.txt";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
+    <>
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
@@ -217,8 +301,81 @@ export function PasskeysPanel() {
             data-testid="passkey-require-2fa"
           />
         </div>
+
+        {/* Backup codes */}
+        <div className="rounded-md border p-3 space-y-3">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-0.5">
+              <Label className="font-medium">Backup codes</Label>
+              <p className="text-xs text-muted-foreground">
+                One-time codes that let you sign in even if you lose every passkey.
+                {unusedBackupCodes > 0
+                  ? ` You have ${unusedBackupCodes} unused code${unusedBackupCodes === 1 ? "" : "s"}.`
+                  : " You have no backup codes yet."}
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                setConfirmDialog({
+                  title: unusedBackupCodes > 0 ? "Replace existing backup codes?" : "Generate backup codes?",
+                  body:
+                    unusedBackupCodes > 0
+                      ? "Any existing unused codes will stop working. You'll be shown 10 new codes once — save them immediately."
+                      : "You'll be shown 10 one-time codes. Store them somewhere safe (password manager, printed copy). Each code works once.",
+                  onConfirm: () => void generateBackupCodes(),
+                })
+              }
+              disabled={generating}
+            >
+              {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : unusedBackupCodes > 0 ? "Regenerate" : "Generate"}
+            </Button>
+          </div>
+
+          {newCodes && (
+            <div className="rounded-md border bg-muted/40 p-3 space-y-2">
+              <p className="text-xs font-medium text-destructive">
+                These codes will not be shown again. Save them now.
+              </p>
+              <ul className="grid grid-cols-2 gap-1 font-mono text-sm">
+                {newCodes.map((c) => <li key={c}>{c}</li>)}
+              </ul>
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={copyCodes}>
+                  <Copy className="h-3.5 w-3.5 mr-1" /> Copy
+                </Button>
+                <Button size="sm" variant="outline" onClick={downloadCodes}>
+                  <Download className="h-3.5 w-3.5 mr-1" /> Download
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setNewCodes(null)}>I've saved them</Button>
+              </div>
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
+
+    <AlertDialog open={confirmDialog !== null} onOpenChange={(o) => !o && setConfirmDialog(null)}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{confirmDialog?.title}</AlertDialogTitle>
+          <AlertDialogDescription>{confirmDialog?.body}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => {
+              confirmDialog?.onConfirm();
+              setConfirmDialog(null);
+            }}
+          >
+            Continue
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+    </>
   );
 }
 
