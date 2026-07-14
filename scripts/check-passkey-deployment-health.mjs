@@ -1,8 +1,29 @@
 #!/usr/bin/env node
+import { existsSync, readFileSync } from "node:fs";
 import process from "node:process";
 
-const backendUrl = process.env.VITE_SUPABASE_URL;
-const publishableKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+// `prebuild` runs in plain Node before Vite loads its env files. Load only the
+// two public values required by this probe so publishing does not fail merely
+// because the hosting process did not inject them into Node's environment.
+function readPublicEnv(name) {
+  if (process.env[name]) return process.env[name];
+
+  for (const file of [".env.production.local", ".env.production", ".env.local", ".env"]) {
+    if (!existsSync(file)) continue;
+    const line = readFileSync(file, "utf8")
+      .split(/\r?\n/)
+      .find((entry) => entry.trimStart().startsWith(`${name}=`));
+    if (!line) continue;
+
+    const value = line.slice(line.indexOf("=") + 1).trim();
+    return value.replace(/^(["'])(.*)\1$/, "$2");
+  }
+
+  return undefined;
+}
+
+const backendUrl = readPublicEnv("VITE_SUPABASE_URL");
+const publishableKey = readPublicEnv("VITE_SUPABASE_PUBLISHABLE_KEY");
 const attempts = 3;
 const timeoutMs = 12_000;
 
