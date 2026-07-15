@@ -266,5 +266,131 @@ export async function initializeGatewayPayment(opts: {
     return { checkoutUrl: data.data.link, reference };
   }
 
+  if (gateway === "opay") {
+    // Nigeria-only direct bank transfer via Opay Cashier API (sandbox)
+    const cur = (currency || "NGN").toUpperCase();
+    if (cur !== "NGN") {
+      throw new Error("Opay only supports NGN payments in Nigeria");
+    }
+    const amountMinor = Math.round(amount * 100); // kobo
+    const payload = {
+      country: "NG",
+      reference,
+      amount: { total: amountMinor, currency: "NGN" },
+      returnUrl: callbackUrl,
+      callbackUrl: opts.webhookUrl || callbackUrl,
+      cancelUrl: callbackUrl,
+      displayName: productName || "Payment",
+      expireAt: 30, // minutes
+      userInfo: {
+        userEmail: email,
+        userName: customerName || email.split("@")[0],
+        userMobile: customerPhone || "",
+        userId: (metadata.customer_id as string) || email,
+      },
+      payMethod: "BankTransfer",
+      productList: [
+        {
+          productId: reference,
+          name: productName || "Payment",
+          description: `Order ${(metadata.order_number as string) || reference}`,
+          price: amountMinor,
+          quantity: 1,
+          currency: "NGN",
+        },
+      ],
+    };
+    const isProd = (Deno.env.get("OPAY_MODE") || "sandbox") === "live";
+    const base = isProd
+      ? "https://cashierapi.opayweb.com"
+      : "https://sandboxapi.opaycheckout.com";
+    const res = await fetch(`${base}/api/v1/international/cashier/create`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${keys.secretKey}`,
+        MerchantId: keys.merchantId || "",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (data.code !== "00000") {
+      throw new Error(data.message || "Opay initialization failed");
+    }
+    const d = data.data || {};
+    // Opay returns bank transfer instructions in `paymentInformation` for BankTransfer method
+    const info = d.paymentInformation || d.payInfo || {};
+    return {
+      checkoutUrl: d.cashierUrl || callbackUrl,
+      reference,
+      bankTransfer: {
+        bankName: info.bankName || info.bank || "Opay Wema Bank",
+        accountName: info.accountName || info.name || "OPAY MERCHANT",
+        accountNumber: info.accountNumber || info.account || "",
+        amount,
+        currency: "NGN",
+        expiresAt: d.expireAt || undefined,
+        orderNo: d.orderNo || d.orderNumber || reference,
+      },
+    };
+  }
+
+  if (gateway === "paypal") {
+    // PayPal Orders v2 (sandbox by default). Global multi-currency.
+    const isProd = (Deno.env.get("PAYPAL_MODE") || "sandbox") === "live";
+    const base = isProd ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com";
+    const clientId = keys.merchantId || Deno.env.get("PAYPAL_CLIENT_ID") || "";
+    // OAuth token
+    const tokenRes = await fetch(`${base}/v1/oauth2/token`, {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${btoa(`${clientId}:${keys.secretKey}`)}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "grant_type=client_credentials",
+    });
+    const tokenData = await tokenRes.json();
+    if (!tokenData.access_token) throw new Error(tokenData.error_description || "PayPal auth failed");
+
+    const orderRes = await fetch(`${base}/v2/checkout/orders`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${tokenData.access_token}`,
+        "Content-Type": "application/json",
+        "PayPal-Request-Id": reference,
+      },
+      body: JSON.stringify({
+        intent: "CAPTURE",
+        purchase_units: [
+          {
+            reference_id: reference,
+            description: productName || "Payment",
+            custom_id: (metadata.order_id as string) || reference,
+            amount: {
+              currency_code: (currency || "USD").toUpperCase(),
+              value: amount.toFixed(2),
+            },
+          },
+        ],
+        payment_source: {
+          paypal: {
+            experience_context: {
+              brand_name: "FYSORA FASHN",
+              landing_page: "LOGIN",
+              user_action: "PAY_NOW",
+              return_url: `${callbackUrl}${callbackUrl.includes("?") ? "&" : "?"}gateway=paypal&reference=${encodeURIComponent(reference)}`,
+              cancel_url: `${callbackUrl}${callbackUrl.includes("?") ? "&" : "?"}gateway=paypal&status=cancelled`,
+            },
+          },
+        },
+      }),
+    });
+    const orderData = await orderRes.json();
+    if (!orderData.id) throw new Error(orderData.message || "PayPal order create failed");
+    const approveUrl = (orderData.links || []).find((l: any) => l.rel === "payer-action" || l.rel === "approve")?.href;
+    if (!approveUrl) throw new Error("PayPal approval URL missing");
+    return { checkoutUrl: approveUrl, reference: orderData.id };
+  }
+
   throw new Error(`Unsupported gateway: ${gateway}`);
 }
