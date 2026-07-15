@@ -8789,6 +8789,41 @@ export type Database = {
         }
         Relationships: []
       }
+      profile_identity: {
+        Row: {
+          created_at: string
+          id: string
+          identity_number: string | null
+          identity_type: string | null
+          identity_verification_status: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          identity_number?: string | null
+          identity_type?: string | null
+          identity_verification_status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          identity_number?: string | null
+          identity_type?: string | null
+          identity_verification_status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_identity_id_fkey"
+            columns: ["id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           access_status: string
@@ -8806,9 +8841,6 @@ export type Database = {
           facebook_url: string | null
           free_tours_used: number
           id: string
-          identity_number: string | null
-          identity_type: string | null
-          identity_verification_status: string | null
           identity_verified: boolean | null
           identity_verified_at: string | null
           instagram_url: string | null
@@ -8845,9 +8877,6 @@ export type Database = {
           facebook_url?: string | null
           free_tours_used?: number
           id: string
-          identity_number?: string | null
-          identity_type?: string | null
-          identity_verification_status?: string | null
           identity_verified?: boolean | null
           identity_verified_at?: string | null
           instagram_url?: string | null
@@ -8884,9 +8913,6 @@ export type Database = {
           facebook_url?: string | null
           free_tours_used?: number
           id?: string
-          identity_number?: string | null
-          identity_type?: string | null
-          identity_verification_status?: string | null
           identity_verified?: boolean | null
           identity_verified_at?: string | null
           instagram_url?: string | null
