@@ -8,6 +8,7 @@ import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 export interface GatewayKeys {
   secretKey: string;
   publicKey?: string;
+  merchantId?: string;
 }
 
 export async function resolveGatewayKeys(
@@ -31,12 +32,15 @@ export async function resolveGatewayKeys(
     orgMap["secret_key"] ||
     orgMap["PAYSTACK_SECRET_KEY"] ||
     orgMap["STRIPE_SECRET_KEY"] ||
-    orgMap["FLUTTERWAVE_SECRET_KEY"];
+    orgMap["FLUTTERWAVE_SECRET_KEY"] ||
+    orgMap["OPAY_SECRET_KEY"] ||
+    orgMap["PAYPAL_CLIENT_SECRET"];
 
   if (orgSecret) {
     return {
       secretKey: orgSecret,
       publicKey: orgMap["public_key"] || orgMap["publishable_key"],
+      merchantId: orgMap["merchant_id"] || orgMap["OPAY_MERCHANT_ID"] || orgMap["PAYPAL_CLIENT_ID"],
     };
   }
 
@@ -56,9 +60,28 @@ export async function resolveGatewayKeys(
     return {
       secretKey: platSecret,
       publicKey: platMap["public_key"] || platMap["publishable_key"],
+      merchantId: platMap["merchant_id"],
     };
   }
 
+  // 3. Final fallback: env secrets (sandbox/dev credentials configured via secrets manager)
+  const envMap: Record<string, { secret: string; public?: string; merchant?: string }> = {
+    opay: {
+      secret: Deno.env.get("OPAY_SECRET_KEY") || "",
+      public: Deno.env.get("OPAY_PUBLIC_KEY") || undefined,
+      merchant: Deno.env.get("OPAY_MERCHANT_ID") || undefined,
+    },
+    paypal: {
+      secret: Deno.env.get("PAYPAL_CLIENT_SECRET") || "",
+      public: Deno.env.get("PAYPAL_CLIENT_ID") || undefined,
+      merchant: Deno.env.get("PAYPAL_CLIENT_ID") || undefined,
+    },
+    paystack: { secret: Deno.env.get("PAYSTACK_SECRET_KEY") || "" },
+  };
+  const env = envMap[gateway];
+  if (env?.secret) {
+    return { secretKey: env.secret, publicKey: env.public, merchantId: env.merchant };
+  }
   return null;
 }
 
@@ -68,6 +91,30 @@ const AFRICAN_CURRENCIES = new Set([
   "NGN", "KES", "GHS", "ZAR", "UGX", "TZS", "RWF", "XOF", "XAF",
   "EGP", "MAD", "ETB", "MWK", "ZMW", "SLL", "GMD",
 ]);
+
+/**
+ * Country- and currency-aware gateway routing.
+ * Returns an ordered list of gateway candidates for a customer:
+ *   - Opay is Nigeria-only (NGN + country NG).
+ *   - PayPal is used as the global fallback for non-NGN or non-NG customers.
+ *   - Paystack/Flutterwave remain available for Africa when configured.
+ */
+export function chooseGateway(opts: {
+  country?: string | null;
+  currency?: string | null;
+}): string[] {
+  const country = (opts.country || "").toUpperCase();
+  const currency = (opts.currency || "NGN").toUpperCase();
+
+  if (country === "NG" && currency === "NGN") {
+    return ["opay", "paystack", "flutterwave", "paypal"];
+  }
+  if (AFRICAN_CURRENCIES.has(currency)) {
+    return ["flutterwave", "paystack", "paypal"];
+  }
+  // Global / non-African: PayPal first, Stripe as an option if configured
+  return ["paypal", "stripe"];
+}
 
 /** Map currencies to optimal Flutterwave payment options */
 function getFlutterwavePaymentOptions(currency: string): string {
