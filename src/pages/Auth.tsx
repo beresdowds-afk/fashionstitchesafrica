@@ -256,11 +256,16 @@ const Auth = () => {
         const { data: userData } = await supabase.auth.getUser();
         if (userData?.user) {
           await supabase.from("profiles").update({
-            identity_type: identityType,
-            identity_number: identityNumber.trim(),
             identity_verified: true,
             identity_verified_at: new Date().toISOString(),
           } as any).eq("id", userData.user.id);
+
+          await (supabase.from as any)("profile_identity").upsert({
+            id: userData.user.id,
+            identity_type: identityType,
+            identity_number: identityNumber.trim(),
+            identity_verification_status: "verified",
+          });
 
           // Persist optional referral code (best-effort; column is optional)
           if (referralCode.trim()) {

@@ -146,12 +146,16 @@ Deno.serve(async (req) => {
     // 3. Update entity record if entity_id provided
     if (entity_id && entity_type === "profile") {
       await serviceClient.from("profiles").update({
-        identity_number: cleanNumber,
-        identity_type: type,
         identity_verified: result.valid,
         identity_verified_at: result.valid ? new Date().toISOString() : null,
-        identity_verification_status: result.valid ? "verified" : "failed",
       }).eq("id", entity_id);
+
+      await serviceClient.from("profile_identity").upsert({
+        id: entity_id,
+        identity_number: cleanNumber,
+        identity_type: type,
+        identity_verification_status: result.valid ? "verified" : "failed",
+      });
 
       await serviceClient.from("audit_logs").insert({
         user_id: entity_id,
