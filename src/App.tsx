@@ -26,6 +26,8 @@ import DemoOrgWebsite from "./pages/DemoOrgWebsite";
 import PlatformCataloguePage from "./pages/PlatformCataloguePage";
 import PlatformTour from "./pages/PlatformTour";
 import PaymentsPortal from "./pages/PaymentsPortal";
+import CheckoutPage from "./pages/CheckoutPage";
+import ReceiptPage from "./pages/ReceiptPage";
 import OrgCustomerInstall from "./pages/OrgCustomerInstall";
 import FeaturesPage from "./pages/FeaturesPage";
 import PricingPage from "./pages/PricingPage";
@@ -178,6 +180,8 @@ const App = () => (
             <Route path="/platform-catalogue" element={<PlatformCataloguePage />} />
             <Route path="/platform-tour" element={<PlatformTour />} />
             <Route path="/payments" element={<PaymentsPortal />} />
+            <Route path="/checkout/:orderId" element={<CheckoutPage />} />
+            <Route path="/receipt/:paymentId" element={<ReceiptPage />} />
             <Route path="/docs/api" element={<ApiDocs />} />
             <Route path="/api-docs" element={<Navigate to="/docs/api" replace />} />
             <Route path="/preview/template/:token" element={<TemplatePreviewPage />} />
