@@ -7638,6 +7638,7 @@ export type Database = {
           gateway_checkout_url: string | null
           gateway_payment_id: string | null
           id: string
+          metadata: Json | null
           notes: string | null
           order_id: string
           org_id: string
@@ -7657,6 +7658,7 @@ export type Database = {
           gateway_checkout_url?: string | null
           gateway_payment_id?: string | null
           id?: string
+          metadata?: Json | null
           notes?: string | null
           order_id: string
           org_id: string
@@ -7676,6 +7678,7 @@ export type Database = {
           gateway_checkout_url?: string | null
           gateway_payment_id?: string | null
           id?: string
+          metadata?: Json | null
           notes?: string | null
           order_id?: string
           org_id?: string
