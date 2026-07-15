@@ -8,6 +8,7 @@ import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 export interface GatewayKeys {
   secretKey: string;
   publicKey?: string;
+  merchantId?: string;
 }
 
 export async function resolveGatewayKeys(
@@ -31,12 +32,15 @@ export async function resolveGatewayKeys(
     orgMap["secret_key"] ||
     orgMap["PAYSTACK_SECRET_KEY"] ||
     orgMap["STRIPE_SECRET_KEY"] ||
-    orgMap["FLUTTERWAVE_SECRET_KEY"];
+    orgMap["FLUTTERWAVE_SECRET_KEY"] ||
+    orgMap["OPAY_SECRET_KEY"] ||
+    orgMap["PAYPAL_CLIENT_SECRET"];
 
   if (orgSecret) {
     return {
       secretKey: orgSecret,
       publicKey: orgMap["public_key"] || orgMap["publishable_key"],
+      merchantId: orgMap["merchant_id"] || orgMap["OPAY_MERCHANT_ID"] || orgMap["PAYPAL_CLIENT_ID"],
     };
   }
 
@@ -56,9 +60,28 @@ export async function resolveGatewayKeys(
     return {
       secretKey: platSecret,
       publicKey: platMap["public_key"] || platMap["publishable_key"],
+      merchantId: platMap["merchant_id"],
     };
   }
 
+  // 3. Final fallback: env secrets (sandbox/dev credentials configured via secrets manager)
+  const envMap: Record<string, { secret: string; public?: string; merchant?: string }> = {
+    opay: {
+      secret: Deno.env.get("OPAY_SECRET_KEY") || "",
+      public: Deno.env.get("OPAY_PUBLIC_KEY") || undefined,
+      merchant: Deno.env.get("OPAY_MERCHANT_ID") || undefined,
+    },
+    paypal: {
+      secret: Deno.env.get("PAYPAL_CLIENT_SECRET") || "",
+      public: Deno.env.get("PAYPAL_CLIENT_ID") || undefined,
+      merchant: Deno.env.get("PAYPAL_CLIENT_ID") || undefined,
+    },
+    paystack: { secret: Deno.env.get("PAYSTACK_SECRET_KEY") || "" },
+  };
+  const env = envMap[gateway];
+  if (env?.secret) {
+    return { secretKey: env.secret, publicKey: env.public, merchantId: env.merchant };
+  }
   return null;
 }
 
@@ -68,6 +91,30 @@ const AFRICAN_CURRENCIES = new Set([
   "NGN", "KES", "GHS", "ZAR", "UGX", "TZS", "RWF", "XOF", "XAF",
   "EGP", "MAD", "ETB", "MWK", "ZMW", "SLL", "GMD",
 ]);
+
+/**
+ * Country- and currency-aware gateway routing.
+ * Returns an ordered list of gateway candidates for a customer:
+ *   - Opay is Nigeria-only (NGN + country NG).
+ *   - PayPal is used as the global fallback for non-NGN or non-NG customers.
+ *   - Paystack/Flutterwave remain available for Africa when configured.
+ */
+export function chooseGateway(opts: {
+  country?: string | null;
+  currency?: string | null;
+}): string[] {
+  const country = (opts.country || "").toUpperCase();
+  const currency = (opts.currency || "NGN").toUpperCase();
+
+  if (country === "NG" && currency === "NGN") {
+    return ["opay", "paystack", "flutterwave", "paypal"];
+  }
+  if (AFRICAN_CURRENCIES.has(currency)) {
+    return ["flutterwave", "paystack", "paypal"];
+  }
+  // Global / non-African: PayPal first, Stripe as an option if configured
+  return ["paypal", "stripe"];
+}
 
 /** Map currencies to optimal Flutterwave payment options */
 function getFlutterwavePaymentOptions(currency: string): string {
@@ -111,7 +158,20 @@ export async function initializeGatewayPayment(opts: {
   productName?: string;
   customerName?: string;
   customerPhone?: string;
-}): Promise<{ checkoutUrl: string; reference: string }> {
+  webhookUrl?: string;
+}): Promise<{
+  checkoutUrl: string;
+  reference: string;
+  bankTransfer?: {
+    bankName: string;
+    accountName: string;
+    accountNumber: string;
+    amount: number;
+    currency: string;
+    expiresAt?: string;
+    orderNo?: string;
+  };
+}> {
   const { gateway, keys, amount, currency, reference, callbackUrl, email, metadata, productName, customerName, customerPhone } = opts;
 
   if (gateway === "paystack") {
@@ -204,6 +264,132 @@ export async function initializeGatewayPayment(opts: {
     const data = await res.json();
     if (data.status !== "success") throw new Error(data.message || "Flutterwave initialization failed");
     return { checkoutUrl: data.data.link, reference };
+  }
+
+  if (gateway === "opay") {
+    // Nigeria-only direct bank transfer via Opay Cashier API (sandbox)
+    const cur = (currency || "NGN").toUpperCase();
+    if (cur !== "NGN") {
+      throw new Error("Opay only supports NGN payments in Nigeria");
+    }
+    const amountMinor = Math.round(amount * 100); // kobo
+    const payload = {
+      country: "NG",
+      reference,
+      amount: { total: amountMinor, currency: "NGN" },
+      returnUrl: callbackUrl,
+      callbackUrl: opts.webhookUrl || callbackUrl,
+      cancelUrl: callbackUrl,
+      displayName: productName || "Payment",
+      expireAt: 30, // minutes
+      userInfo: {
+        userEmail: email,
+        userName: customerName || email.split("@")[0],
+        userMobile: customerPhone || "",
+        userId: (metadata.customer_id as string) || email,
+      },
+      payMethod: "BankTransfer",
+      productList: [
+        {
+          productId: reference,
+          name: productName || "Payment",
+          description: `Order ${(metadata.order_number as string) || reference}`,
+          price: amountMinor,
+          quantity: 1,
+          currency: "NGN",
+        },
+      ],
+    };
+    const isProd = (Deno.env.get("OPAY_MODE") || "sandbox") === "live";
+    const base = isProd
+      ? "https://cashierapi.opayweb.com"
+      : "https://sandboxapi.opaycheckout.com";
+    const res = await fetch(`${base}/api/v1/international/cashier/create`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${keys.secretKey}`,
+        MerchantId: keys.merchantId || "",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (data.code !== "00000") {
+      throw new Error(data.message || "Opay initialization failed");
+    }
+    const d = data.data || {};
+    // Opay returns bank transfer instructions in `paymentInformation` for BankTransfer method
+    const info = d.paymentInformation || d.payInfo || {};
+    return {
+      checkoutUrl: d.cashierUrl || callbackUrl,
+      reference,
+      bankTransfer: {
+        bankName: info.bankName || info.bank || "Opay Wema Bank",
+        accountName: info.accountName || info.name || "OPAY MERCHANT",
+        accountNumber: info.accountNumber || info.account || "",
+        amount,
+        currency: "NGN",
+        expiresAt: d.expireAt || undefined,
+        orderNo: d.orderNo || d.orderNumber || reference,
+      },
+    };
+  }
+
+  if (gateway === "paypal") {
+    // PayPal Orders v2 (sandbox by default). Global multi-currency.
+    const isProd = (Deno.env.get("PAYPAL_MODE") || "sandbox") === "live";
+    const base = isProd ? "https://api-m.paypal.com" : "https://api-m.sandbox.paypal.com";
+    const clientId = keys.merchantId || Deno.env.get("PAYPAL_CLIENT_ID") || "";
+    // OAuth token
+    const tokenRes = await fetch(`${base}/v1/oauth2/token`, {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${btoa(`${clientId}:${keys.secretKey}`)}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: "grant_type=client_credentials",
+    });
+    const tokenData = await tokenRes.json();
+    if (!tokenData.access_token) throw new Error(tokenData.error_description || "PayPal auth failed");
+
+    const orderRes = await fetch(`${base}/v2/checkout/orders`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${tokenData.access_token}`,
+        "Content-Type": "application/json",
+        "PayPal-Request-Id": reference,
+      },
+      body: JSON.stringify({
+        intent: "CAPTURE",
+        purchase_units: [
+          {
+            reference_id: reference,
+            description: productName || "Payment",
+            custom_id: (metadata.order_id as string) || reference,
+            amount: {
+              currency_code: (currency || "USD").toUpperCase(),
+              value: amount.toFixed(2),
+            },
+          },
+        ],
+        payment_source: {
+          paypal: {
+            experience_context: {
+              brand_name: "FYSORA FASHN",
+              landing_page: "LOGIN",
+              user_action: "PAY_NOW",
+              return_url: `${callbackUrl}${callbackUrl.includes("?") ? "&" : "?"}gateway=paypal&reference=${encodeURIComponent(reference)}`,
+              cancel_url: `${callbackUrl}${callbackUrl.includes("?") ? "&" : "?"}gateway=paypal&status=cancelled`,
+            },
+          },
+        },
+      }),
+    });
+    const orderData = await orderRes.json();
+    if (!orderData.id) throw new Error(orderData.message || "PayPal order create failed");
+    const approveUrl = (orderData.links || []).find((l: any) => l.rel === "payer-action" || l.rel === "approve")?.href;
+    if (!approveUrl) throw new Error("PayPal approval URL missing");
+    return { checkoutUrl: approveUrl, reference: orderData.id };
   }
 
   throw new Error(`Unsupported gateway: ${gateway}`);

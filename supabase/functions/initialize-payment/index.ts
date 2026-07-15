@@ -84,13 +84,24 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: `${gateway} secret key not configured for this organization or platform` }), { status: 400, headers: corsHeaders });
     }
 
-    const refPrefix = gateway === "paystack" ? "PAY" : gateway === "stripe" ? "STRIPE" : "FLW";
+    const refPrefix =
+      gateway === "paystack" ? "PAY"
+      : gateway === "stripe" ? "STRIPE"
+      : gateway === "opay" ? "OPAY"
+      : gateway === "paypal" ? "PP"
+      : "FLW";
     const reference = `${refPrefix}-${order.order_number}-${Date.now().toString(36)}`;
 
     // Get customer email
     const userId = claimsData.claims.sub;
     const { data: userData } = await serviceClient.auth.admin.getUserById(userId);
     const email = userData?.user?.email || "customer@example.com";
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const webhookUrl =
+      gateway === "opay" ? `${supabaseUrl}/functions/v1/opay-webhook`
+      : gateway === "paypal" ? `${supabaseUrl}/functions/v1/paypal-webhook`
+      : undefined;
 
     const result = await initializeGatewayPayment({
       gateway,
@@ -104,12 +115,14 @@ Deno.serve(async (req) => {
         order_id: order.id,
         org_id: order.org_id,
         order_number: order.order_number,
+        customer_id: userId,
       },
       productName: `Order ${order.order_number}`,
+      webhookUrl,
     });
 
     // Create a pending payment record
-    await serviceClient.from("payments").insert({
+    const { data: paymentRow } = await serviceClient.from("payments").insert({
       org_id: order.org_id,
       order_id: order.id,
       amount: amountDue,
@@ -121,9 +134,15 @@ Deno.serve(async (req) => {
       status: "pending",
       platform_fee_amount: Number(order.platform_fee_amount) || 0,
       admin_fee_amount: Number(order.admin_fee_amount) || 0,
-    });
+      metadata: result.bankTransfer ? { bank_transfer: result.bankTransfer } : null,
+    }).select("id").maybeSingle();
 
-    return new Response(JSON.stringify({ checkout_url: result.checkoutUrl, reference: result.reference }), {
+    return new Response(JSON.stringify({
+      checkout_url: result.checkoutUrl,
+      reference: result.reference,
+      payment_id: paymentRow?.id ?? null,
+      bank_transfer: result.bankTransfer ?? null,
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 

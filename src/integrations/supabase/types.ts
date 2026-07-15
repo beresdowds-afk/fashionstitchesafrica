@@ -7638,6 +7638,7 @@ export type Database = {
           gateway_checkout_url: string | null
           gateway_payment_id: string | null
           id: string
+          metadata: Json | null
           notes: string | null
           order_id: string
           org_id: string
@@ -7657,6 +7658,7 @@ export type Database = {
           gateway_checkout_url?: string | null
           gateway_payment_id?: string | null
           id?: string
+          metadata?: Json | null
           notes?: string | null
           order_id: string
           org_id: string
@@ -7676,6 +7678,7 @@ export type Database = {
           gateway_checkout_url?: string | null
           gateway_payment_id?: string | null
           id?: string
+          metadata?: Json | null
           notes?: string | null
           order_id?: string
           org_id?: string
@@ -12729,6 +12732,7 @@ export type Database = {
         Args: { _grant_type: string; _org_id: string }
         Returns: boolean
       }
+      passkey_deployment_health_check: { Args: never; Returns: Json }
       promote_staging_template: { Args: { _staging_id: string }; Returns: Json }
       read_email_batch: {
         Args: { batch_size: number; queue_name: string; vt: number }
