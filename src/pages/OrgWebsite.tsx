@@ -273,7 +273,20 @@ const OrgWebsite = () => {
             "get_org_website_redirect" as any,
             { _org_id: (orgData as any).id }
           );
-          merged = { ...merged, webhook_url: (redirectUrl as unknown as string) ?? null };
+          const url = (redirectUrl as unknown as string) ?? null;
+          merged = { ...merged, webhook_url: url };
+          if (!url) {
+            // Site is set to custom_integration but the RPC returned no redirect.
+            // Fire-and-forget diagnostic so the schema alerts panel picks it up.
+            void supabase.rpc("log_org_website_redirect_failure" as any, {
+              _org_id: (orgData as any).id,
+              _reason: "rpc_returned_null",
+            });
+            console.error("[OrgWebsite] custom_integration site missing redirect URL", {
+              org_id: (orgData as any).id,
+              slug,
+            });
+          }
         }
         setWebsite(merged as OrgWebsiteData);
       }
