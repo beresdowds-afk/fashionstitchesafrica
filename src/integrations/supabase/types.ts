@@ -9171,6 +9171,33 @@ export type Database = {
         }
         Relationships: []
       }
+      reserved_role_assignments: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          note: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          note?: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          note?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       rest_api_endpoints: {
         Row: {
           created_at: string
