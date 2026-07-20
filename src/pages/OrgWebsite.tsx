@@ -16,6 +16,7 @@ import FeaturedShowcase, { type ShowcaseVariant, type ShowcaseSpeed } from "@/co
 import { addToCart } from "@/lib/cartFlow";
 import { AddToCartDialog } from "@/components/catalogue/AddToCartDialog";
 import { supabase as _sb } from "@/integrations/supabase/client";
+import { WOMEN_SIZE_TABLE, type SizeStandard } from "@/lib/sizeCharts";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface OrgWebsiteData {
