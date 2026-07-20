@@ -16,6 +16,7 @@ import FeaturedShowcase, { type ShowcaseVariant, type ShowcaseSpeed } from "@/co
 import { addToCart } from "@/lib/cartFlow";
 import { AddToCartDialog } from "@/components/catalogue/AddToCartDialog";
 import { supabase as _sb } from "@/integrations/supabase/client";
+import { WOMEN_SIZE_TABLE, type SizeStandard } from "@/lib/sizeCharts";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface OrgWebsiteData {
@@ -46,6 +47,8 @@ interface OrgWebsiteData {
   mission_statement?: string | null;
   our_story?: string | null;
   template_id?: string | null;
+  show_size_chart?: boolean | null;
+  size_chart_standards?: string[] | null;
 }
 
 interface OfficerData {
@@ -669,6 +672,47 @@ const OrgWebsite = () => {
               <span className="text-xs tracking-[0.15em] uppercase" style={textMuted}>{template.copy.sustainabilityNote}</span>
             </div>
           )}
+
+          {/* Optional site-wide Size Chart (UK / US / EU / CN) */}
+          {website.show_size_chart && (() => {
+            const stds = ((website.size_chart_standards && website.size_chart_standards.length
+              ? website.size_chart_standards
+              : ["UK", "US", "CN"]) as SizeStandard[]).filter((s) =>
+              (["UK", "US", "EU", "CN"] as const).includes(s as any),
+            );
+            if (!stds.length) return null;
+            const rows = WOMEN_SIZE_TABLE[stds[0]].map((_, i) => stds.map((s) => WOMEN_SIZE_TABLE[s][i]));
+            return (
+              <div className={`border-t ${borderStyle} py-8 mb-6`}>
+                <h4 className="text-xs font-semibold uppercase tracking-[0.2em] mb-4 text-center" style={textMuted}>
+                  Size Chart · Women
+                </h4>
+                <div className="overflow-x-auto">
+                  <table className="mx-auto text-sm">
+                    <thead>
+                      <tr>
+                        {stds.map((s) => (
+                          <th key={s} className="px-4 py-2 text-xs font-semibold uppercase tracking-wider" style={textMuted}>{s}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map((r, i) => (
+                        <tr key={i} className={`border-t ${borderStyle}`}>
+                          {r.map((v, j) => (
+                            <td key={j} className="px-4 py-2 text-center" style={{ color: td.textPrimary }}>{v}</td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <p className="mt-3 text-[11px] text-center" style={textMuted}>
+                  Approximate industry conversions. Per-product measurements take precedence when provided.
+                </p>
+              </div>
+            );
+          })()}
 
           <div className={`border-t ${borderStyle} pt-6 flex flex-col md:flex-row items-center justify-between gap-3 text-xs`} style={textMuted}>
             <span>© {new Date().getFullYear()} {org.name}. All rights reserved.</span>

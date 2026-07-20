@@ -53,6 +53,8 @@ interface WebsiteSettings {
   tiktok_url: string;
   youtube_url: string;
   public_website_url: string;
+  show_size_chart: boolean;
+  size_chart_standards: string[];
 }
 
 interface CatalogueItem {
@@ -126,6 +128,8 @@ const defaultSettings = (orgId: string): WebsiteSettings => ({
   tiktok_url: "",
   youtube_url: "",
   public_website_url: "",
+  show_size_chart: false,
+  size_chart_standards: ["UK", "US", "CN"],
 });
 
 // ── Tier Banner with Usage ────────────────────────────────────────────────────
@@ -915,6 +919,10 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
       mission_statement: (settings as any).mission_statement || null,
       our_story: (settings as any).our_story || null,
       public_website_url: ((settings as any).public_website_url || "").trim() || null,
+      show_size_chart: !!(settings as any).show_size_chart,
+      size_chart_standards: (settings as any).size_chart_standards?.length
+        ? (settings as any).size_chart_standards
+        : ["UK", "US", "CN"],
     };
 
     // Save org details if changed
@@ -1387,6 +1395,63 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
               })()}
             </div>
           )}
+
+          {/* Optional: UK / US / CN size chart */}
+          <div className="rounded-xl bg-card border border-border p-6 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-heading font-semibold text-base">Size Chart</h3>
+                <p className="text-xs text-muted-foreground">
+                  Show an optional UK / US / CN (and EU) size conversion chart on your public website.
+                </p>
+              </div>
+              <div
+                role="switch"
+                aria-checked={(settings as any).show_size_chart}
+                className={`w-10 h-5 rounded-full transition-colors relative cursor-pointer ${(settings as any).show_size_chart ? "bg-primary" : "bg-muted"}`}
+                onClick={() =>
+                  canEdit &&
+                  setSettings({ ...settings, show_size_chart: !(settings as any).show_size_chart } as any)
+                }
+              >
+                <div
+                  className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white transition-transform ${(settings as any).show_size_chart ? "translate-x-5" : "translate-x-0"}`}
+                />
+              </div>
+            </div>
+            {(settings as any).show_size_chart && (
+              <div className="space-y-2 pt-2 border-t border-border/50">
+                <label className="text-xs font-medium text-muted-foreground">Standards to display</label>
+                <div className="flex flex-wrap gap-2">
+                  {(["UK", "US", "EU", "CN"] as const).map((std) => {
+                    const active = ((settings as any).size_chart_standards || []).includes(std);
+                    return (
+                      <button
+                        key={std}
+                        type="button"
+                        disabled={!canEdit}
+                        onClick={() => {
+                          const current: string[] = (settings as any).size_chart_standards || [];
+                          const next = active ? current.filter((s) => s !== std) : [...current, std];
+                          setSettings({ ...settings, size_chart_standards: next } as any);
+                        }}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                          active
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "bg-background text-muted-foreground border-input hover:border-primary/50"
+                        }`}
+                      >
+                        {std}
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  Per-product measurements set on catalogue items still take precedence over the site-wide chart.
+                </p>
+              </div>
+            )}
+          </div>
 
           {canEdit && (
             <Button variant="hero" onClick={handleSaveSettings} disabled={saving}>

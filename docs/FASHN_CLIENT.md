@@ -22,6 +22,40 @@ All authenticated with `Authorization: Bearer ${FASHN_API_KEY}` and
 
 const DEFAULT_BASE_URL = "https://api.fashn.ai/v1";
 
+/**
+ * Startup-time validation. Import this from your server bootstrap
+ * (e.g. `src/server/index.ts`) so a missing/invalid FASHN config fails
+ * fast with a clear error instead of surfacing later as an opaque 401.
+ *
+ *   import { assertFashnEnv } from "@/lib/fashn.server";
+ *   assertFashnEnv(); // throws before the HTTP server starts
+ */
+export function assertFashnEnv(env: NodeJS.ProcessEnv = process.env): void {
+  const missing: string[] = [];
+  const apiKey = env.FASHN_API_KEY?.trim();
+  if (!apiKey) missing.push("FASHN_API_KEY");
+
+  const rawBase = env.FASHN_BASE_URL?.trim();
+  const baseUrl = rawBase || DEFAULT_BASE_URL;
+  try {
+    const u = new URL(baseUrl);
+    if (u.protocol !== "https:" && u.hostname !== "localhost") {
+      throw new Error(`FASHN_BASE_URL must be https (got ${u.protocol})`);
+    }
+  } catch (e) {
+    throw new Error(
+      `FASHN config invalid: FASHN_BASE_URL="${rawBase}" is not a valid URL (${(e as Error).message})`,
+    );
+  }
+
+  if (missing.length) {
+    throw new Error(
+      `FASHN config missing: ${missing.join(", ")}. ` +
+        `Set them in your environment (see docs/FASHN_CLIENT.md).`,
+    );
+  }
+}
+
 export type FashnStatus =
   | "starting"
   | "in_queue"
