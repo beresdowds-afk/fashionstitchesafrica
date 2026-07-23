@@ -897,6 +897,21 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
       return;
     }
     setSaving(true);
+    // Validate size chart standards before persisting (mirrors DB trigger).
+    const scValidation = validateSizeChartStandards(
+      (settings as any).size_chart_standards,
+      { showSizeChart: !!(settings as any).show_size_chart },
+    );
+    if (!scValidation.ok) {
+      setSaving(false);
+      toast({
+        title: "Invalid size chart selection",
+        description: scValidation.error,
+        variant: "destructive",
+      });
+      setActiveSection("branding");
+      return;
+    }
     const payload: Record<string, any> = {
       org_id: org.id,
       is_enabled: settings.is_enabled,
@@ -921,9 +936,9 @@ const WebsiteBuilderTab = ({ org, role }: WebsiteBuilderTabProps) => {
       our_story: (settings as any).our_story || null,
       public_website_url: ((settings as any).public_website_url || "").trim() || null,
       show_size_chart: !!(settings as any).show_size_chart,
-      size_chart_standards: (settings as any).size_chart_standards?.length
-        ? (settings as any).size_chart_standards
-        : ["UK", "US", "CN"],
+      size_chart_standards: scValidation.value.length
+        ? scValidation.value
+        : ["UK", "US", "EU", "CN"],
     };
 
     // Save org details if changed
